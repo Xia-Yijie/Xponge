@@ -1,0 +1,18 @@
+@<TRIPOS>MOLECULE
+WAT
+4 3 1 0 0
+SMALL
+USER_CHARGES
+
+
+@<TRIPOS>ATOM
+      1 OW           0.0000    0.0000    0.0000 OW         1     WAT    0
+      2 HW1          0.9572    0.0000    0.0000 HW         1     WAT    0.52422
+      3 HW2         -0.2400    0.9266    0.0000 HW         1     WAT    0.52422
+      4 EPW          0.07651   0.09885   0.0000 EPW        1     WAT   -1.04844  
+      
+@<TRIPOS>BOND
+     1     1     2     1
+     2     1     3     1
+     3     2     3     1
+
