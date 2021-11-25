@@ -40,6 +40,8 @@ class _GlobalSetting():
                    "angle"   : {"degree":3.141592654,  "rad": 180}
                    
                     }
+    PDBResidueNameMap = {"head" : {}, "tail": {}}
+    HISMap = {"DeltaH": "", "EpsilonH": "",   "HIS": {}}
     @staticmethod
     def Set_Unit_Transfer_Function(sometype):
         def wrapper(func):
@@ -154,13 +156,11 @@ class Type():
         with open(filename) as f:
             New_From_String(f.read(), skip_lines)
 
-
-
     def __repr__(self):
         return "Type of " + type(self).name + ": " + self.name
         
     def __hash__(self):
-        return hash("Type of " + type(self).name + ": " + self.name)
+        return hash(repr(self))
     
     def __getattribute__(self, attr):
         if attr != "contents" and attr in self.contents.keys():
@@ -210,6 +210,22 @@ class ResidueType(Type):
     types = {}
     types_different_name = {}
     
+    @property
+    def head(self):
+        return self.connect_atoms["head"]
+    
+    @head.setter
+    def head(self, atom):
+        self.connect_atoms["head"] = atom
+
+    @property
+    def tail(self):
+        return self.connect_atoms["tail"]
+    
+    @tail.setter
+    def tail(self, atom):
+        self.connect_atoms["tail"] = atom
+        
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.atoms = []
@@ -220,7 +236,8 @@ class ResidueType(Type):
         self.builded = False
         self.link = {}
         self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
-
+        self.connect_atoms = {"head": None, "tail":None}
+        
     def Add_Atom(self, name, atom_type, x, y, z):
         new_atom = Atom(atom_type, name)
         self.atoms.append(new_atom)
@@ -243,6 +260,9 @@ class ResidueType(Type):
         if type(bonded_force_entity).name not in self.bonded_forces.keys():
             self.bonded_forces[type(bonded_force_entity).name] = []
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
+    
+    def Add_Connect_Atom(self, name, atom):
+        self.connect_atoms[name] = atom
 
 
 class Entity():
@@ -252,7 +272,7 @@ class Entity():
         return "Entity of " + type(self).name + ": " + self.name  + "(" +str(self.count) + ")"
         
     def __hash__(self):
-        return hash("Entity of " + type(self).name + ": " + self.name + "(" +str(self.count) + ")")
+        return hash(repr(self))
         
     def __getattribute__(self, attr):
         if attr != "contents" and attr in self.contents.keys():
@@ -301,11 +321,16 @@ class Residue(Entity):
         self._name2atom = {}
         self._atom2name = {}
         self.connectivity = {}
-        self.bonded_forces = {}
+        self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
         self.builded = False
     
-    def Add_Atom(self, name, atom_type, x, y, z):
-        new_atom = Atom(atom_type, name)
+    def Add_Atom(self, name, atom_type = None, x = None, y = None, z = None):
+        if not atom_type: 
+            atom_type = self.type._name2atom[name].type
+            new_atom = Atom(atom_type, name)
+            new_atom.contents = self.type._name2atom[name].contents
+        else:
+            new_atom = Atom(atom_type, name)
         self.atoms.append(new_atom)
         new_atom.x = float(x)
         new_atom.y = float(y)
@@ -313,8 +338,6 @@ class Residue(Entity):
         self._name2atom[name] = new_atom
         self._atom2name[new_atom] = name
         self.connectivity[new_atom] = set([])
-        self.link = []
-        self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
     def Add_Connectivity(self, atom0, atom1):
         if type(atom0) == str:
             atom0 = self._name2atom[atom0]
@@ -330,6 +353,21 @@ class Residue(Entity):
             self.bonded_forces[type(bonded_force_entity).name] = []
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
 
+class ResidueLink():
+    def __repr__(self):
+        return "Entity of ResidueLink: " + repr(self.atom1) + "-" + repr(self.atom2)
+    def __hash__(self):
+        return hash(repr(self))
+    def __init__(self, atom1, atom2):
+        self.atom1 = atom1
+        self.atom2 = atom2
+        self.builded = False
+        self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
+    def Add_Bonded_Force(self, bonded_force_entity):
+        if type(bonded_force_entity).name not in self.bonded_forces.keys():
+            self.bonded_forces[type(bonded_force_entity).name] = []
+        self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
+        
 class Molecule():
     all = {}
     save_functions = []
@@ -345,8 +383,10 @@ class Molecule():
         Molecule.all[name] = self
         self.residues = []
         self.atoms = []
+        self.residue_links = []
         self.bonded_forces = []
         self.builded = False
+        
         
     def Add_Residue(self, residue):
         self.residues.append(residue)
@@ -355,6 +395,9 @@ class Molecule():
         if type(bonded_force_entity).name not in self.bonded_forces.keys():
             self.bonded_forces[type(bonded_force_entity).name] = []
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
+    
+    def Add_Residue_Link(self, atom1, atom2):
+        self.residue_links.append(ResidueLink(atom1, atom2))
         
 @Molecule.Set_Save_SPONGE_Input     
 def write_residue(self, prefix, dirname):

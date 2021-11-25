@@ -39,7 +39,7 @@ EPW    -3       -2      -1      0.1066413  0.1066413
 
 
 
-TIP3P = LOAD.mol2(os.path.join(os.path.dirname(__file__), "tip4pew.mol2"))
+TIP3P = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "tip4pew.mol2"))
 
 
 BUILD.Build_Bonded_Force(TIP3P)

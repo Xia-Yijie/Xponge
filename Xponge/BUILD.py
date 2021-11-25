@@ -17,7 +17,7 @@ def _build_bfrc(cls):
         top = frc.topology_like
         top_matrix = frc.topology_matrix
         frc_all = []
-        t = time()
+        #t = time()
         for atom0 in cls.atoms:
             backups = {i:[] for i in range(len(top))}
             backups[0].append([atom0])
@@ -28,7 +28,7 @@ def _build_bfrc(cls):
                     for backup in backups[i-1]:
                         good_backup = True
                         for j, atomj in enumerate(backup):
-                            if top_matrix[j][i] <= 1 or atom1 not in atomj.linked_atoms[top_matrix[j][i]]:
+                            if atomj == atom1 or top_matrix[j][i] <= 1 or atom1 not in atomj.linked_atoms[top_matrix[j][i]]:
                                 good_backup = False
                                 break
                         if  good_backup:
@@ -91,7 +91,7 @@ def _build_bfrc_from_type(cls):
                 res_type_atom_map_inverse[atom] = atom0
                 clsatoms.pop(atom)
                 break
-    
+
     for atom in cls.atoms:
         atom0 = res_type_atom_map_inverse[atom]
         for key in atom0.linked_atoms.keys():
@@ -106,27 +106,127 @@ def _build_bfrc_from_type(cls):
             finded_type = frc_entity.type
             cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
         
+def _build_bfrc_link(cls):
+    atom1 = cls.atom1
+    atom2 = cls.atom2
+
+    atom1_friends = set([atom1])
+    atom2_friends = set([atom2])
     
+    far = GlobalSetting.farthest_bonded_force
+    #t = time()
+    for i in range(far-1, 1, -1):
+        for atom in atom1.linked_atoms[i]:
+            atom.linked_atoms[i+1].append(atom2)
+            atom2.linked_atoms[i+1].append(atom)
+            atom1_friends.add(atom)
+        for atom in atom2.linked_atoms[i]:
+            atom.linked_atoms[i+1].append(atom1)
+            atom1.linked_atoms[i+1].append(atom)
+            atom2_friends.add(atom)
+    atom1.linked_atoms[2].append(atom2)
+    atom2.linked_atoms[2].append(atom1)
+    for i in range(2, far):
+        for j in range(2, far + 1 - i):
+            for atom1_linked_atom in atom1.linked_atoms[i]:
+                for atom2_linked_atom in atom2.linked_atoms[j]:
+                    atom1_linked_atom.linked_atoms[i+j].append(atom2_linked_atom)
+                    atom2_linked_atom.linked_atoms[j+i].append(atom1_linked_atom)
+    #print("analysis of connectivity: %f"%(time()-t))
+    atom12_friends = atom1_friends | atom2_friends
+    for frc in GlobalSetting.BondedForces:
+        top = frc.topology_like
+        top_matrix = frc.topology_matrix
+        frc_all = []
+        #t = time()
+        for atom0 in atom12_friends:
+            backups = {i:[] for i in range(len(top))}
+            backups[0].append([atom0])
+            for i,d in enumerate(top):
+                if i == 0:
+                    continue
+                for atom1 in atom0.linked_atoms[d]:
+                    for backup in backups[i-1]:
+                        good_backup = True
+                        for j, atomj in enumerate(backup):
+                            if atomj == atom1 or atomj not in atom12_friends or top_matrix[j][i] <= 1 or atom1 not in atomj.linked_atoms[top_matrix[j][i]]:
+                                good_backup = False
+                                break
+                        if  good_backup:
+                            backups[i].append([*backup,atom1])
+            for backup in backups[len(top)-1]:
+                backupset = set(backup)
+                if atom1_friends & backupset and backupset & atom2_friends:
+                    frc_all.append(backup)
+        #print(frc.name, "analysis of links:%f"%(time()-t))  
+        #t = time()
+        frc_all_final = []
+        frc_keys = {}
+        for frc_one in frc_all:
+            frc_one_name = "".join([str(hash(atom)) for atom in frc_one])
+            if frc_one_name in frc_keys.keys():
+                frc_keys[frc_one_name].append(frc_one)
+            else:
+                temp_list = [frc_one]
+                frc_all_final.append(temp_list)
+                for atom_permutation in frc.Same_Force(frc_one):
+                    frc_one_name = "".join([str(hash(atom)) for atom in atom_permutation])
+                    frc_keys[frc_one_name] = temp_list
+                    
+        #print(frc.name, "analysis of same force: %f"%(time()-t))  
+        #t = time()
+        for frc_ones in frc_all_final:
+            finded = {}
+            #先直接找
+            for frc_one in frc_ones:
+                tofindname = "-".join([atom.type.name for atom in frc_one])
+                if tofindname in frc.types.keys():
+                    finded[tofindname] = [frc.types[tofindname], frc_one]
+                    break
+            #没找到再找通用的
+            if not finded:
+                for frc_one in frc_ones:
+                    tofind = [[atom.type.name, "X"] for atom in frc_one]
+                    for p in product(*tofind):
+                        tofindname = "-".join(p) 
+                        if tofindname in frc.types.keys():
+                            finded[tofindname] = [frc.types[tofindname], frc_one]
+                            break                    
+
+            assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s"%(frc.name, "-".join([atom.type.name for atom in frc_one]))
+            
+            if finded:
+                for finded_type, finded_atoms in finded.values():
+                    cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
+        #print(frc.name, "analysis of force type: %f"%(time()-t))
     
 def Build_Bonded_Force(cls):
+    if cls.builded:
+        return
+
     if type(cls) == ResidueType:
         _build_bfrc(cls)
-        cls.builded = True
-    
+        cls.builded = True  
+        
     elif type(cls) == Residue:
         _build_bfrc_from_type(cls)
         cls.builded = True
         
+    elif type(cls) == ResidueLink:
+        _build_bfrc_link(cls)
+        cls.builded = True
     elif type(cls) == Molecule:
         for res in cls.residues:
             if not res.type.builded:
                 Build_Bonded_Force(res.type)
             Build_Bonded_Force(res)
-            
-        cls.builded = True
- 
-
+        for link in cls.residue_links:
+            Build_Bonded_Force(link)
+            cls.builded = True
+    
         
+        
+ 
     else:
         raise NotImplementedError
 
@@ -134,6 +234,8 @@ def Build_Bonded_Force(cls):
 
 
 def Save_SPONGE_Input(molecule, prefix = None, dirname = "."):
+    Build_Bonded_Force(molecule)
+    
     if not prefix:
         prefix = molecule.name
     
@@ -143,6 +245,11 @@ def Save_SPONGE_Input(molecule, prefix = None, dirname = "."):
         molecule.atoms.extend(res.atoms)
         for frc in GlobalSetting.BondedForces:
             molecule.bonded_forces[frc.name].extend(res.bonded_forces[frc.name])
+            
+    for link in molecule.residue_links:
+        for frc in GlobalSetting.BondedForces:
+            molecule.bonded_forces[frc.name].extend(link.bonded_forces[frc.name])
+            
     molecule.atom_index = { molecule.atoms[i]: i for i in range(len(molecule.atoms))}
     
     for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():

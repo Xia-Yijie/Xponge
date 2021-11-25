@@ -27,7 +27,7 @@ OW-OW   0.152      1.7683
 HW-HW   0          0
 """)
 
-TIP3P = LOAD.mol2(os.path.join(os.path.dirname(__file__), "tip3p.mol2"))
+TIP3P = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "tip3p.mol2"))
 
 
 BUILD.Build_Bonded_Force(TIP3P)

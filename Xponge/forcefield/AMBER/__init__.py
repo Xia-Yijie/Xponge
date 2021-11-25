@@ -1,5 +1,8 @@
 from ... import *
 from ..BASE import CHARGE, MASS, LJ, BOND, ANGLE, DIHEDRAL, NB14, VIRTUAL_ATOM
+import os
+
+AMBER_DATA_DIR = os.path.join(os.path.dirname(__file__), "dat")
 
 LJ.LJType.combining_method_A = LJ.Lorentz_Berthelot_For_A
 LJ.LJType.combining_method_B = LJ.Lorents_Berthelot_For_B
