@@ -1,5 +1,6 @@
 from . import *
 import os
+import sys
 
 ##########################################################################
 #General Format
@@ -38,7 +39,7 @@ def mol2(filename):
                     if words[7] in ResidueType.types.keys():
                         temp = False
                     else:
-                        ResidueType(name = words[7])
+                        sys.modules['__main__'].__dict__[words[7]] = ResidueType(name = words[7])
                         temp = True
                     if current_residue:
                         current_molecule.Add_Residue(current_residue)
@@ -70,7 +71,8 @@ def mol2(filename):
                             else:
                                 atom_residue_map[words[2]][1].type.tail = atom_residue_map[words[2]][0]
     return current_molecule
-                
+    
+sys.modules['__main__'].__dict__["loadmol2"] = mol2    
                 
 
 def pdb(filename, judge_HIS = True):
@@ -186,6 +188,8 @@ def pdb(filename, judge_HIS = True):
         ResB = molecule.residues[count-1]
         molecule.Add_Residue_Link(ResA._name2atom[ResA.type.connect_atoms["head"]], ResB._name2atom[ResB.type.connect_atoms["tail"]])
     return molecule
+    
+sys.modules['__main__'].__dict__["loadpdb"] = pdb    
 
 ##########################################################################
 #AMBER Format
@@ -200,6 +204,9 @@ def frcmod(filename, nbtype = "RE"):
         propers = "name  k[kcal/mol]    phi0[degree]    periodicity    reset\n"
         reset = 1
         impropers = "name  k[kcal/mol]    phi0[degree]    periodicity\n"
+        cmap = {}
+        cmap_flag = None
+        temp_cmp = {}
         if nbtype == "SK":
             raise NotImplementedError
         elif nbtype == "AC":
@@ -211,7 +218,7 @@ def frcmod(filename, nbtype = "RE"):
             if not line.strip():
                 continue
             words = line.split()
-            if len(words) == 1:
+            if flag != "CMAP" and len(words) == 1:
                 flag = line.strip()
             elif flag == "MASS":
                 atom_types[words[0]] = words[1]
@@ -238,13 +245,40 @@ def frcmod(filename, nbtype = "RE"):
             elif flag == "NONB":
                 words = line.split()
                 LJs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
-
+            elif flag == "CMAP":
+                if line.startswith("%FLAG"):
+                    if "CMAP_COUNT" in line:
+                        if temp_cmp:
+                            for res in temp_cmp["residues"]:
+                                cmap[res] = temp_cmp["info"]
+                        temp_cmp = {"residues":[], "info": {"resolution":24, "count":int(line.split()[-1]), "parameters": []}}
+                        cmap_flag = "CMAP_COUNT"
+                    elif "CMAP_RESOLUTION" in line:
+                        temp_cmp["info"]["resolution"] = int(line.split()[-1])
+                        cmap_flag = "CMAP_RESOLUTION"
+                    elif  "CMAP_RESLIST" in line:
+                        cmap_flag = "CMAP_RESLIST"
+                    elif "CMAP_TITLE" in line:
+                        cmap_flag = "CMAP_TITLE"
+                    elif "CMAP_PARAMETER" in line:
+                        cmap_flag = "CMAP_PARAMETER"
+                elif cmap_flag == "CMAP_RESLIST":
+                    temp_cmp["residues"].extend(line.split())
+                elif cmap_flag == "CMAP_PARAMETER":
+                    temp_cmp["info"]["parameters"].extend([float(x) for x in line.split()])
+                    
+                    
+    if temp_cmp:
+        for res in temp_cmp["residues"]:
+            cmap[res] = temp_cmp["info"]
     atoms = "name  mass  LJtype\n"
     for atom, mass in atom_types.items():
         atoms += atom + "\t" + mass + "\t" + atom + "\n"
         
-    return atoms, bonds, angles, propers, impropers, LJs
-            
+    return atoms, bonds, angles, propers, impropers, LJs, cmap
+
+sys.modules['__main__'].__dict__["loadfrcmod"] = frcmod    
+
 def parmdat(filename):
     with open(filename) as f:
         f.readline()
@@ -342,5 +376,5 @@ def parmdat(filename):
         
     return atoms, bonds, angles, propers, impropers, LJs
         
-        
-        
+
+sys.modules['__main__'].__dict__["loadparmdat"] = parmdat 

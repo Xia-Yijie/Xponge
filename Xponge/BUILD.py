@@ -1,5 +1,7 @@
 from . import *
 from time import time
+import sys
+
 def _build_bfrc(cls):
     #t = time()
     for atom0, c in cls.connectivity.items():
@@ -234,36 +236,48 @@ def Build_Bonded_Force(cls):
 
 
 def Save_SPONGE_Input(molecule, prefix = None, dirname = "."):
-    Build_Bonded_Force(molecule)
-    
-    if not prefix:
-        prefix = molecule.name
-    
-    molecule.atoms = []
-    molecule.bonded_forces = { frc.name:[] for frc in GlobalSetting.BondedForces}
-    for res in molecule.residues:
-        molecule.atoms.extend(res.atoms)
-        for frc in GlobalSetting.BondedForces:
-            molecule.bonded_forces[frc.name].extend(res.bonded_forces[frc.name])
-            
-    for link in molecule.residue_links:
-        for frc in GlobalSetting.BondedForces:
-            molecule.bonded_forces[frc.name].extend(link.bonded_forces[frc.name])
-            
-    molecule.atom_index = { molecule.atoms[i]: i for i in range(len(molecule.atoms))}
-    
-    for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
-        for vatom in molecule.bonded_forces[vatom_type_name]:
-            this_vatoms = [vatom.atoms[0]]
-            for i in range(vatom_type_atom_numbers):
-                this_vatoms.append(molecule.atoms[molecule.atom_index[vatom.atoms[0]] + getattr(vatom, "atom%d"%i)]) 
-            this_vatoms.sort(key = lambda x:molecule.atom_index[x])
-            while this_vatoms:
-                tolink = this_vatoms.pop(0)
-                for i in this_vatoms:
-                    if "v" not in tolink.linked_atoms.keys():
-                        tolink.linked_atoms["v"] = []
-                    tolink.linked_atoms["v"].append(i) 
-                    
-    for func in Molecule.save_functions:
-        func(molecule, prefix, dirname)
+    if type(molecule)== Molecule:
+        Build_Bonded_Force(molecule)
+        
+        if not prefix:
+            prefix = molecule.name
+        
+        molecule.atoms = []
+        molecule.bonded_forces = { frc.name:[] for frc in GlobalSetting.BondedForces}
+        for res in molecule.residues:
+            molecule.atoms.extend(res.atoms)
+            for frc in GlobalSetting.BondedForces:
+                molecule.bonded_forces[frc.name].extend(res.bonded_forces[frc.name])
+                
+        for link in molecule.residue_links:
+            for frc in GlobalSetting.BondedForces:
+                molecule.bonded_forces[frc.name].extend(link.bonded_forces[frc.name])
+                
+        molecule.atom_index = { molecule.atoms[i]: i for i in range(len(molecule.atoms))}
+        
+        for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
+            for vatom in molecule.bonded_forces[vatom_type_name]:
+                this_vatoms = [vatom.atoms[0]]
+                for i in range(vatom_type_atom_numbers):
+                    this_vatoms.append(molecule.atoms[molecule.atom_index[vatom.atoms[0]] + getattr(vatom, "atom%d"%i)]) 
+                this_vatoms.sort(key = lambda x:molecule.atom_index[x])
+                while this_vatoms:
+                    tolink = this_vatoms.pop(0)
+                    for i in this_vatoms:
+                        if "v" not in tolink.linked_atoms.keys():
+                            tolink.linked_atoms["v"] = []
+                        tolink.linked_atoms["v"].append(i) 
+                        
+        for func in Molecule.save_functions:
+            func(molecule, prefix, dirname)
+    elif type(molecule) == Residue:
+        mol = Molecule(name = molecule.name)
+        mol.Add_Residue(molecule)
+        Save_SPONGE_Input(mol)
+    elif type(molecule) == ResidueType:
+        residue = Residue(molecule, name = molecule.name)
+        for atom in molecule.atoms:
+            residue.Add_Atom(atom.name, x = atom.x, y = atom.y, z = atom.z)
+        Save_SPONGE_Input(residue)
+
+sys.modules['__main__'].__dict__["Save_SPONGE_Input"] = Save_SPONGE_Input 

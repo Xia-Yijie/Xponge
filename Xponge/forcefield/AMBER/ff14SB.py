@@ -12,7 +12,7 @@ DIHEDRAL.ImproperType.New_From_String(impropers)
 LJ.LJType.New_From_String(LJs)
 
 
-atoms, bonds, angles, propers, impropers, LJs = LOAD.frcmod(os.path.join(AMBER_DATA_DIR, "ff14SB.frcmod"))
+atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(os.path.join(AMBER_DATA_DIR, "ff14SB.frcmod"))
 
 AtomType.New_From_String(atoms)
 BOND.BondType.New_From_String(bonds)
@@ -36,5 +36,5 @@ GlobalSetting.HISMap["HIS"].update({"HIS": {"HID":"HID", "HIE":"HIE", "HIP":"HIP
 
 ResidueType.types["CYX"].connect_atoms["ssbond"] = "SG"
 
-#sys.modules['__main__'].__dict__["ff14SB"] = ff14SB
+
 ResidueType.types["HIS"] = ResidueType.types["HIE"]

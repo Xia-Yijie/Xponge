@@ -22,6 +22,7 @@ import os
 import numpy as np
 import types
 from itertools import product, permutations
+import time
 
 ##########################################################################
 #Basic Classes
@@ -290,7 +291,7 @@ class Entity():
         self.contents = {**entity_type.contents}
         self.count = type(self).count
         if not name:
-            name = entity_type.name + str(self.count)
+            name = entity_type.name
         type(self).count += 1
         self.name = name
         self.type = entity_type
@@ -310,6 +311,13 @@ class Atom(Entity):
     def __init__(self, entity_type, name = None):
         super().__init__(entity_type, name)
         self.linked_atoms = { i+1 : [] for i in range(1,GlobalSetting.farthest_bonded_force)}
+        self.residue = None
+        self.copied = {}
+    def deepcopy(self, forlink = None):
+        new_atom = Atom(self.entity)
+        if forlink:
+            self.copied[forlink] = new_atom
+        return new_atom
 
 
 class Residue(Entity):
@@ -331,13 +339,19 @@ class Residue(Entity):
             new_atom.contents = self.type._name2atom[name].contents
         else:
             new_atom = Atom(atom_type, name)
+            new_atom.contents = self.type._name2atom[name].contents
+        new_atom.residue = self
         self.atoms.append(new_atom)
-        new_atom.x = float(x)
-        new_atom.y = float(y)
-        new_atom.z = float(z)
+        if x:
+            new_atom.x = float(x)
+        if y:
+            new_atom.y = float(y)
+        if z:
+            new_atom.z = float(z)
         self._name2atom[name] = new_atom
         self._atom2name[new_atom] = name
         self.connectivity[new_atom] = set([])
+        
     def Add_Connectivity(self, atom0, atom1):
         if type(atom0) == str:
             atom0 = self._name2atom[atom0]
@@ -352,6 +366,14 @@ class Residue(Entity):
         if type(bonded_force_entity).name not in self.bonded_forces.keys():
             self.bonded_forces[type(bonded_force_entity).name] = []
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
+    
+    def deepcopy(self, forlink = None):
+        new_residue = Residue(self.type)
+        for atom in self.atoms:
+            new_residue.Add_Atom(atom.name)
+            if forlink:
+                atom.copied[forlink] = new_residue.atoms[-1]
+        return new_residue
 
 class ResidueLink():
     def __repr__(self):
@@ -367,6 +389,9 @@ class ResidueLink():
         if type(bonded_force_entity).name not in self.bonded_forces.keys():
             self.bonded_forces[type(bonded_force_entity).name] = []
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
+    def deepcopy(self, forlink):
+        if self.atom1.copied[forlink] and self.atom2.copied[forlink]:
+            return ResidueLink(self.atom1.copied[forlink], self.atom2.copied[forlink])
         
 class Molecule():
     all = {}
@@ -398,12 +423,45 @@ class Molecule():
     
     def Add_Residue_Link(self, atom1, atom2):
         self.residue_links.append(ResidueLink(atom1, atom2))
+
+    def deepcopy(self):
+        new_molecule = Molecule(self.name)
+        forlink = hash(str(time.time()))
+        for res in self.residues:
+            new_molecule.Add_Residue(res.deepcopy(forlink))
+        for link in self.residue_links:
+            new_molecule.residue_links.append(link.deepcopy(forlink))
+        for res in self.residues:
+            for atom in res.atoms:
+                atom.copied.pop(forlink)
+        return new_molecule
         
 @Molecule.Set_Save_SPONGE_Input     
 def write_residue(self, prefix, dirname):
     towrite = "%d %d\n"%(len(self.atoms), len(self.residues))
     towrite += "\n".join([str(len(res.atoms)) for res in self.residues])
     f = open(os.path.join(dirname, prefix + "_residue.txt"),"w")
+    f.write(towrite)
+    f.close()
+
+@Molecule.Set_Save_SPONGE_Input     
+def write_coordinate(self, prefix, dirname):
+    towrite = "%d\n"%(len(self.atoms))
+    boxlength = [0, 0, 0, 90, 90, 90]    
+    for atom in self.atoms:
+        towrite += "%f %f %f\n"%(atom.x, atom.y, atom.z)
+        if atom.x > boxlength[0]:
+            boxlength[0] = atom.x
+        if atom.y > boxlength[1]:
+            boxlength[1] = atom.y
+        if atom.z > boxlength[2]:
+            boxlength[2] = atom.z
+    towrite += "\n".join(["%f %f %f"%(atom.x, atom.y, atom.z) for atom in self.atoms])
+    boxlength[0] += 3
+    boxlength[1] += 3
+    boxlength[2] += 3
+    towrite += "\n%f %f %f %f %f %f"%(boxlength[0], boxlength[1], boxlength[2], boxlength[3], boxlength[4], boxlength[5])
+    f = open(os.path.join(dirname, prefix + "_coordinate.txt"),"w")
     f.write(towrite)
     f.close()
 
@@ -497,3 +555,113 @@ def Generate_New_Pairwise_Force_Type(Type_Name, properties):
     return PairwiseForceType
 
 from . import LOAD, BUILD
+
+def ResidueType_Add(self, other):
+    if type(other) == ResidueType:
+        new_molecule = Molecule(self.name)
+        resA = Residue(self)
+        resB = Residue(other)
+        for atom in self.atoms:
+            resA.Add_Atom(atom.name)
+        for atom in other.atoms:
+            resB.Add_Atom(atom.name)
+        new_molecule.Add_Residue(resA)
+        new_molecule.Add_Residue(resB)
+        if self.tail and other.head:
+            new_molecule.Add_Residue_Link(resA._name2atom[self.tail], resB._name2atom[other.head])
+        return new_molecule
+    elif type(other) == Molecule:
+        new_molecule = other.deepcopy()
+        resA = Residue(self)
+        for atom in self.atoms:
+            resA.Add_Atom(atom.name)
+        if self.tail and other.residues[0].type.head:
+            new_molecule.Add_Residue_Link(resA._name2atom[self.tail], other.residues[0]._name2atom[other.residues[0].type.head])
+        new_molecule.residues.insert(0, resA)
+        return new_molecule
+    elif type(other) == type(None):
+        return self
+    else:
+        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
+
+def Molecule_Add(self, other):
+    if type(other) == ResidueType:
+        new_molecule = self.deepcopy()
+        resB = Residue(other)
+        for atom in other.atoms:
+            resB.Add_Atom(atom.name)
+        new_molecule.Add_Residue(resB)
+        if new_molecule.residues[-1].type.tail and other.head:
+            new_molecule.Add_Residue_Link(new_molecule.residues[-1]._name2atom[new_molecule.residues[-1].type.tail], resB._name2atom[other.head])
+        return new_molecule
+    elif type(other) == Molecule:
+        new_molecule = self.deepcopy()
+        new_molecule2 = other.deepcopy()
+        if new_molecule.residues[-1].type.tail and new_molecule2.residues[0].type.head:
+            new_molecule.Add_Residue_Link(new_molecule.residues[-1]._name2atom[new_molecule.residues[-1].type.tail],
+            new_molecule2.residues[0]._name2atom[new_molecule2.residues[0].type.head])
+        for res in new_molecule2.residues:
+            new_molecule.Add_Residue(res)
+        return new_molecule
+    elif type(other) == type(None):
+        return self
+    else:
+        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
+
+def iMolecule_Add(self, other):
+    if type(other) == ResidueType:
+        resB = Residue(other)
+        for atom in other.atoms:
+            resB.Add_Atom(atom.name)
+        self.Add_Residue(resB)
+        if self.residues[-1].type.tail and other.head:
+            self.Add_Residue_Link(self.residues[-1]._name2atom[self.residues[-1].type.tail], resB._name2atom[other.head])
+        return self
+    elif type(other) == Molecule:
+        new_molecule2 = other.deepcopy()
+        if self.residues[-1].type.tail and new_molecule2.residues[0].type.head:
+            self.Add_Residue_Link(self.residues[-1]._name2atom[self.residues[-1].type.tail],
+            new_molecule2.residues[0]._name2atom[new_molecule2.residues[0].type.head])
+        for res in new_molecule2.residues:
+            self.Add_Residue(res)
+        return self
+    elif type(other) == type(None):
+        return self
+    else:
+        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
+
+def Muls(self, other):
+    if type(other) == int:
+        assert other >= 0
+        t = self
+        for i in range(other - 1):
+            t = t + self
+        return t
+    else:
+        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
+
+def iMuls(self, other):
+    if type(other) == int:
+        assert other >= 0
+        for i in range(other - 1):
+            self += self
+        return self
+    else:
+        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
+
+ResidueType.__add__ = ResidueType_Add
+ResidueType.__radd__ = ResidueType_Add
+ResidueType.__mul__ = Muls
+ResidueType.__rmul__ = Muls
+Molecule.__add__ = Molecule_Add
+Molecule.__radd__ = Molecule_Add
+Molecule.__iadd__ = iMolecule_Add
+Molecule.__mul__ = Muls
+Molecule.__rmul__ = Muls
+Molecule.__imul__ = iMuls
+
+del ResidueType_Add
+del Molecule_Add
+del Muls
+del iMuls
+del iMolecule_Add
