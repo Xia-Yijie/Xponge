@@ -24,20 +24,26 @@ LJ.LJType.New_From_String(LJs)
 from ..BASE import CMAP
 CMAP.CMAP.Residue_Map.update(cmap)
 
-#ff19SB = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "ff19SB.mol2"))
-
-#residues = "ALA ARG ASN ASP CYS CYX GLN GLU GLY HID HIE HIP ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL HIS".split()
-
-#GlobalSetting.PDBResidueNameMap["head"].update({resname:"N" + resname for resname in residues})
-#GlobalSetting.PDBResidueNameMap["tail"].update({resname:"C" + resname for resname in residues})
-
-#GlobalSetting.HISMap["DeltaH"] = "HD1"
-#GlobalSetting.HISMap["EpsilonH"] = "HE2"
-#GlobalSetting.HISMap["HIS"].update({"HIS": {"HID":"HID", "HIE":"HIE", "HIP":"HIP"}, 
-#                                    "CHIS":{"HID":"CHID", "HIE":"CHIE", "HIP":"CHIP"},
-#                                    "NHIS":{"HID":"NHID", "HIE":"NHIE", "HIP":"NHIP"}})
-
-#ResidueType.types["CYX"].connect_atoms["ssbond"] = "SG"
+CMAP.CMAP.New_From_String(r"""
+name
+C-N-XC-C-N
+""")
 
 
-#ResidueType.types["HIS"] = ResidueType.types["HIE"]
+ff19SB = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "ff19SB.mol2"))
+
+residues = "ALA ARG ASN ASP CYS CYX GLN GLU GLY HID HIE HIP ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL HIS".split()
+
+GlobalSetting.PDBResidueNameMap["head"].update({resname:"N" + resname for resname in residues})
+GlobalSetting.PDBResidueNameMap["tail"].update({resname:"C" + resname for resname in residues})
+
+GlobalSetting.HISMap["DeltaH"] = "HD1"
+GlobalSetting.HISMap["EpsilonH"] = "HE2"
+GlobalSetting.HISMap["HIS"].update({"HIS": {"HID":"HID", "HIE":"HIE", "HIP":"HIP"}, 
+                                    "CHIS":{"HID":"CHID", "HIE":"CHIE", "HIP":"CHIP"},
+                                    "NHIS":{"HID":"NHID", "HIE":"NHIE", "HIP":"NHIP"}})
+
+ResidueType.types["CYX"].connect_atoms["ssbond"] = "SG"
+
+
+ResidueType.types["HIS"] = ResidueType.types["HIE"]

@@ -447,19 +447,27 @@ def write_residue(self, prefix, dirname):
 @Molecule.Set_Save_SPONGE_Input     
 def write_coordinate(self, prefix, dirname):
     towrite = "%d\n"%(len(self.atoms))
-    boxlength = [0, 0, 0, 90, 90, 90]    
+    boxlength = [0, 0, 0, 90, 90, 90]
+    maxi = [-float("inf"), -float("inf"), -float("inf")]
+    mini = [ float("inf"),  float("inf"),  float("inf")]
     for atom in self.atoms:
         towrite += "%f %f %f\n"%(atom.x, atom.y, atom.z)
-        if atom.x > boxlength[0]:
-            boxlength[0] = atom.x
-        if atom.y > boxlength[1]:
-            boxlength[1] = atom.y
-        if atom.z > boxlength[2]:
-            boxlength[2] = atom.z
+        if atom.x > maxi[0]:
+            maxi[0] = atom.x
+        if atom.y > maxi[1]:
+            maxi[1] = atom.y
+        if atom.z > maxi[2]:
+            maxi[2] = atom.z
+        if atom.x < mini[0]:
+            mini[0] = atom.x
+        if atom.y < mini[1]:
+            mini[1] = atom.y
+        if atom.z < mini[2]:
+            mini[2] = atom.z
     towrite += "\n".join(["%f %f %f"%(atom.x, atom.y, atom.z) for atom in self.atoms])
-    boxlength[0] += 3
-    boxlength[1] += 3
-    boxlength[2] += 3
+    boxlength[0] = maxi[0] - mini[0] + 3
+    boxlength[1] = maxi[1] - mini[1] + 3
+    boxlength[2] = maxi[2] - mini[2] + 3
     towrite += "\n%f %f %f %f %f %f"%(boxlength[0], boxlength[1], boxlength[2], boxlength[3], boxlength[4], boxlength[5])
     f = open(os.path.join(dirname, prefix + "_coordinate.txt"),"w")
     f.write(towrite)

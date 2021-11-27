@@ -30,9 +30,14 @@ def _build_bfrc(cls):
                     for backup in backups[i-1]:
                         good_backup = True
                         for j, atomj in enumerate(backup):
-                            if atomj == atom1 or top_matrix[j][i] <= 1 or atom1 not in atomj.linked_atoms[top_matrix[j][i]]:
+                            if atomj == atom1 or abs(top_matrix[j][i]) <= 1 or atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
                                 good_backup = False
                                 break
+                            if top_matrix[j][i] <= -1:
+                                for d2 in range(2, d):
+                                   if atom1 in atomj.linked_atoms[d2]:
+                                    good_backup = False
+                                    break
                         if  good_backup:
                             backups[i].append([*backup,atom1])
             frc_all.extend(backups[len(top)-1])
@@ -115,25 +120,34 @@ def _build_bfrc_link(cls):
     atom1_friends = set([atom1])
     atom2_friends = set([atom2])
     
+    
     far = GlobalSetting.farthest_bonded_force
+    temp_atom2_linked = {i : [] for i in range(far, 2, -1)}
     #t = time()
     for i in range(far-1, 1, -1):
         for atom in atom1.linked_atoms[i]:
             atom.linked_atoms[i+1].append(atom2)
-            atom2.linked_atoms[i+1].append(atom)
+            temp_atom2_linked[i+1].append(atom)
             atom1_friends.add(atom)
         for atom in atom2.linked_atoms[i]:
             atom.linked_atoms[i+1].append(atom1)
             atom1.linked_atoms[i+1].append(atom)
             atom2_friends.add(atom)
+    for i in range(far-1, 1, -1):
+        atom2.linked_atoms[i+1].extend(temp_atom2_linked[i+1]) 
     atom1.linked_atoms[2].append(atom2)
     atom2.linked_atoms[2].append(atom1)
+    
+
+    
     for i in range(2, far):
         for j in range(2, far + 1 - i):
             for atom1_linked_atom in atom1.linked_atoms[i]:
                 for atom2_linked_atom in atom2.linked_atoms[j]:
-                    atom1_linked_atom.linked_atoms[i+j].append(atom2_linked_atom)
-                    atom2_linked_atom.linked_atoms[j+i].append(atom1_linked_atom)
+                    if atom1_linked_atom not in atom2_friends and atom2_linked_atom not in atom1_friends:
+                        atom1_linked_atom.linked_atoms[i+j].append(atom2_linked_atom)
+                        atom2_linked_atom.linked_atoms[j+i].append(atom1_linked_atom)
+
     #print("analysis of connectivity: %f"%(time()-t))
     atom12_friends = atom1_friends | atom2_friends
     for frc in GlobalSetting.BondedForces:
@@ -151,9 +165,14 @@ def _build_bfrc_link(cls):
                     for backup in backups[i-1]:
                         good_backup = True
                         for j, atomj in enumerate(backup):
-                            if atomj == atom1 or atomj not in atom12_friends or top_matrix[j][i] <= 1 or atom1 not in atomj.linked_atoms[top_matrix[j][i]]:
+                            if atomj == atom1 or abs(top_matrix[j][i]) <= 1 or atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
                                 good_backup = False
                                 break
+                            if top_matrix[j][i] <= -1:
+                                for d2 in range(2, d):
+                                   if atom1 in atomj.linked_atoms[d2]:
+                                    good_backup = False
+                                    break
                         if  good_backup:
                             backups[i].append([*backup,atom1])
             for backup in backups[len(top)-1]:
@@ -227,7 +246,7 @@ def Build_Bonded_Force(cls):
             cls.builded = True
     
         
-        
+
  
     else:
         raise NotImplementedError
@@ -270,6 +289,7 @@ def Save_SPONGE_Input(molecule, prefix = None, dirname = "."):
                         
         for func in Molecule.save_functions:
             func(molecule, prefix, dirname)
+
     elif type(molecule) == Residue:
         mol = Molecule(name = molecule.name)
         mol.Add_Residue(molecule)
