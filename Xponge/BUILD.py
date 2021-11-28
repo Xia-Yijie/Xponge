@@ -1,6 +1,5 @@
 from . import *
 from time import time
-import sys
 
 def _build_bfrc(cls):
     #t = time()
@@ -74,7 +73,8 @@ def _build_bfrc(cls):
                         tofindname = "-".join(p) 
                         if tofindname in frc.types.keys():
                             finded[tofindname] = [frc.types[tofindname], frc_one]
-                            break                         
+                            break
+                   
             
             assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s"%(frc.name, "-".join([atom.type.name for atom in frc_one]))
             
@@ -120,10 +120,10 @@ def _build_bfrc_link(cls):
     atom1_friends = set([atom1])
     atom2_friends = set([atom2])
     
-    
     far = GlobalSetting.farthest_bonded_force
+    temp_atom1_linked = {i : [] for i in range(far, 2, -1)}
     temp_atom2_linked = {i : [] for i in range(far, 2, -1)}
-    #t = time()
+    #t = time()    
     for i in range(far-1, 1, -1):
         for atom in atom1.linked_atoms[i]:
             atom.linked_atoms[i+1].append(atom2)
@@ -131,13 +131,13 @@ def _build_bfrc_link(cls):
             atom1_friends.add(atom)
         for atom in atom2.linked_atoms[i]:
             atom.linked_atoms[i+1].append(atom1)
-            atom1.linked_atoms[i+1].append(atom)
+            temp_atom1_linked[i+1].append(atom)
             atom2_friends.add(atom)
     for i in range(far-1, 1, -1):
+        atom1.linked_atoms[i+1].extend(temp_atom1_linked[i+1])
         atom2.linked_atoms[i+1].extend(temp_atom2_linked[i+1]) 
     atom1.linked_atoms[2].append(atom2)
     atom2.linked_atoms[2].append(atom1)
-    
 
     
     for i in range(2, far):
@@ -212,7 +212,7 @@ def _build_bfrc_link(cls):
                         tofindname = "-".join(p) 
                         if tofindname in frc.types.keys():
                             finded[tofindname] = [frc.types[tofindname], frc_one]
-                            break                    
+                            break
 
             assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s"%(frc.name, "-".join([atom.type.name for atom in frc_one]))
             
@@ -301,3 +301,4 @@ def Save_SPONGE_Input(molecule, prefix = None, dirname = "."):
         Save_SPONGE_Input(residue)
 
 sys.modules['__main__'].__dict__["Save_SPONGE_Input"] = Save_SPONGE_Input 
+

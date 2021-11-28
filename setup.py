@@ -6,7 +6,7 @@ f.close()
  
 setuptools.setup(
     name="Xponge",
-    version="0.0.3",
+    version="0.0.4",
     author="Yijie Xia",  
     author_email="yijiexia@pku.edu.cn", 
     description="A package for building molecular dynamics inputs for SPONGE",
@@ -15,6 +15,7 @@ setuptools.setup(
     url="https://gitee.com/gao_hyp_xyj_admin/xponge",
     packages=setuptools.find_packages(),
     package_data = {"":['*.mol2', '*.frcmod', '*.dat']},
+    install_requires = ["numpy"],
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
         "Development Status :: 3 - Alpha",

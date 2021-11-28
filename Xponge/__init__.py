@@ -23,6 +23,7 @@ import numpy as np
 import types
 from itertools import product, permutations
 import time
+import sys
 
 ##########################################################################
 #Basic Classes
@@ -38,11 +39,14 @@ class _GlobalSetting():
     UnitMapping = {"distance": {"nm": 1e-9, "A": 1e-10},
                    "energy"  : {"kcal/mol":4.184, "eV":96.4853, "kJ/mol": 1},
                    "charge"  : {"e":1,   "SPONGE":1.0/18.2223},
-                   "angle"   : {"degree":3.141592654,  "rad": 180}
+                   "angle"   : {"degree":np.pi,  "rad": 180}
                    
                     }
     PDBResidueNameMap = {"head" : {}, "tail": {}}
     HISMap = {"DeltaH": "", "EpsilonH": "",   "HIS": {}}
+    LinkBond  = 1.5
+    LinkAngle = 109.5 / 180 * np.pi 
+    LinkDihedral = np.pi 
     @staticmethod
     def Set_Unit_Transfer_Function(sometype):
         def wrapper(func):
@@ -220,12 +224,20 @@ class ResidueType(Type):
         self.connect_atoms["head"] = atom
 
     @property
-    def tail(self):
-        return self.connect_atoms["tail"]
+    def head_next(self):
+        return self.connect_atoms["head_next"]
     
-    @tail.setter
-    def tail(self, atom):
-        self.connect_atoms["tail"] = atom
+    @head_next.setter
+    def head_next(self, atom):
+        self.connect_atoms["head_next"] = atom
+        
+    @property
+    def tail_next(self):
+        return self.connect_atoms["tail_next"]
+    
+    @tail_next.setter
+    def tail_next(self, atom):
+        self.connect_atoms["tail_next"] = atom
         
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -237,7 +249,7 @@ class ResidueType(Type):
         self.builded = False
         self.link = {}
         self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
-        self.connect_atoms = {"head": None, "tail":None}
+        self.connect_atoms = {"head": None, "tail":None, "head_next":None, "tail_next":None}
         
     def Add_Atom(self, name, atom_type, x, y, z):
         new_atom = Atom(atom_type, name)
@@ -313,10 +325,11 @@ class Atom(Entity):
         self.linked_atoms = { i+1 : [] for i in range(1,GlobalSetting.farthest_bonded_force)}
         self.residue = None
         self.copied = {}
-    def deepcopy(self, forlink = None):
+    def deepcopy(self, forcopy = None):
         new_atom = Atom(self.entity)
-        if forlink:
-            self.copied[forlink] = new_atom
+        new_atom.contents = {**self.contents}
+        if forcopy:
+            self.copied[forcopy] = new_atom
         return new_atom
 
 
@@ -333,13 +346,20 @@ class Residue(Entity):
         self.builded = False
     
     def Add_Atom(self, name, atom_type = None, x = None, y = None, z = None):
-        if not atom_type: 
-            atom_type = self.type._name2atom[name].type
-            new_atom = Atom(atom_type, name)
-            new_atom.contents = self.type._name2atom[name].contents
+        if type(name) == Atom:
+            assert atom_type == None
+            new_atom = Atom(name.type, name.name)
+            new_atom.contents = {**name.contents}
+            name = name.name
         else:
-            new_atom = Atom(atom_type, name)
-            new_atom.contents = self.type._name2atom[name].contents
+            if not atom_type: 
+                atom_type = self.type._name2atom[name].type
+                new_atom = Atom(atom_type, name)
+                new_atom.contents = {**self.type._name2atom[name].contents}
+            else:
+                new_atom = Atom(atom_type, name)
+                new_atom.contents = {**self.type._name2atom[name].contents}
+        
         new_atom.residue = self
         self.atoms.append(new_atom)
         if x:
@@ -367,12 +387,13 @@ class Residue(Entity):
             self.bonded_forces[type(bonded_force_entity).name] = []
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
     
-    def deepcopy(self, forlink = None):
+    def deepcopy(self, forcopy = None):
         new_residue = Residue(self.type)
         for atom in self.atoms:
-            new_residue.Add_Atom(atom.name)
-            if forlink:
-                atom.copied[forlink] = new_residue.atoms[-1]
+            new_residue.Add_Atom(atom)
+            if forcopy:
+                atom.copied[forcopy] = new_residue.atoms[-1]
+
         return new_residue
 
 class ResidueLink():
@@ -389,9 +410,9 @@ class ResidueLink():
         if type(bonded_force_entity).name not in self.bonded_forces.keys():
             self.bonded_forces[type(bonded_force_entity).name] = []
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
-    def deepcopy(self, forlink):
-        if self.atom1.copied[forlink] and self.atom2.copied[forlink]:
-            return ResidueLink(self.atom1.copied[forlink], self.atom2.copied[forlink])
+    def deepcopy(self, forcopy):
+        if self.atom1.copied[forcopy] and self.atom2.copied[forcopy]:
+            return ResidueLink(self.atom1.copied[forcopy], self.atom2.copied[forcopy])
         
 class Molecule():
     all = {}
@@ -426,14 +447,14 @@ class Molecule():
 
     def deepcopy(self):
         new_molecule = Molecule(self.name)
-        forlink = hash(str(time.time()))
+        forcopy = hash(str(time.time()))
         for res in self.residues:
-            new_molecule.Add_Residue(res.deepcopy(forlink))
+            new_molecule.Add_Residue(res.deepcopy(forcopy))
         for link in self.residue_links:
-            new_molecule.residue_links.append(link.deepcopy(forlink))
+            new_molecule.residue_links.append(link.deepcopy(forcopy))
         for res in self.residues:
             for atom in res.atoms:
-                atom.copied.pop(forlink)
+                atom.copied.pop(forcopy)
         return new_molecule
         
 @Molecule.Set_Save_SPONGE_Input     
@@ -562,114 +583,6 @@ def Generate_New_Pairwise_Force_Type(Type_Name, properties):
     
     return PairwiseForceType
 
-from . import LOAD, BUILD
 
-def ResidueType_Add(self, other):
-    if type(other) == ResidueType:
-        new_molecule = Molecule(self.name)
-        resA = Residue(self)
-        resB = Residue(other)
-        for atom in self.atoms:
-            resA.Add_Atom(atom.name)
-        for atom in other.atoms:
-            resB.Add_Atom(atom.name)
-        new_molecule.Add_Residue(resA)
-        new_molecule.Add_Residue(resB)
-        if self.tail and other.head:
-            new_molecule.Add_Residue_Link(resA._name2atom[self.tail], resB._name2atom[other.head])
-        return new_molecule
-    elif type(other) == Molecule:
-        new_molecule = other.deepcopy()
-        resA = Residue(self)
-        for atom in self.atoms:
-            resA.Add_Atom(atom.name)
-        if self.tail and other.residues[0].type.head:
-            new_molecule.Add_Residue_Link(resA._name2atom[self.tail], other.residues[0]._name2atom[other.residues[0].type.head])
-        new_molecule.residues.insert(0, resA)
-        return new_molecule
-    elif type(other) == type(None):
-        return self
-    else:
-        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
 
-def Molecule_Add(self, other):
-    if type(other) == ResidueType:
-        new_molecule = self.deepcopy()
-        resB = Residue(other)
-        for atom in other.atoms:
-            resB.Add_Atom(atom.name)
-        new_molecule.Add_Residue(resB)
-        if new_molecule.residues[-1].type.tail and other.head:
-            new_molecule.Add_Residue_Link(new_molecule.residues[-1]._name2atom[new_molecule.residues[-1].type.tail], resB._name2atom[other.head])
-        return new_molecule
-    elif type(other) == Molecule:
-        new_molecule = self.deepcopy()
-        new_molecule2 = other.deepcopy()
-        if new_molecule.residues[-1].type.tail and new_molecule2.residues[0].type.head:
-            new_molecule.Add_Residue_Link(new_molecule.residues[-1]._name2atom[new_molecule.residues[-1].type.tail],
-            new_molecule2.residues[0]._name2atom[new_molecule2.residues[0].type.head])
-        for res in new_molecule2.residues:
-            new_molecule.Add_Residue(res)
-        return new_molecule
-    elif type(other) == type(None):
-        return self
-    else:
-        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
-
-def iMolecule_Add(self, other):
-    if type(other) == ResidueType:
-        resB = Residue(other)
-        for atom in other.atoms:
-            resB.Add_Atom(atom.name)
-        self.Add_Residue(resB)
-        if self.residues[-1].type.tail and other.head:
-            self.Add_Residue_Link(self.residues[-1]._name2atom[self.residues[-1].type.tail], resB._name2atom[other.head])
-        return self
-    elif type(other) == Molecule:
-        new_molecule2 = other.deepcopy()
-        if self.residues[-1].type.tail and new_molecule2.residues[0].type.head:
-            self.Add_Residue_Link(self.residues[-1]._name2atom[self.residues[-1].type.tail],
-            new_molecule2.residues[0]._name2atom[new_molecule2.residues[0].type.head])
-        for res in new_molecule2.residues:
-            self.Add_Residue(res)
-        return self
-    elif type(other) == type(None):
-        return self
-    else:
-        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
-
-def Muls(self, other):
-    if type(other) == int:
-        assert other >= 0
-        t = self
-        for i in range(other - 1):
-            t = t + self
-        return t
-    else:
-        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
-
-def iMuls(self, other):
-    if type(other) == int:
-        assert other >= 0
-        for i in range(other - 1):
-            self += self
-        return self
-    else:
-        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
-
-ResidueType.__add__ = ResidueType_Add
-ResidueType.__radd__ = ResidueType_Add
-ResidueType.__mul__ = Muls
-ResidueType.__rmul__ = Muls
-Molecule.__add__ = Molecule_Add
-Molecule.__radd__ = Molecule_Add
-Molecule.__iadd__ = iMolecule_Add
-Molecule.__mul__ = Muls
-Molecule.__rmul__ = Muls
-Molecule.__imul__ = iMuls
-
-del ResidueType_Add
-del Molecule_Add
-del Muls
-del iMuls
-del iMolecule_Add
+from . import LOAD, BUILD, IMPOSE, PROCESS
