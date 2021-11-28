@@ -40,13 +40,9 @@ class _GlobalSetting():
                    "energy"  : {"kcal/mol":4.184, "eV":96.4853, "kJ/mol": 1},
                    "charge"  : {"e":1,   "SPONGE":1.0/18.2223},
                    "angle"   : {"degree":np.pi,  "rad": 180}
-                   
-                    }
+                  }
     PDBResidueNameMap = {"head" : {}, "tail": {}}
     HISMap = {"DeltaH": "", "EpsilonH": "",   "HIS": {}}
-    LinkBond  = 1.5
-    LinkAngle = 109.5 / 180 * np.pi 
-    LinkDihedral = np.pi 
     @staticmethod
     def Set_Unit_Transfer_Function(sometype):
         def wrapper(func):
@@ -224,21 +220,45 @@ class ResidueType(Type):
         self.connect_atoms["head"] = atom
 
     @property
-    def head_next(self):
-        return self.connect_atoms["head_next"]
+    def tail_second(self):
+        return self.connect_atoms["tail_second"]
     
-    @head_next.setter
-    def head_next(self, atom):
-        self.connect_atoms["head_next"] = atom
+    @tail_second.setter
+    def tail_second(self, atom):
+        self.connect_atoms["tail_second"] = atom
         
     @property
-    def tail_next(self):
-        return self.connect_atoms["tail_next"]
+    def tail_third(self):
+        return self.connect_atoms["tail_third"]
     
-    @tail_next.setter
-    def tail_next(self, atom):
-        self.connect_atoms["tail_next"] = atom
+    @tail_third.setter
+    def tail_third(self, atom):
+        self.connect_atoms["tail_third"] = atom
+
+    @property
+    def tail_bond(self):
+        return self.connect_atoms["tail_bond"]
+    
+    @tail_bond.setter
+    def tail_bond(self, atom):
+        self.connect_atoms["tail_bond"] = atom
         
+    @property
+    def tail_angle(self):
+        return self.connect_atoms["tail_angle"]
+    
+    @tail_angle.setter
+    def tail_angle(self, atom):
+        self.connect_atoms["tail_angle"] = atom
+        
+    @property
+    def tail_dihedral(self):
+        return self.connect_atoms["tail_dihedral"]
+    
+    @tail_dihedral.setter
+    def tail_dihedral(self, atom):
+        self.connect_atoms["tail_dihedral"] = atom
+      
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.atoms = []
@@ -249,7 +269,7 @@ class ResidueType(Type):
         self.builded = False
         self.link = {}
         self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
-        self.connect_atoms = {"head": None, "tail":None, "head_next":None, "tail_next":None}
+        self.connect_atoms = {"head": None, "tail":None, "tail_second":None, "tail_third":None, "tail_bond":3, "tail_angle":109.5, "tail_dihedral": 180}
         
     def Add_Atom(self, name, atom_type, x, y, z):
         new_atom = Atom(atom_type, name)

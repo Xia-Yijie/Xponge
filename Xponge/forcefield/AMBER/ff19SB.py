@@ -41,10 +41,16 @@ sys.modules['__main__'].__dict__["CHIS"] = ResidueType.types["CHIS"]
 residues = "ALA ARG ASN ASP CYS CYX GLN GLU GLY HID HIE HIP ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL HIS".split()
 
 for res in residues:
-    ResidueType.types[res].head_next = "CA"
-    ResidueType.types[res].tail_next = "CA"
-    ResidueType.types["N" + res].tail_next = "CA"
-    ResidueType.types["C" + res].head_next = "CA"
+    ResidueType.types[res].tail_second = "CA"
+    ResidueType.types[res].tail_third = "N"
+    ResidueType.types["N" + res].tail_second = "CA"
+    ResidueType.types["N" + res].tail_third = "N"
+    ResidueType.types[res].tail_bond = 1.5
+    ResidueType.types[res].tail_angle = -120 / 180 * np.pi 
+    ResidueType.types[res].tail_dihedral = np.pi
+    ResidueType.types["N" + res].tail_bond = 1.5
+    ResidueType.types["N" + res].tail_angle = -120 / 180 * np.pi 
+    ResidueType.types["N" + res].tail_dihedral = np.pi 
 
 GlobalSetting.PDBResidueNameMap["head"].update({resname:"N" + resname for resname in residues})
 GlobalSetting.PDBResidueNameMap["tail"].update({resname:"C" + resname for resname in residues})
