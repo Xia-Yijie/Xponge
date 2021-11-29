@@ -266,6 +266,8 @@ class ResidueType(Type):
     @tail_dihedral.setter
     def tail_dihedral(self, atom):
         self.connect_atoms["tail_dihedral"] = atom
+
+       
       
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -277,7 +279,8 @@ class ResidueType(Type):
         self.builded = False
         self.link = {}
         self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
-        self.connect_atoms = {"head": None, "tail":None, "tail_second":None, "tail_third":None, "tail_bond":3, "tail_angle":109.5, "tail_dihedral": 180}
+        self.connect_atoms = {"head": None, "tail": None, "tail_second":None, "tail_third":None, 
+                              "tail_bond":2, "tail_angle":109.5, "tail_dihedral": 180}
         
     def Add_Atom(self, name, atom_type, x, y, z):
         new_atom = Atom(atom_type, name)
@@ -364,6 +367,12 @@ class Atom(Entity):
 class Residue(Entity):
     name = "Residue"
     count = 0
+    
+    def __getattribute__(self, attr):
+        if attr not in  ("_name2atom", "contents") and attr in self._name2atom.keys():
+            return self._name2atom[attr]
+        else:
+            return super().__getattribute__(attr)
     def __init__(self, entity_type, name = None):
         super().__init__(entity_type, name)
         self.atoms = []

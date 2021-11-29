@@ -18,7 +18,7 @@ setuptools.setup(
     install_requires = ["numpy"],
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6', 

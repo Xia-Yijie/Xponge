@@ -13,7 +13,7 @@ def _get_crd(molecule):
     molecule.atoms = []
     for res in molecule.residues:
         molecule.atoms.extend(res.atoms)
-            
+    
     molecule.atom_index = { molecule.atoms[i]: i for i in range(len(molecule.atoms))}
     return np.array([[atom.x, atom.y, atom.z] for atom in molecule.atoms])
 
@@ -21,11 +21,11 @@ def _get_friends(molecule, atom1, atom2):
     if atom1.residue != atom2.residue:
         if molecule.atom_index[atom1.residue.atoms[0]] < molecule.atom_index[atom1.residue.atoms[1]]:
             res_index = molecule.atom_index[atom1.residue.atoms[-1]]
-            atom1_friends = list(range(res_index+1))
+            atom1_friends = list(range(res_index))
             atom2_friends = list(range(res_index+1, len(molecule.atoms)))
         else:
             res_index = molecule.atom_index[atom2.residue.atoms[-1]]
-            atom2_friends = list(range(res_index+1))
+            atom2_friends = list(range(res_index))
             atom1_friends = list(range(res_index+1, len(molecule.atoms)))
     else:
         link_front = 0
@@ -62,11 +62,11 @@ def _get_friends(molecule, atom1, atom2):
                 index_next.update(index_temp)
             index_dict = index_next
             
-        
+       
         index_dict = {}.fromkeys(restype.connectivity[typeatom2], typeatom2)
         if typeatom1 in index_dict.keys():
             index_dict.pop(typeatom1)
-
+        
         while index_dict:
             index_next = {}
             for atom0, from_atom in index_dict.items():
@@ -90,6 +90,19 @@ def _get_friends(molecule, atom1, atom2):
             head = 2
         elif atom2.name == restype.tail:
             tail = 2
+            
+        resindex_head = min(molecule.atom_index[atom1.residue.atoms[0]], molecule.atom_index[atom2.residue.atoms[0]])
+        resindex_tail = max(molecule.atom_index[atom1.residue.atoms[-1]], molecule.atom_index[atom2.residue.atoms[-1]])
+
+        if head == 1:
+            atom1_friends.extend(list(range(resindex_head)))
+        else:
+            atom2_friends.extend(list(range(resindex_head)))
+        if tail == 1:
+            atom1_friends.extend(list(range(resindex_tail+1, len(molecule.atoms))))
+        else:
+            atom2_friends.extend(list(range(resindex_tail+1, len(molecule.atoms))))
+
         atom1_friends = set(atom1_friends)
         atom1_friends.add(molecule.atom_index[atom1])
         atom1_friends = np.array(list(atom1_friends))
@@ -121,12 +134,17 @@ sys.modules['__main__'].__dict__["Impose_Bond"] = Impose_Bond
 
 def Impose_Angle(molecule, atom1, atom2, atom3, angle):
     crd = _get_crd(molecule)
-    atom2_friends, atom3_friends = _get_friends(molecule, atom1, atom2)
+    atom2_friends, atom3_friends = _get_friends(molecule, atom2, atom3)
     r12 = crd[molecule.atom_index[atom1]] - crd[molecule.atom_index[atom2]]
     r23 = crd[molecule.atom_index[atom3]] - crd[molecule.atom_index[atom2]]
     angle0 = np.arccos(np.dot(r12, r23)  / np.linalg.norm(r23) / np.linalg.norm(r12))
     deltaAngle = angle - angle0
     crd[atom3_friends] = np.dot(crd[atom3_friends] - crd[molecule.atom_index[atom2]], _get_rotate_matrix(np.cross(r12, r23), deltaAngle)) + crd[molecule.atom_index[atom2]]
+    for atom in molecule.atoms:
+        i = molecule.atom_index[atom]
+        atom.x = crd[i][0]
+        atom.y = crd[i][1]
+        atom.z = crd[i][2]
         
 sys.modules['__main__'].__dict__["Impose_Angle"] = Impose_Angle 
 
@@ -134,14 +152,21 @@ def Impose_Dihedral(molecule, atom1, atom2, atom3, atom4, dihedral):
     crd = _get_crd(molecule)
     atom3_friends, atom4_friends = _get_friends(molecule, atom2, atom3)
     r12 = crd[molecule.atom_index[atom1]] - crd[molecule.atom_index[atom2]]
-    r23 = crd[molecule.atom_index[atom2]] - crd[molecule.atom_index[atom3]]
+    r23 = crd[molecule.atom_index[atom3]] - crd[molecule.atom_index[atom2]]
     r34 = crd[molecule.atom_index[atom3]] - crd[molecule.atom_index[atom4]]
     r12xr23 = np.cross(r12, r23)
     r23xr34 = np.cross(r23, r34)
-    dihedral0 = np.arccos(np.dot(r12xr23, r23xr34)  / np.linalg.norm(r12xr23) / np.linalg.norm(r23xr34))
+    cos = np.dot(r12xr23, r23xr34)  / np.linalg.norm(r12xr23) / np.linalg.norm(r23xr34)
+    cos = max(-0.999999, min(cos, 0.999999))
+    dihedral0 = np.arccos(cos)
+    dihedral0 = np.pi - np.copysign(dihedral0, np.cross(r23xr34, r12xr23).dot(r23))
     deltaAngle = dihedral - dihedral0
     crd[atom4_friends] = np.dot(crd[atom4_friends] - crd[molecule.atom_index[atom3]], _get_rotate_matrix(r23, deltaAngle)) + crd[molecule.atom_index[atom3]]
-    
+    for atom in molecule.atoms:
+        i = molecule.atom_index[atom]
+        atom.x = crd[i][0]
+        atom.y = crd[i][1]
+        atom.z = crd[i][2]   
 
 sys.modules['__main__'].__dict__["Impose_Dihedral"] = Impose_Dihedral 
 
@@ -154,20 +179,26 @@ def _link_residue_process_coordinate(molecule, atom1, atom2, atom10, atom100, li
     dr = (linkbond/L0 - 1) * r0
     crd[atom2_friends] += dr
     
-    if atom10:        
+    if atom10:              
         r101 = crd[molecule.atom_index[atom10]] - crd[molecule.atom_index[atom1]]
         angle0 = np.arccos(np.dot(r0, r101)  / np.linalg.norm(r0) / np.linalg.norm(r101))
         deltaAngle =  linkangle - angle0 
         crd[atom2_friends] = np.dot(crd[atom2_friends] - crd[molecule.atom_index[atom1]], _get_rotate_matrix( np.cross(r101, r0), deltaAngle)) + crd[molecule.atom_index[atom1]]
+        
         if atom100:
             atom1_friends, atom2_friends = _get_friends(molecule, atom10, atom1)
             r000 = crd[molecule.atom_index[atom100]] - crd[molecule.atom_index[atom10]]
+            r101 = crd[molecule.atom_index[atom1]] - crd[molecule.atom_index[atom10]]
+            r0 = crd[molecule.atom_index[atom1]] - crd[molecule.atom_index[atom2]]
             r12xr23 = np.cross(r000, r101)
-            r23xr34 = np.cross(r101, r0)
-            dihedral0 = np.arccos(np.dot(r12xr23, r23xr34)  / np.linalg.norm(r12xr23) / np.linalg.norm(r23xr34))
+            r23xr34 = np.cross(r0, r101)
+            cos = np.dot(r12xr23, r23xr34)  / np.linalg.norm(r12xr23) / np.linalg.norm(r23xr34)
+            cos = max(-0.999999, min(cos, 0.999999))
+            dihedral0 = np.arccos(cos)
+            dihedral0 = np.pi - np.copysign(dihedral0, np.cross(r23xr34, r12xr23).dot(r101))
             deltaAngle = linkdihedral - dihedral0
             crd[atom2_friends] = np.dot(crd[atom2_friends] - crd[molecule.atom_index[atom1]], _get_rotate_matrix(r101, deltaAngle)) + crd[molecule.atom_index[atom1]]
-    
+        
     for atom in molecule.atoms:
         i = molecule.atom_index[atom]
         atom.x = crd[i][0]
@@ -189,24 +220,36 @@ def ResidueType_Add(self, other):
         atom1 = resA._name2atom[self.tail]
         atom2 = resB._name2atom[other.head] 
         new_molecule.Add_Residue_Link(atom1, atom2)
-        atom10 = resA._name2atom[self.tail_second]
-        atom100 = resA._name2atom[self.tail_third] 
+        if resA.type.tail_second:
+            atom10 = resA._name2atom[resA.type.tail_second]
+        else:
+            atom10 = None
+        if resA.type.tail_third:
+            atom100 = resA._name2atom[resA.type.tail_third]
+        else:
+            atom100 = None
         _link_residue_process_coordinate(new_molecule, atom1, atom2, atom10, atom100, 
             resA.type.tail_bond, resA.type.tail_angle, resA.type.tail_dihedral)            
         return new_molecule
     elif type(other) == Molecule:
         new_molecule = other.deepcopy()
         resA = Residue(self)
-        resB = other.residues[0]
+        resB = new_molecule.residues[0]
         for atom in self.atoms:
             resA.Add_Atom(atom)
         new_molecule.residues.insert(0, resA)
         assert resA.type.tail and resB.type.head, "+ and * can only be used to link head and tail"
-        atom1 = resA._name2atom[self.tail]
-        atom2 = resB._name2atom[other.residues[0].type.head] 
+        atom1 = resA._name2atom[resA.type.tail]
+        atom2 = resB._name2atom[resB.type.head] 
         new_molecule.Add_Residue_Link(atom1, atom2)
-        atom10 = resA._name2atom[self.tail_second]
-        atom100 = resA._name2atom[self.tail_third] 
+        if resA.type.tail_second:
+            atom10 = resA._name2atom[resA.type.tail_second]
+        else:
+            atom10 = None
+        if resA.type.tail_third:
+            atom100 = resA._name2atom[resA.type.tail_third]
+        else:
+            atom100 = None
         _link_residue_process_coordinate(new_molecule, atom1, atom2, atom10, atom100, 
             resA.type.tail_bond, resA.type.tail_angle, resA.type.tail_dihedral)   
         
@@ -226,10 +269,16 @@ def Molecule_Add(self, other):
         new_molecule.Add_Residue(resB)
         assert resA.type.tail and resB.type.head, "+ and * can only be used to link head and tail"
         atom1 = resA._name2atom[resA.type.tail]
-        atom2 = resB._name2atom[other.head]
+        atom2 = resB._name2atom[resB.type.head]
         new_molecule.Add_Residue_Link(atom1, atom2)
-        atom10 = resA._name2atom[resA.type.tail_second]
-        atom100 = resA._name2atom[resA.type.tail_third] 
+        if resA.type.tail_second:
+            atom10 = resA._name2atom[resA.type.tail_second]
+        else:
+            atom10 = None
+        if resA.type.tail_third:
+            atom100 = resA._name2atom[resA.type.tail_third]
+        else:
+            atom100 = None
         _link_residue_process_coordinate(new_molecule, atom1, atom2, atom10, atom100, 
             resA.type.tail_bond, resA.type.tail_angle, resA.type.tail_dihedral)    
         
@@ -245,8 +294,14 @@ def Molecule_Add(self, other):
         atom1 = resA._name2atom[resA.type.tail]
         atom2 = resB._name2atom[resB.type.head]
         new_molecule.Add_Residue_Link(atom1, atom2)
-        atom10 = resA._name2atom[resA.type.tail_second]
-        atom100 = resA._name2atom[resA.type.tail_third] 
+        if resA.type.tail_second:
+            atom10 = resA._name2atom[resA.type.tail_second]
+        else:
+            atom10 = None
+        if resA.type.tail_third:
+            atom100 = resA._name2atom[resA.type.tail_third]
+        else:
+            atom100 = None
         _link_residue_process_coordinate(new_molecule, atom1, atom2, atom10, atom100, 
             resA.type.tail_bond, resA.type.tail_angle, resA.type.tail_dihedral)   
 
@@ -267,13 +322,18 @@ def iMolecule_Add(self, other):
             atom1 = resA._name2atom[resA.type.tail]
             atom2 = resB._name2atom[other.head]
             self.Add_Residue_Link(atom1, atom2)
-            atom10 = resA._name2atom[resA.type.tail_second]
-            atom100 = resA._name2atom[resA.type.tail_third] 
+            if resA.type.tail_second:
+                atom10 = resA._name2atom[resA.type.tail_second]
+            else:
+                atom10 = None
+            if resA.type.tail_third:
+                atom100 = resA._name2atom[resA.type.tail_third]
+            else:
+                atom100 = None
             _link_residue_process_coordinate(self, atom1, atom2, atom10, atom100, 
                 resA.type.tail_bond, resA.type.tail_angle, resA.type.tail_dihedral)  
         return self
     elif type(other) == Molecule:
-        self = self.deepcopy()
         new_molecule2 = other.deepcopy()
         resA = self.residues[-1]
         resB = new_molecule2.residues[0]
@@ -283,8 +343,14 @@ def iMolecule_Add(self, other):
             atom1 = resA._name2atom[resA.type.tail]
             atom2 = resB._name2atom[resB.type.head]
             self.Add_Residue_Link(atom1, atom2)
-            atom10 = resA._name2atom[resA.type.tail_second]
-            atom100 = resA._name2atom[resA.type.tail_third] 
+            if resA.type.tail_second:
+                atom10 = resA._name2atom[resA.type.tail_second]
+            else:
+                atom10 = None
+            if resA.type.tail_third:
+                atom100 = resA._name2atom[resA.type.tail_third]
+            else:
+                atom100 = None 
             _link_residue_process_coordinate(self, atom1, atom2, atom10, atom100, 
                 resA.type.tail_bond, resA.type.tail_angle, resA.type.tail_dihedral)   
         return self
