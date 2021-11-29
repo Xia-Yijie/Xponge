@@ -79,10 +79,12 @@ def write_LJ(self, prefix, dirname):
     real_Bs = []
     tosub = 0
     for i in range(len(LJtypes)):
+        
         if same_type[i] == i:
             real_LJtypes.append(LJtypes[i])
             same_type[i] -= tosub
         else:
+            same_type[i] = same_type[same_type[i]]
             tosub += 1
 
     for i in range(len(real_LJtypes)):
@@ -120,7 +122,6 @@ def write_LJ(self, prefix, dirname):
             count += 1
         towrite +="\n"
     towrite += "\n"
-    
     towrite += "\n".join(["%d"%(same_type[LJtypemap[atom.LJtype]]) for atom in self.atoms])
     f = open(os.path.join(dirname, prefix + "_LJ.txt"),"w")
     f.write(towrite)

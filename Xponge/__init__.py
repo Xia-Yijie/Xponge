@@ -218,7 +218,15 @@ class ResidueType(Type):
     @head.setter
     def head(self, atom):
         self.connect_atoms["head"] = atom
-
+        
+    @property
+    def tail(self):
+        return self.connect_atoms["tail"]
+    
+    @tail.setter
+    def tail(self, atom):
+        self.connect_atoms["tail"] = atom
+        
     @property
     def tail_second(self):
         return self.connect_atoms["tail_second"]
@@ -492,7 +500,6 @@ def write_coordinate(self, prefix, dirname):
     maxi = [-float("inf"), -float("inf"), -float("inf")]
     mini = [ float("inf"),  float("inf"),  float("inf")]
     for atom in self.atoms:
-        towrite += "%f %f %f\n"%(atom.x, atom.y, atom.z)
         if atom.x > maxi[0]:
             maxi[0] = atom.x
         if atom.y > maxi[1]:
@@ -505,10 +512,12 @@ def write_coordinate(self, prefix, dirname):
             mini[1] = atom.y
         if atom.z < mini[2]:
             mini[2] = atom.z
-    towrite += "\n".join(["%f %f %f"%(atom.x, atom.y, atom.z) for atom in self.atoms])
-    boxlength[0] = maxi[0] - mini[0] + 3
-    boxlength[1] = maxi[1] - mini[1] + 3
-    boxlength[2] = maxi[2] - mini[2] + 3
+
+    towrite += "\n".join(["%f %f %f"%(atom.x - mini[0] + 3, atom.y - mini[1] + 3, atom.z - mini[2] + 3) for atom in self.atoms])
+    
+    boxlength[0] = maxi[0] - mini[0] + 6
+    boxlength[1] = maxi[1] - mini[1] + 6
+    boxlength[2] = maxi[2] - mini[2] + 6
     towrite += "\n%f %f %f %f %f %f"%(boxlength[0], boxlength[1], boxlength[2], boxlength[3], boxlength[4], boxlength[5])
     f = open(os.path.join(dirname, prefix + "_coordinate.txt"),"w")
     f.write(towrite)
