@@ -186,7 +186,7 @@ def pdb(filename, judge_HIS = True):
     for count in links:
         ResA = molecule.residues[count]
         ResB = molecule.residues[count-1]
-        molecule.Add_Residue_Link(ResA._name2atom[ResA.type.connect_atoms["head"]], ResB._name2atom[ResB.type.connect_atoms["tail"]])
+        molecule.Add_Residue_Link(ResA._name2atom[ResA.type.head], ResB._name2atom[ResB.type.tail])
     return molecule
     
 sys.modules['__main__'].__dict__["loadpdb"] = pdb    

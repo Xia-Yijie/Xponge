@@ -41,24 +41,30 @@ sys.modules['__main__'].__dict__["CHIS"] = ResidueType.types["CHIS"]
 residues = "ALA ARG ASN ASP CYS CYX GLN GLU GLY HID HIE HIP ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL HIS".split()
 
 for res in residues:
-    ResidueType.types[res].tail_second = "CA"
-    ResidueType.types[res].tail_third = "N"
-    ResidueType.types["N" + res].tail_second = "CA"
-    ResidueType.types["N" + res].tail_third = "N"
-    ResidueType.types[res].tail_bond = 1.5
-    ResidueType.types[res].tail_angle = -120 / 180 * np.pi 
-    ResidueType.types[res].tail_dihedral = np.pi
-    ResidueType.types["N" + res].tail_bond = 1.5
-    ResidueType.types["N" + res].tail_angle = -120 / 180 * np.pi 
-    ResidueType.types["N" + res].tail_dihedral = np.pi
+    ResidueType.types[res].head_link_conditions.append({"atoms":["N"], "parameter": 1.2})
+    ResidueType.types[res].head_link_conditions.append({"atoms":["CA", "N"], "parameter": 120/180 * np.pi})
+    ResidueType.types[res].head_link_conditions.append({"atoms":["H", "CA", "N"], "parameter": -np.pi})
+    ResidueType.types[res].tail_link_conditions.append({"atoms":["C"], "parameter": 1.2})
+    ResidueType.types[res].tail_link_conditions.append({"atoms":["CA", "C"], "parameter": 120/180 * np.pi})
+    ResidueType.types[res].tail_link_conditions.append({"atoms":["O", "CA", "C"], "parameter": -np.pi})    
 
-ResidueType.types["ACE"].tail_second = "CH3"
-ResidueType.types["ACE"].tail_angle = -120 / 180 * np.pi
-ResidueType.types["ACE"].tail_third = "H3"
-ResidueType.types["ACE"].tail_dihedral = np.pi
+    ResidueType.types["N" + res].tail_link_conditions.append({"atoms":["C"], "parameter": 1.2})
+    ResidueType.types["N" + res].tail_link_conditions.append({"atoms":["CA", "C"], "parameter": 120/180 * np.pi})
+    ResidueType.types["N" + res].tail_link_conditions.append({"atoms":["O", "CA", "C"], "parameter": -np.pi})   
 
-GlobalSetting.PDBResidueNameMap["head"].update({resname:"N" + resname for resname in residues})
-GlobalSetting.PDBResidueNameMap["tail"].update({resname:"C" + resname for resname in residues})
+    ResidueType.types["C" + res].head_link_conditions.append({"atoms":["N"], "parameter": 1.2})
+    ResidueType.types["C" + res].head_link_conditions.append({"atoms":["CA", "N"], "parameter": 120/180 * np.pi})
+    ResidueType.types["C" + res].head_link_conditions.append({"atoms":["H", "CA", "N"], "parameter": -np.pi})
+    GlobalSetting.Add_PDB_Residue_Name_Mapping("head", res, "N" + res)
+    GlobalSetting.Add_PDB_Residue_Name_Mapping("tail", res, "C" + res)
+
+ResidueType.types["ACE"].tail_link_conditions.append({"atoms":["C"], "parameter": 1.2})
+ResidueType.types["ACE"].tail_link_conditions.append({"atoms":["CH3", "C"], "parameter": 120/180 * np.pi})
+ResidueType.types["ACE"].tail_link_conditions.append({"atoms":["O", "CH3", "C"], "parameter": -np.pi})   
+
+ResidueType.types["NME"].head_link_conditions.append({"atoms":["N"], "parameter": 1.2})
+ResidueType.types["NME"].head_link_conditions.append({"atoms":["CH3", "N"], "parameter": 120/180 * np.pi})
+ResidueType.types["NME"].head_link_conditions.append({"atoms":["H", "CH3", "N"], "parameter": -np.pi})  
 
 GlobalSetting.HISMap["DeltaH"] = "HD1"
 GlobalSetting.HISMap["EpsilonH"] = "HE2"

@@ -14,7 +14,7 @@
 # limitations under the License.
 ##########################################################################
 
-__version__ = "alpha-test"
+__version__ = "beta-test"
 __author__ = "Yijie Xia"
 
 from collections import OrderedDict
@@ -41,8 +41,14 @@ class _GlobalSetting():
                    "charge"  : {"e":1,   "SPONGE":1.0/18.2223},
                    "angle"   : {"degree":np.pi,  "rad": 180}
                   }
-    PDBResidueNameMap = {"head" : {}, "tail": {}}
+    PDBResidueNameMap = {"head" : {}, "tail": {}, "save":{}}
     HISMap = {"DeltaH": "", "EpsilonH": "",   "HIS": {}}
+    
+    def Add_PDB_Residue_Name_Mapping(self, place, pdb_name, real_name):
+        assert place in ("head", "tail")
+        self.PDBResidueNameMap[place][pdb_name] = real_name
+        self.PDBResidueNameMap["save"][real_name] = pdb_name
+    
     @staticmethod
     def Set_Unit_Transfer_Function(sometype):
         def wrapper(func):
@@ -213,62 +219,28 @@ class ResidueType(Type):
     
     @property
     def head(self):
-        return self.connect_atoms["head"]
+        return self.link["head"]
     
     @head.setter
     def head(self, atom):
-        self.connect_atoms["head"] = atom
+        self.link["head"] = atom
         
     @property
     def tail(self):
-        return self.connect_atoms["tail"]
+        return self.link["tail"]
     
     @tail.setter
     def tail(self, atom):
-        self.connect_atoms["tail"] = atom
-        
-    @property
-    def tail_second(self):
-        return self.connect_atoms["tail_second"]
+        self.link["tail"] = atom
     
-    @tail_second.setter
-    def tail_second(self, atom):
-        self.connect_atoms["tail_second"] = atom
-        
     @property
-    def tail_third(self):
-        return self.connect_atoms["tail_third"]
-    
-    @tail_third.setter
-    def tail_third(self, atom):
-        self.connect_atoms["tail_third"] = atom
+    def head_link_conditions(self):
+        return self.link["head_link_conditions"]
 
     @property
-    def tail_bond(self):
-        return self.connect_atoms["tail_bond"]
+    def tail_link_conditions(self):
+        return self.link["tail_link_conditions"]
     
-    @tail_bond.setter
-    def tail_bond(self, atom):
-        self.connect_atoms["tail_bond"] = atom
-        
-    @property
-    def tail_angle(self):
-        return self.connect_atoms["tail_angle"]
-    
-    @tail_angle.setter
-    def tail_angle(self, atom):
-        self.connect_atoms["tail_angle"] = atom
-        
-    @property
-    def tail_dihedral(self):
-        return self.connect_atoms["tail_dihedral"]
-    
-    @tail_dihedral.setter
-    def tail_dihedral(self, atom):
-        self.connect_atoms["tail_dihedral"] = atom
-
-       
-      
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.atoms = []
@@ -277,10 +249,9 @@ class ResidueType(Type):
         self.connectivity = {}
         self.bonded_forces = {}
         self.builded = False
-        self.link = {}
         self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
-        self.connect_atoms = {"head": None, "tail": None, "tail_second":None, "tail_third":None, 
-                              "tail_bond":2, "tail_angle":109.5, "tail_dihedral": 180}
+        self.link = {"head": None, "tail": None, "head_link_conditions":[], "tail_link_conditions":[]}
+        self.connect_atoms = {}
         
     def Add_Atom(self, name, atom_type, x, y, z):
         new_atom = Atom(atom_type, name)
@@ -305,8 +276,6 @@ class ResidueType(Type):
             self.bonded_forces[type(bonded_force_entity).name] = []
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
     
-    def Add_Connect_Atom(self, name, atom):
-        self.connect_atoms[name] = atom
 
 
 class Entity():
