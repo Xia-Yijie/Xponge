@@ -242,7 +242,7 @@ def frcmod(filename, nbtype = "RE"):
                 atoms = [ word.strip() for word in line[:11].split("-") ]
                 words = line[11:].split()
                 impropers += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\t" + str(int(float(words[2]))) + "\n"
-            elif flag == "NONB":
+            elif flag == "NONB" or flag == "NONBON":
                 words = line.split()
                 LJs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
             elif flag == "CMAP":
