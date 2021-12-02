@@ -232,6 +232,38 @@ class ResidueType(Type):
     @tail.setter
     def tail(self, atom):
         self.link["tail"] = atom
+        
+    @property
+    def head_next(self):
+        return self.link["head_next"]
+    
+    @head_next.setter
+    def head_next(self, atom):
+        self.link["head_next"] = atom
+        
+    @property
+    def tail_next(self):
+        return self.link["tail_next"]
+    
+    @tail_next.setter
+    def tail_next(self, atom):
+        self.link["tail_next"] = atom 
+    
+    @property
+    def head_length(self):
+        return self.link["head_length"]
+    
+    @head_length.setter
+    def head_length(self, atom):
+        self.link["head_length"] = atom
+        
+    @property
+    def tail_length(self):
+        return self.link["tail_length"]
+    
+    @tail_length.setter
+    def tail_length(self, atom):
+        self.link["tail_length"] = atom   
     
     @property
     def head_link_conditions(self):
@@ -250,7 +282,8 @@ class ResidueType(Type):
         self.bonded_forces = {}
         self.builded = False
         self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
-        self.link = {"head": None, "tail": None, "head_link_conditions":[], "tail_link_conditions":[]}
+        self.link = {"head": None, "tail": None, "head_next":None, "tail_next":None, 
+        "head_length":1.5, "tail_length":1.5, "head_link_conditions":[], "tail_link_conditions":[]}
         self.connect_atoms = {}
         
     def Add_Atom(self, name, atom_type, x, y, z):

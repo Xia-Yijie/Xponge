@@ -175,6 +175,12 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
     atom1_friends, atom2_friends = _get_friends(molecule, atom1, atom2)
     crd[atom2_friends] += 2000
     
+    bond_length = (resA.type.tail_length + resB.type.head_length) / 2
+    r0 = crd[molecule.atom_index[atom2]] - crd[molecule.atom_index[atom1]]
+    L0 = np.linalg.norm(r0)
+    dr = (bond_length/L0 - 1) * r0
+    crd[atom2_friends] += dr
+    
     res = resA
     atomA = atom1
     atomB = atom2
@@ -192,8 +198,7 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
             rOB =  crd[molecule.atom_index[atomB]] - crd[molecule.atom_index[atoms[1]]]
             angle0 = np.arccos(np.dot(rAO, rOB)  / np.linalg.norm(rAO) / np.linalg.norm(rOB))
             deltaAngle =  parameter - angle0
-            crd[atomB_friends] = np.dot(crd[atomB_friends] - crd[molecule.atom_index[atoms[1]]], _get_rotate_matrix( np.cross(rAO, rOB), deltaAngle)) + crd[molecule.atom_index[atoms[1]]]        
-        
+            crd[atomB_friends] = np.dot(crd[atomB_friends] - crd[molecule.atom_index[atoms[1]]], _get_rotate_matrix( np.cross(rAO, rOB), deltaAngle)) + crd[molecule.atom_index[atoms[1]]]                
         elif len(atoms) == 3:
             rOO =  crd[molecule.atom_index[atoms[0]]] - crd[molecule.atom_index[atoms[1]]]
             rOA =  crd[molecule.atom_index[atoms[1]]] - crd[molecule.atom_index[atoms[2]]]
@@ -228,7 +233,7 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
         elif len(atoms) == 3:
             rOO =  crd[molecule.atom_index[atoms[0]]] - crd[molecule.atom_index[atoms[1]]]
             rOA =  crd[molecule.atom_index[atoms[1]]] - crd[molecule.atom_index[atoms[2]]]
-            rAB =  crd[molecule.atom_index[atoms[1]]] - crd[molecule.atom_index[atomB]]
+            rAB =  crd[molecule.atom_index[atoms[2]]] - crd[molecule.atom_index[atomB]]
             r12xr23 = np.cross(rOO, rOA)
             r23xr34 = np.cross(rAB, rOA)
             cos = np.dot(r12xr23, r23xr34)  / np.linalg.norm(r12xr23) / np.linalg.norm(r23xr34)
@@ -238,6 +243,21 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
             deltaAngle = parameter - dihedral0
             crd[atomB_friends] = np.dot(crd[atomB_friends] - crd[molecule.atom_index[atoms[2]]], _get_rotate_matrix(rOA, deltaAngle)) + crd[molecule.atom_index[atoms[2]]]
     
+    if resA.type.tail_next and resB.type.head_next:
+            atomA = resA._name2atom[resA.type.tail_next]
+            atomB = resB._name2atom[resB.type.head_next]
+            rOO =  crd[molecule.atom_index[atomA]] - crd[molecule.atom_index[atom1]]
+            rOA =  crd[molecule.atom_index[atom1]] - crd[molecule.atom_index[atom2]]
+            rAB =  crd[molecule.atom_index[atom2]] - crd[molecule.atom_index[atomB]]
+            r12xr23 = np.cross(rOO, rOA)
+            r23xr34 = np.cross(rAB, rOA)
+            cos = np.dot(r12xr23, r23xr34)  / np.linalg.norm(r12xr23) / np.linalg.norm(r23xr34)
+            cos = max(-0.999999, min(cos, 0.999999))
+            dihedral0 = np.arccos(cos)
+            dihedral0 = np.pi - np.copysign(dihedral0, np.cross(r23xr34, r12xr23).dot(rOA))
+            deltaAngle = np.pi - dihedral0
+            crd[atom2_friends] = np.dot(crd[atom2_friends] - crd[molecule.atom_index[atom2]], _get_rotate_matrix(rOA, deltaAngle)) + crd[molecule.atom_index[atom2]]        
+            
     for atom in molecule.atoms:
         i = molecule.atom_index[atom]
         atom.x = crd[i][0]

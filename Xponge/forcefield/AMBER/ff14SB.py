@@ -31,29 +31,36 @@ sys.modules['__main__'].__dict__["CHIS"] = ResidueType.types["CHIS"]
 residues = "ALA ARG ASN ASP CYS CYX GLN GLU GLY HID HIE HIP ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL HIS".split()
 
 for res in residues:
-    ResidueType.types[res].head_link_conditions.append({"atoms":["N"], "parameter": 1.2})
+    ResidueType.types[res].head_next = "CA"
+    ResidueType.types[res].head_length = 1.3
+    ResidueType.types[res].tail_next = "CA"
+    ResidueType.types[res].tail_length = 1.3
     ResidueType.types[res].head_link_conditions.append({"atoms":["CA", "N"], "parameter": 120/180 * np.pi})
     ResidueType.types[res].head_link_conditions.append({"atoms":["H", "CA", "N"], "parameter": -np.pi})
-    ResidueType.types[res].tail_link_conditions.append({"atoms":["C"], "parameter": 1.2})
     ResidueType.types[res].tail_link_conditions.append({"atoms":["CA", "C"], "parameter": 120/180 * np.pi})
     ResidueType.types[res].tail_link_conditions.append({"atoms":["O", "CA", "C"], "parameter": -np.pi})    
 
-    ResidueType.types["N" + res].tail_link_conditions.append({"atoms":["C"], "parameter": 1.2})
+
+    ResidueType.types["N" + res].tail_next = "CA"
+    ResidueType.types["N" + res].tail_length = 1.3
     ResidueType.types["N" + res].tail_link_conditions.append({"atoms":["CA", "C"], "parameter": 120/180 * np.pi})
     ResidueType.types["N" + res].tail_link_conditions.append({"atoms":["O", "CA", "C"], "parameter": -np.pi})   
-
-    ResidueType.types["C" + res].head_link_conditions.append({"atoms":["N"], "parameter": 1.2})
+    
+    ResidueType.types["C" + res].head_next = "CA"
+    ResidueType.types["C" + res].head_length = 1.3
     ResidueType.types["C" + res].head_link_conditions.append({"atoms":["CA", "N"], "parameter": 120/180 * np.pi})
     ResidueType.types["C" + res].head_link_conditions.append({"atoms":["H", "CA", "N"], "parameter": -np.pi})
     
     GlobalSetting.Add_PDB_Residue_Name_Mapping("head", res, "N" + res)
     GlobalSetting.Add_PDB_Residue_Name_Mapping("tail", res, "C" + res)
 
-ResidueType.types["ACE"].tail_link_conditions.append({"atoms":["C"], "parameter": 1.2})
+ResidueType.types["ACE"].tail_next = "CH3"
+ResidueType.types["ACE"].tail_length = 1.3
 ResidueType.types["ACE"].tail_link_conditions.append({"atoms":["CH3", "C"], "parameter": 120/180 * np.pi})
 ResidueType.types["ACE"].tail_link_conditions.append({"atoms":["O", "CH3", "C"], "parameter": -np.pi})   
 
-ResidueType.types["NME"].head_link_conditions.append({"atoms":["N"], "parameter": 1.2})
+ResidueType.types["NME"].head_next = "CH3"
+ResidueType.types["NME"].head_length = 1.3
 ResidueType.types["NME"].head_link_conditions.append({"atoms":["CH3", "N"], "parameter": 120/180 * np.pi})
 ResidueType.types["NME"].head_link_conditions.append({"atoms":["H", "CH3", "N"], "parameter": -np.pi})   
 
