@@ -73,4 +73,9 @@ GlobalSetting.HISMap["HIS"].update({"HIS": {"HID":"HID", "HIE":"HIE", "HIP":"HIP
 
 ResidueType.types["CYX"].connect_atoms["ssbond"] = "SG"
 
-
+print("""Reference for ff14SB.py:
+  James A. Maier, Carmenza Martinez, Koushik Kasavajhala, Lauren Wickstrom, Kevin E. Hauser, and Carlos Simmerling
+    ff14SB: Improving the accuracy of protein side chain and backbone parameters from ff99SB
+    Journal of Chemical Theory and Computation 2015 11 (8), 3696-3713
+    DOI: 10.1021/acs.jctc.5b00255
+""")
