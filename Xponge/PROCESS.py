@@ -50,7 +50,7 @@ def Box(molecule, solutions, distance):
                     atom.x = solcrd[i][0] + x0
                     atom.y = solcrd[i][1] + y0
                     atom.z = solcrd[i][2] + z0
-                molecule += new_molecule
+                molecule |= new_molecule
                 z0 += solshape[2]
             y0 += solshape[1]
         x0 += solshape[0]

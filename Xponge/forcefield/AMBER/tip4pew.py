@@ -7,7 +7,7 @@ AtomType.New_From_String(
 name mass    charge[e]      LJtype
 HW   1.008   0.52422        HW
 OW   16      0              OW
-EPW  0      -1.04844        EPW
+EP   0      -1.04844        EPW
 """)
 
 
@@ -34,7 +34,7 @@ EPW-EPW 0                   0
 
 VIRTUAL_ATOM.VirtualType2.New_From_String(r"""
 name   atom0    atom1   atom2   k1         k2
-EPW    -3       -2      -1      0.1066413  0.1066413
+EP     -3       -2      -1      0.1066413  0.1066413
 """)
 
 

@@ -27,7 +27,7 @@ OW-OW   0.1553              1.7767
 HW-HW   0                   0
 """)
 
-SPCE = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "tip3p.mol2"))
+SPCE = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "spce.mol2"))
 
 atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(os.path.join(AMBER_DATA_DIR, "ions1lm_126_spce.frcmod"))
 AtomType.New_From_String(atoms)

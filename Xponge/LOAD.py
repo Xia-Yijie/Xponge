@@ -363,7 +363,7 @@ def parmdat(filename):
         
         for line in f:
             if not line.strip():
-                break
+                break    
             else:
                 words = line.split()
                 LJs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
