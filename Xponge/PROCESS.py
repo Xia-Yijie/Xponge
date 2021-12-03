@@ -57,5 +57,54 @@ def Box(molecule, solutions, distance):
 
 sys.modules['__main__'].__dict__["Process_Box"] = Box
 
-def Pack(molecules, box):
+def HMass_Repartition(molecules, repartition_mass = 1.1, repartition_rate = 3, exclude_residue_name = "WAT"):
+    for res in molecules.residues:
+        if res.name == exclude_residue_name:
+            continue
+        for atom in res.atoms:
+            if atom.mass <= repartition_mass:
+                connect_atoms = res.type.connectivity[res.type._name2atom[atom.name]]
+                assert len(connect_atoms) == 1
+                origin_mass = atom.mass
+                atom.mass *= repartition_rate
+                delta_mass = atom.mass - origin_mass
+                for heavy_atom in connect_atoms:
+                    res._name2atom[heavy_atom.name].mass -= delta_mass
+
+sys.modules['__main__'].__dict__["HMass_Repartition"] = HMass_Repartition
+
+def Replace(molecule, select, toreplace):
+    solutions = []
+    for i in range(len(molecule.residues)):
+        if select(molecule.residues[i]):
+            solutions.append(i)
+
+    np.random.shuffle(solutions)
+    count = 0
+    for key, value in toreplace.items():
+        assert type(key) == ResidueType or (type(key) == Molecule and len(key.residues) == 1)
+        if type(key) == Molecule:
+            key = key.residues[0].type
+        
+        tempi = solutions[count:count+value]
+        count += value
+        for i in tempi:
+            new_residue = Residue(key)
+            crd_o = [molecule.residues[i].atoms[0].x, molecule.residues[i].atoms[0].y, molecule.residues[i].atoms[0].z]
+            crd0 = [key.atoms[0].x, key.atoms[0].y, key.atoms[0].z]
+            for atom in key.atoms:
+                new_residue.Add_Atom(atom, x = atom.x + crd_o[0] - crd0[0], 
+                y = atom.y + crd_o[1] - crd0[1], z = atom.z + crd_o[2] - crd0[2])
+            molecule.residues[i] = new_residue
+
+sys.modules['__main__'].__dict__["Ion_Replace"] = Replace
+    
+
+def Mutation(molecule, residue, tomutate):
+    pass
+
+def Repeat(molecule, repeat_unit, repeat_place, repeat_range):
+    pass
+
+def Pack(molecules, box, conditions):
     pass

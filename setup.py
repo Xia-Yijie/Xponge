@@ -3,11 +3,11 @@ import setuptools
 f = open("README.md", "r", encoding="utf-8")
 long_description = f.read()
 f.close()
-
+"""
 #for test
 setuptools.setup(
     name="Xponge",
-    version="0.0.6.5",
+    version="0.0.7",
     author="Yijie Xia",  
     author_email="yijiexia@pku.edu.cn", 
     description="A package for building molecular dynamics inputs for SPONGE",
@@ -28,7 +28,7 @@ setuptools.setup(
 #for formal
 setuptools.setup(
     name="Xponge",
-    version="0.0.6",
+    version="0.0.7",
     author="Yijie Xia",  
     author_email="yijiexia@pku.edu.cn", 
     description="A package for building molecular dynamics inputs for SPONGE",
@@ -45,4 +45,3 @@ setuptools.setup(
     ],
     python_requires='>=3.6', 
 )
-"""
