@@ -99,6 +99,35 @@ def Replace(molecule, select, toreplace):
 
 sys.modules['__main__'].__dict__["Ion_Replace"] = Replace
     
+def Rotate(molecule, direction_long = [0,0,1], direction_middle = [0,1,0], direction_short = [1,0,0]):
+    molcrd = IMPOSE._get_crd(molecule)
+    I = np.zeros((3,3))
+    mass_of_center = np.zeros(3)
+    total_mass = 0
+    for i, atom in enumerate(molecule.atoms):
+        xi, yi, zi = molcrd[i]
+        total_mass += atom.mass
+        mass_of_center += atom.mass * np.array([xi, yi, zi])
+    mass_of_center /= total_mass
+    
+    for i, atom in enumerate(molecule.atoms):
+        xi, yi, zi = molcrd[i] - mass_of_center
+        I += atom.mass * np.array([[yi * yi + zi * zi, -xi * yi, -xi * zi ],
+                                   [-xi * yi, xi * xi + zi * zi, -yi * zi],
+                                   [-xi * zi, -yi * zi, xi * xi + yi * yi]])
+    
+    eigval, eigvec = np.linalg.eig(I)
+    t = np.argsort(eigval)
+    matrix0 = np.vstack([direction_short, direction_middle, direction_long])
+    rotation_matrix = np.dot( matrix0, np.linalg.inv(np.vstack((eigvec[:,t[2]], eigvec[:,t[1]], eigvec[:,t[0]]))))
+    molcrd = np.dot(molcrd - mass_of_center, rotation_matrix) + mass_of_center
+    for i, atom in enumerate(molecule.atoms):
+        atom.x = molcrd[i][0]
+        atom.y = molcrd[i][1]
+        atom.z = molcrd[i][2]
+
+sys.modules['__main__'].__dict__["Molecule_Rotate"] = Rotate
+        
 
 def Mutation(molecule, residue, tomutate):
     pass

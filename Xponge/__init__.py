@@ -464,14 +464,23 @@ class Molecule():
     def __repr__(self):
         return "Entity of Molecule: " + self.name
     def __init__(self, name):
-        self.name = name
-        Molecule.all[name] = self
+        if type(name) == ResidueType:
+            self.name = name.name
+        else:
+            self.name = name
+        Molecule.all[self.name] = self
         self.residues = []
         self.atoms = []
         self.residue_links = []
         self.bonded_forces = []
         self.builded = False
-        
+        if type(name) == ResidueType:
+            new_residue = Residue(name)
+            for i in name.atoms:
+                new_residue.Add_Atom(i)
+            self.Add_Residue(new_residue)
+            
+            
         
     def Add_Residue(self, residue):
         self.residues.append(residue)
