@@ -25,26 +25,17 @@ default_radius = {"H": 1.2, "C":1.5, "N":1.5,
                   "O": 1.4, "P":1.8, "S":1.75}
 
 #Pay Attention To !!!UNIT!!!
-def Get_MK_Grid(molecule, crd, area_density = 1.0, radius = default_radius, ):
+def Get_MK_Grid(Assign, crd, area_density = 1.0, radius = default_radius):
     grids = []
-    for atom in molecule.atoms:
-        if getattr(atom, "element", -1) == -1:
-            if getattr(atom, "mass", -1) == -1:
-                raise Exception("unknown atom element")
-            else:
-                raise NotImplementedError("From Mass To Element")
-        elif atom.element not in radius.keys():
-            raise Exception("unknown atom vdw radius")
-    
-    factor = area_density * 4 * np.pi
+    factor = area_density * 0.52918 * 0.52918 * 4 * np.pi
     lists0 = np.array([1.4, 1.6, 1.8, 2.0])
-    for i, atom in enumerate(molecule.atoms):
-        r0 = radius[atom.element] / 0.5291772094723385
+    for atom in Assign.atoms:
+        r0 = radius[atom] / 0.52918
         for r in r0 * lists0:
             grids.extend([*Get_Fibonacci_Grid(int(factor * r * r), crd[i], r)])   
     grids = np.array(grids).reshape(-1, 3)
     for i, atom in enumerate(molecule.atoms):
-        r0 = 1.4 * radius[atom.element] / 0.5291772094723385
+        r0 = 1.4 * radius[atom.element] / 0.52918
         t = np.linalg.norm(grids - crd[i], axis = 1)
         grids = grids[t > r0, :]
     return grids
@@ -52,12 +43,13 @@ def Get_MK_Grid(molecule, crd, area_density = 1.0, radius = default_radius, ):
 
 
 #Pay Attention To !!!UNIT!!!
-def RESP_Fit(molecule, basis = "6-31g*", opt = True, charge = 0, spin = 0, method = None):
+def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, method = None):
     from pyscf import gto, scf
     mols = ""
-    for atom in molecule.atoms:
-        mols += "%s %f %f %f\n"%(atom.element, atom.x, atom.y, atom.z)
-    mol = gto.M(atom = mols, verbose = 0, basis = basis, charge = charge, spin = spin, symmetry = True)
+    for atom in Assign.atoms:
+        mols += "%s %f %f %f\n"%(atom, atom.x, atom.y, atom.z)
+    mol = gto.M(atom = mols, verbose = 0, basis = basis, charge = charge, spin = spin)
+    
     if spin == 0:
         fun = scf.RHF(mol)
     else:
@@ -73,7 +65,7 @@ def RESP_Fit(molecule, basis = "6-31g*", opt = True, charge = 0, spin = 0, metho
     
     fun.run()
     
-    grids = Get_MK_Grid(molecule, mol.atom_coords(), 6)
+    grids = Get_MK_Grid(Assign, mol.atom_coords(), 6)
 
     #step1
     a = 0.0005
@@ -81,7 +73,7 @@ def RESP_Fit(molecule, basis = "6-31g*", opt = True, charge = 0, spin = 0, metho
     step = 0
     q_last_step = np.ones(mol.natm)
     q_out = np.zeros(mol.natm)
-    while np.sum(np.abs(q_out - q_last_step)) > 1e-3:
+    while np.max(np.abs(q_out - q_last_step)) > 1e-6:
         step += 1
         if step == 1:
             q_last_step = np.zeros(mol.natm)
@@ -128,7 +120,7 @@ def RESP_Fit(molecule, basis = "6-31g*", opt = True, charge = 0, spin = 0, metho
     b = 0.1
     step = 0
     q_last_step = np.ones(mol.natm)
-    while np.sum(np.abs(q_out - q_last_step)) > 1e-3:
+    while np.sum(np.abs(q_out - q_last_step)) > 1e-6:
         step += 1
         q_last_step = q_out
 
@@ -169,7 +161,3 @@ def RESP_Fit(molecule, basis = "6-31g*", opt = True, charge = 0, spin = 0, metho
         q_out = q[:-1]
         
     return q_out
-
-t = Get_Molecule_From_PubChem(175,"cid")
-q = RESP_Fit(t, "6-31+g*", opt = False, charge = -1)
-print(q)
