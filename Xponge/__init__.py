@@ -17,7 +17,7 @@
 __version__ = "beta-test"
 __author__ = "Yijie Xia"
 
-from collections import OrderedDict
+from collections import OrderedDict, deque
 import os
 import numpy as np
 import types
