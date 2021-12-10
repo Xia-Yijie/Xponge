@@ -349,6 +349,77 @@ def Save_PDB(molecule, filename = None):
         for atom in molecule.atoms:
             residue.Add_Atom(atom)
         Save_PDB(residue)
-
+    else:
+        raise NotImplementedError
 
 sys.modules['__main__'].__dict__["Save_PDB"] = Save_PDB 
+
+def Save_Mol2(molecule, filename = None):
+    if type(molecule)== Molecule:
+        molecule.atoms = []
+        for res in molecule.residues:
+            molecule.atoms.extend(res.atoms)
+        molecule.atom_index = { molecule.atoms[i]: i for i in range(len(molecule.atoms))}
+        bonds = []
+        for res in molecule.residues:
+            for atom1, atom1_con in res.type.connectivity.items():
+                atom1_index = molecule.atom_index[res._name2atom[atom1.name]] + 1
+                for atom2 in atom1_con:
+                    atom2_index = molecule.atom_index[res._name2atom[atom2.name]] + 1
+                    if atom1_index < atom2_index:
+                        bonds.append("%6d %6d"%(atom1_index, atom2_index))
+                        
+        for link in molecule.residue_links:
+            atom1_index = molecule.atom_index[link.atom1] + 1
+            atom2_index = molecule.atom_index[link.atom2] + 1
+            if atom1_index < atom2_index:
+                bonds.append("%6d %6d"%(atom1_index, atom2_index))
+            else:
+                bonds.append("%6d %6d"%(atom2_index, atom1_index))
+        
+        towrite = "@<TRIPOS>MOLECULE\n"
+        towrite += "%s\n"%(molecule.name)
+        towrite += " %d %d %d 0 1\n"%(len(molecule.atoms), len(bonds), len(molecule.residues))
+        towrite += "SMALL\n"
+        towrite += "USER_CHARGES\n"
+        
+        towrite += "@<TRIPOS>ATOM\n"
+        count = 0
+        res_count = 0
+        residue_start = []
+        for atom in molecule.atoms:
+            count += 1
+            if atom == atom.residue.atoms[0]:
+                res_count += 1
+                residue_start.append(count)
+            resname = atom.residue.name
+            towrite += "%6d %4s %8.3f %8.3f %8.3f %4s %5d %8s %10.6f\n"%(count, atom.name, atom.x, atom.y, atom.z, atom.type.name, res_count, resname, atom.charge/18.2223)
+        
+        towrite += "@<TRIPOS>BOND\n"
+        for i, bond in enumerate(bonds):
+            towrite += "%6d %s 1\n"%(i+1, bond)
+        towrite += "@<TRIPOS>SUBSTRUCTURE\n"
+        for i, residue in enumerate(molecule.residues):
+            towrite += "%5d %8s %6d ****               0 ****  **** \n"%(i, residue.name, residue_start[i])
+            
+                
+        if not filename:
+            filename = molecule.name + ".mol2"
+        
+        f = open(filename, "w")
+        f.write(towrite)
+        f.close()   
+    elif type(molecule) == Residue:
+        mol = Molecule(name = molecule.name)
+        mol.Add_Residue(molecule)
+        Save_Mol2(mol)
+    elif type(molecule) == ResidueType:
+        residue = Residue(molecule, name = molecule.name)
+        for atom in molecule.atoms:
+            residue.Add_Atom(atom)
+        Save_Mol2(residue)
+    else:
+        raise NotImplementedError
+
+
+sys.modules['__main__'].__dict__["Save_Mol2"] = Save_Mol2 

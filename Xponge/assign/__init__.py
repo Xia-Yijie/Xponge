@@ -34,6 +34,7 @@ class _RING():
     def get_3_neighbors(self):
         for i in range(len(self.atoms)):
             yield self.atoms[i-2],self.atoms[i-1],self.atoms[i]
+            
 class ASSIGN():
     XX = set("CNOPS")
     XA = set("OS")
@@ -44,6 +45,8 @@ class ASSIGN():
     def __init__(self):
         self.atom_numbers = 0
         self.atoms = []
+        self.names = []
+        self.coordinate = None
         self.atom_types = {}
         self.atom_marker = {}
         self.bonds = {}
@@ -53,13 +56,19 @@ class ASSIGN():
         element, links = [''.join(list(g)) for k, g in groupby(string, key=lambda x: x.isdigit())]
         return self.atoms[atom] == element and len(self.bonds[atom]) == int(links)
     
-    def Add_Atom(self, element):
+    def Add_Atom(self, element, x, y, z, name = ""):
         self.atoms.append(element)
         self.bonds[self.atom_numbers] = {}
         self.bond_marker[self.atom_numbers] = {}
         self.atom_marker[self.atom_numbers] = {}
+        self.atom_types[self.atom_numbers] = None
         self.atom_numbers += 1
-        
+        self.names.append(name)
+        if type(self.coordinate) == type(None):
+            self.coordinate = np.array([[x,y,z]])
+        else:
+            self.coordinate = np.vstack((self.coordinate, np.array([x,y,z])))
+    
     def Add_Atom_Marker(self, atom, marker):
         if marker in self.atom_marker[atom].keys():
             self.atom_marker[atom][marker] += 1
@@ -190,7 +199,7 @@ class ASSIGN():
     def Determine_Atom_Type(self, rule):
         if type(rule) == type(""):
             rule = Judge_Rule.all[rule]
-        print(self.atoms)
+        #print(self.atoms)
         for i in range(len(self.atoms)):
             find_type = False
             for atom_type, type_rule in rule.rules.items():
@@ -200,10 +209,29 @@ class ASSIGN():
                     break
             
             assert find_type
-        print(self.atom_types)
+        #print(self.atom_types)
                 
-    def To_ResidueType(self, name):
-        raise NotImplementedError
+    def To_ResidueType(self, name, charge):
+        temp = ResidueType(name = name)
+        count = {}
+        for i in range(self.atom_numbers):
+            assert self.atom_types[i] != None
+            if self.names[i]:
+                atom_name = self.names[i]
+            elif self.atoms[i] in count.keys():
+                atom_name = self.atoms[i] + "%d"%count[self.atoms[i]]
+                count[self.atoms[i]] += 1
+            else:
+                count[self.atoms[i]] = 1
+                atom_name = self.atoms[i]
+            temp.Add_Atom(atom_name, self.atom_types[i], x = self.coordinate[i][0],
+                y = self.coordinate[i][1],  z = self.coordinate[i][2])
+            temp.atoms[-1].charge = charge[i] * 18.2223
+        for i, bondi in self.bonds.items():
+            for j in bondi.keys():
+                temp.Add_Connectivity(temp.atoms[i], temp.atoms[j])
+        sys.modules["__main__"].__dict__[name] = temp
+        return temp
         
 def Get_Molecule_From_PubChem(parameter, keyword):
     cs = pcp.get_compounds(parameter, keyword, record_type='3d')
@@ -213,7 +241,7 @@ def Get_Molecule_From_PubChem(parameter, keyword):
         assign = ASSIGN()
         c = cs[0]
         for atom in c.atoms:
-            assign.Add_Atom(atom.element)
+            assign.Add_Atom(atom.element, atom.x, atom.y, atom.z)
         for bond in c.bonds:
             assign.Add_Bond(bond.aid1 - 1, bond.aid2 - 1, bond.order)
         assign.Determine_Ring_And_Bond_Type()
