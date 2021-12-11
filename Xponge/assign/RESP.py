@@ -45,7 +45,11 @@ def Get_MK_Grid(Assign, crd, area_density = 1.0, layer = 4, radius = None):
         grids = grids[t >= r0, :]
     return grids
 
-
+def force_equivalence_q(q, extra_equivalence):
+    for eq_group in extra_equivalence:
+        q_mean = np.mean(q[eq_group])
+        q[eq_group] = q_mean
+    return q
 
 #Pay Attention To !!!UNIT!!!
 def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_equivalence = [], grid_density = 6, grid_cell_layer = 4, 
@@ -113,7 +117,7 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
     q = np.dot(Ainv, B.reshape(-1,1))[:-1]
     
     if only_ESP:
-        return q
+        return force_equivalence_q(q, extra_equivalence)
 
     step = 0
     a = a1
@@ -129,18 +133,16 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
         q = q[:-1]
         
     if not two_stage:
-        return q
+        return force_equivalence_q(q, extra_equivalence)
     
     #step2
     #fit the sp3 C and the hydrogen connected to it (pay attension to the symmetry!)
     tofit_second = []
-    notH_group = []
     fit_group = {i : -1 for i in range(mol.natm)}
     sublength = 0
     for i in range(mol.natm):
         if Assign.Atom_Judge(i, "C4"):
             fit_group[i] = len(tofit_second)
-            notH_group.append(len(tofit_second))
             tofit_second.append([i])
             temp = []
             for j in Assign.bonds[i].keys():
@@ -159,7 +161,6 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
                     temp.append(j)
             if len(temp) == 2:
                 fit_group[i] = len(tofit_second)
-                notH_group.append(len(tofit_second))
                 tofit_second.append([i])
                 for j in temp:
                     fit_group[j] = len(tofit_second)
@@ -171,8 +172,8 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
         equi_group = [set() for i in extra_equivalence]    
         for i, eq in enumerate(extra_equivalence):
             for eq_atom in eq:
-                assert fit_group[eq_atom] != -1
-                equi_group[i].add(fit_group[eq_atom])
+                if fit_group[eq_atom] != -1:
+                    equi_group[i].add(fit_group[eq_atom])
             equi_group[i] = list(equi_group[i])
             equi_group[i].sort()
             
@@ -191,14 +192,16 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
         
         need_to_sub = 0
         temp_max = 0
-        for group in all_groups:  
-            if group_map[group] == group:
+        for group in all_groups:
+            if group == -1:
+                continue
+            elif group_map[group] == group:
                 group_map[group] = temp_max
                 temp_max += 1
             else:
                 group_map[group] = group_map[group_map[group]]
+
         
-        from copy import deepcopy
         temp = tofit_second
         tofit_second = [[] for i in range(temp_max)]
         for i, group in enumerate(temp):
@@ -211,8 +214,6 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
         for atom in range(len(Assign.atoms)):
             fit_group[atom] = group_map[fit_group[atom]]
         
-        for i in range(len(notH_group)):
-            notH_group[i] = group_map[notH_group[i]]
     if tofit_second:
         total_length = mol.natm - sublength + 1 + mol.natm - sublength - len(tofit_second)
         A20 = np.zeros((total_length, total_length))
@@ -252,10 +253,8 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
         while step == 0 or np.max(np.abs(q_temp - q_last_step)) > 1e-4:
             step += 1
             q_last_step = q_temp
-            for i in notH_group:
-                A[i][i] = A20[i][i] + a / np.sqrt(q_last_step[i] * q_last_step[i] + b * b)
             for i in range(mol.natm - sublength):
-                if Assign.atoms[i] != "H" and fit_group[i] >= len(tofit_second):
+                if Assign.atoms[i] != "H":
                     A[i][i] = A20[i][i] + a / np.sqrt(q_last_step[i] * q_last_step[i] + b * b)
             Ainv = np.linalg.inv(A)
             q_temp = np.dot(Ainv, B)[:-1]
@@ -264,7 +263,7 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
             for j in group:
                 q[j] = q_temp[i]
             
-    return q
+    return force_equivalence_q(q, extra_equivalence)
 
 print("""Reference for RESP.py:
 1. pyscf
