@@ -634,4 +634,4 @@ def Generate_New_Pairwise_Force_Type(Type_Name, properties):
 
 
 
-from . import LOAD, BUILD, IMPOSE, PROCESS
+from . import assign, LOAD, BUILD, IMPOSE, PROCESS
