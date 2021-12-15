@@ -7,6 +7,8 @@ LJType = Generate_New_Pairwise_Force_Type("LJ", {"epsilon": float, "rmin": float
 LJType.Set_Property_Unit("rmin", "distance", "A")
 LJType.Set_Property_Unit("sigma", "distance", "A")
 LJType.Set_Property_Unit("epsilon", "energy", "kcal/mol")
+LJType.Set_Property_Unit("A", "energy·distance^6", "kcal/mol·A^6")
+LJType.Set_Property_Unit("B", "energy·distance^12", "kcal/mol·A^12")
 
 @GlobalSetting.Add_Unit_Transfer_Function(LJType)
 def LJ_Unit_Transfer(self):

@@ -1,3 +1,5 @@
+
+"""
 import Xponge
 t = Get_Assignment_From_PubChem("ethylene glycol", "name")
 #t = Get_Assignment_From_Mol2("PHE_ASN.mol2")
@@ -12,3 +14,11 @@ PHE = t.To_ResidueType("PHE", q)
 Save_Mol2(PHE)
 Save_Mol2(t, "PHE_ASN.mol2")
 Save_PDB(t, "PHE.pdb")
+"""
+
+
+
+import Xponge
+t = loaditp("test.itp")
+for i,v in t.items():
+    print("[", i,"]\n",v,"--"*10)
