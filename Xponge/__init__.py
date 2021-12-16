@@ -33,6 +33,7 @@ class _GlobalSetting():
     farthest_bonded_force = 0
     #所有的成键类型力的Type
     BondedForces = []
+    BondedForcesMap = {}
     #所有虚拟原子的Type和对应的依赖的其他原子的数量
     VirtualAtomTypes = {}
     #单位换算
@@ -48,7 +49,16 @@ class _GlobalSetting():
         assert place in ("head", "tail")
         self.PDBResidueNameMap[place][pdb_name] = real_name
         self.PDBResidueNameMap["save"][real_name] = pdb_name
-    
+
+    def Set_Invisible_Bonded_Forces(self, types):
+        for typename in types:
+            self.BondedForces.remove(self.BondedForcesMap[typename])
+            
+    def Set_Visible_Bonded_Forces(self, types):    
+        self.BondedForces = []
+        for typename in types:
+            self.BondedForces.append(self.BondedForcesMap[typename])
+            
     @staticmethod
     def Set_Unit_Transfer_Function(sometype):
         def wrapper(func):
@@ -615,6 +625,7 @@ def Generate_New_Bonded_Force_Type(Type_Name, atoms, properties, Compulsory, Mul
     
     global GlobalSetting
     GlobalSetting.BondedForces.append(BondedForceType)
+    GlobalSetting.BondedForcesMap[BondedForceType.name] = BondedForceType
     for i in atoms.split("-"):
         if int(i) > GlobalSetting.farthest_bonded_force:
             GlobalSetting.farthest_bonded_force = int(i)

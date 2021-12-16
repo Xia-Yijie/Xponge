@@ -1,6 +1,6 @@
 from ... import *
 
-CMAP = Generate_New_Bonded_Force_Type("cmap", "1-2-3-4-5", {}, False)
+CMAP = Generate_New_Bonded_Force_Type("residue_specific_cmap", "1-2-3-4-5", {}, False)
 
 CMAP.Residue_Map = {}
 
@@ -11,7 +11,7 @@ def write_cmap(self, prefix, dirname):
     used_types = []
     used_types_map = {}
     atoms = []
-    for cmap in self.bonded_forces["cmap"]:
+    for cmap in self.bonded_forces["residue_specific_cmap"]:
         resname = cmap.atoms[2].residue.type.name
         if resname in CMAP.Residue_Map.keys():
             if CMAP.Residue_Map[resname]["count"] not in used_types_map.keys():

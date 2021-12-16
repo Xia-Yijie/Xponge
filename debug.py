@@ -17,8 +17,5 @@ Save_PDB(t, "PHE.pdb")
 """
 
 
-
-import Xponge
-t = loaditp("test.itp")
-for i,v in t.items():
-    print("[", i,"]\n",v,"--"*10)
+import Xponge.forcefield.CHARMM27.protein
+Save_SPONGE_Input(Xponge.forcefield.CHARMM27.protein.test)

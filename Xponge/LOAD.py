@@ -385,11 +385,18 @@ sys.modules['__main__'].__dict__["loadparmdat"] = parmdat
 class GROMACS_TOPOLOGY_ITERATOR():
     def __init__(self, filename = None):
         self.files = []
+        self.filenames = []
         if filename:
             self.Add_Iterator_File(filename)
     def Add_Iterator_File(self, filename):
+        if self.files:
+            filename = os.path.abspath(os.path.join(os.path.dirname(self.filenames[-1]), filename.replace('"', '')))
+        else:
+            filename = os.path.abspath(filename.replace('"', ''))
+            
         f = open(filename)
         self.files.append(f)
+        self.filenames.append(filename)
     def __iter__(self):
         return self
     def __next__(self):
@@ -401,11 +408,12 @@ class GROMACS_TOPOLOGY_ITERATOR():
             else:
                 f.close()
                 self.files.pop()
+                self.filenames.pop()
                 continue
         raise StopIteration
             
-def itp(filename):
-    defined_macros = {}
+def ffitp(filename, macros = {}):
+    defined_macros = macros
     macro_define_stat = []
     flag = ""
     iterator = GROMACS_TOPOLOGY_ITERATOR(filename)
@@ -415,27 +423,40 @@ def itp(filename):
     output["bonds"] = "name b[nm] k[kJ/mol·nm^-2]\n"
     output["angles"] = "name b[degree] k[kJ/mol·rad^-2]\n"
     output["Urey-Bradley"] = "name b[degree] k[kJ/mol·rad^-2] r13[nm] kUB[kJ/mol·nm^-2]\n"
+    output["dihedrals"] = "name phi0[degree] k[kJ/mol] periodicity  reset\n"
+    output["impropers"] = "name phi0[degree] k[kJ/mol·rad^-2]\n"
+    output["cmaps"] = {"name":[], "resolution":[], "parameters":[]}
     for line in iterator:
         line = line.strip()
-        if not line or line[0] == ";":
+        comment = line.find(";")
+        if comment >= 0:
+            line = line[:comment]
+        while line and line[-1] == "\\":
+            line = line[:-1] + " " + next(iterator).strip()
+        if not line:
             continue
-        elif line[0] == "#":
+        elif line[0] == "#":         
             words = line.split()
             if words[0] == "#ifdef":
                 macro = words[1]
-                if macro in defined_macros.keys():
+                if macro_define_stat and macro_define_stat[-1] == False:
+                    macro_define_stat.append(False)
+                elif macro in defined_macros.keys():
                     macro_define_stat.append(True)
                 else:
                     macro_define_stat.append(False)
+            elif words[0] == "#else":
+                if len(macro_define_stat) <= 1 or macro_define_stat[-2] != False:
+                    macro_define_stat[-1] = not macro_define_stat[-1]
             elif words[0] == "#endif":
-                macro_define_stat.pop()                 
+                macro_define_stat.pop()    
             elif macro_define_stat and macro_define_stat[-1] == False:
                 continue
             elif words[0] == "#define":
                 if len(words) > 2:
-                    defined_macros[words[1]] = words[2]
+                    defined_macros[words[1]] = line[line.find(words[1]) + len(words[1]):].strip()
                 else:
-                    defined_macros[words[1]] = None
+                    defined_macros[words[1]] = ""
             elif words[0] == "#include":
                 iterator.Add_Iterator_File(words[1])
             elif words[0] == "#undef":
@@ -446,51 +467,72 @@ def itp(filename):
             continue
         elif "[" in line and "]" in line:
             flag = line[1:-1].strip()
-        elif flag == "":
-            raise Exception("No flag! Check your file.")
-        elif flag == "defaults":
-            words = line.split()
-            assert int(words[0]) == 1, "SPONGE Only supports Lennard-Jones now"
-            if int(words[1]) == 1:
-                output["LJ"] = "name A[kJ/mol·nm^6] B[kJ/mol·nm^12]\n"
-                output["nb14_extra"] = "name A[kJ/mol·nm^6] B[kJ/mol·nm^12] kee\n"
-            else:
-                output["LJ"] = "name epsilon[kJ/mol] sigma[nm]\n"
-                output["nb14_extra"] = "name epsilon[kJ/mol] sigma[nm] kee\n"
-            fudgeLJ = float(words[3])
-            fudgeQQ = float(words[4])
-            if words[2] == "yes":
-                output["nb14"] += "X-X {fudgeLJ} {fudgeQQ}\n".format(fudgeLJ=fudgeLJ, fudgeQQ=fudgeQQ)
-                
-        elif flag == "atomtypes":
-            words = line.split()
-            output["atomtypes"] += "{type} {mass} {charge} {type}\n".format(type=words[0], mass = float(words[2]), charge = float(words[3]))
-            output["LJ"] += "{type}-{type} {V} {W}\n".format(type=words[0], V=float(words[5]), W=float(words[6]))
-        elif flag == "pairtypes":
-            words = line.split()
-            if len(words) <= 3:
-                output["nb14"] +=  "{atom1}-{atom2} {kLJ} {kee}\n".format(atom1 = words[0], atom2 = words[1], kLJ = fudgeLJ, kee = fudgeQQ)
-            elif words[2] == "1":
-                output["nb14_extra"] += "{atom1}-{atom2} {V} {W} {kee}\n".format(atom1 = words[0], atom2 = words[1], V = float(words[3]), W = float(words[4]), kee = fudgeQQ)
-            elif words[2] == "2":
-                raise NotImplementedError
-        elif flag == "bondtypes":
-            words = line.split()
-            func = words[2]
-            if func == "1":
-                output["bonds"] += "{atom1}-{atom2} {b} {k}\n".format(atom1 = words[0], atom2 = words[1], b = float(words[3]), k = float(words[4]))
-            else:
-                raise NotImplementedError
-        elif flag == "angletypes":
-            words = line.split()
-            func = words[3]
-            if func == "1":
-                output["angles"] += "-".join(words[:3]) + " " + " ".join(words[4:]) + "\n"
-            elif func == "5":
-                output["Urey-Bradley"] += "-".join(words[:3]) + " " + " ".join(words[4:])  + "\n"
-            else:
-                raise NotImplementedError
+        else:
+            for macro, tobecome in defined_macros.items():
+                line = line.replace(macro, tobecome)
+            if flag == "":
+                continue
+            elif flag == "defaults":
+                words = line.split()
+                assert int(words[0]) == 1, "SPONGE Only supports Lennard-Jones now"
+                if int(words[1]) == 1:
+                    output["LJ"] = "name A[kJ/mol·nm^6] B[kJ/mol·nm^12]\n"
+                    output["nb14_extra"] = "name A[kJ/mol·nm^6] B[kJ/mol·nm^12] kee\n"
+                else:
+                    output["LJ"] = "name sigma[nm] epsilon[kJ/mol] \n"
+                    output["nb14_extra"] = "name sigma[nm] epsilon[kJ/mol] kee\n"
+                fudgeLJ = float(words[3])
+                fudgeQQ = float(words[4])
+                if words[2] == "yes":
+                    output["nb14"] += "X-X {fudgeLJ} {fudgeQQ}\n".format(fudgeLJ=fudgeLJ, fudgeQQ=fudgeQQ)
+                    
+            elif flag == "atomtypes":
+                words = line.split()
+                output["atomtypes"] += "{type} {mass} {charge} {type}\n".format(type=words[0], mass = float(words[2]), charge = float(words[3]))
+                output["LJ"] += "{type}-{type} {V} {W}\n".format(type=words[0], V=float(words[5]), W=float(words[6]))
+            elif flag == "pairtypes":
+                words = line.split()
+                if len(words) <= 3:
+                    output["nb14"] +=  "{atom1}-{atom2} {kLJ} {kee}\n".format(atom1 = words[0], atom2 = words[1], kLJ = fudgeLJ, kee = fudgeQQ)
+                elif words[2] == "1":
+                    output["nb14_extra"] += "{atom1}-{atom2} {V} {W} {kee}\n".format(atom1 = words[0], atom2 = words[1], V = float(words[3]), W = float(words[4]), kee = fudgeQQ)
+                elif words[2] == "2":
+                    raise NotImplementedError
+            elif flag == "bondtypes":
+                words = line.split()
+                func = words[2]
+                if func == "1":
+                    output["bonds"] += "{atom1}-{atom2} {b} {k}\n".format(atom1 = words[0], atom2 = words[1], b = float(words[3]), k = float(words[4]))
+                else:
+                    raise NotImplementedError
+            elif flag == "angletypes":
+                words = line.split()
+                func = words[3]
+                if func == "1":
+                    output["angles"] += "-".join(words[:3]) + " " + " ".join(words[4:]) + "\n"
+                elif func == "5":
+                    output["Urey-Bradley"] += "-".join(words[:3]) + " " + " ".join(words[4:])  + "\n"
+                else:
+                    raise NotImplementedError
+            elif flag == "dihedraltypes":
+                words = line.split()
+                func = words[4]
+                if func == "1":
+                    output["dihedrals"] += "-".join(words[:4]) + " " + " ".join(words[5:]) + " 0\n"
+                elif func == "2":
+                    output["impropers"] += "-".join([words[1], words[2], words[0], words[3]]) + " " + " ".join(words[5:]) + "\n"
+                elif func == "9":
+                    for i in range(5,len(words),20):
+                        output["dihedrals"] += "-".join(words[:4]) + " " + " ".join(words[i:i+3]) + " 0\n"
+            elif flag == "cmaptypes":
+                words = line.split()
+                output["cmaps"]["name"].append("-".join(words[:5]))
+                output["cmaps"]["resolution"].append(int(words[7]))
+                output["cmaps"]["parameters"].append(list(map(float, words[8:])))
+            elif flag == "nonbond_params":
+                words = line.split()
+                output["LJ"] += "{type1}-{type2} {V} {W}\n".format(type1=words[0], type2=words[1], V=float(words[3]), W=float(words[4]))
     return output
        
 
-sys.modules['__main__'].__dict__["loaditp"] = itp 
+sys.modules['__main__'].__dict__["loadffitp"] = ffitp 

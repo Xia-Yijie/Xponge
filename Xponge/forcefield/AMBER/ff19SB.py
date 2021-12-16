@@ -21,10 +21,10 @@ DIHEDRAL.ProperType.New_From_String(propers)
 DIHEDRAL.ImproperType.New_From_String(impropers)
 LJ.LJType.New_From_String(LJs)
 
-from ..BASE import CMAP
-CMAP.CMAP.Residue_Map.update(cmap)
+from ..BASE import RCMAP
+RCMAP.CMAP.Residue_Map.update(cmap)
 
-CMAP.CMAP.New_From_String(r"""
+RCMAP.CMAP.New_From_String(r"""
 name
 C-N-XC-C-N
 """)
