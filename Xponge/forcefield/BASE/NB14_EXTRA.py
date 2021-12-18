@@ -13,28 +13,29 @@ NB14Type.topology_matrix = [[1, -4],
 
 @GlobalSetting.Add_Unit_Transfer_Function(NB14Type)
 def LJ_Unit_Transfer(self):
-    if self.A != None and self.B != None:
-        self.sigma = (self.A / self.B) ** (1/6)
-        self.epsilon = 0.25 * B * self.sigma ** (-6)
-        self.A = None
-        self.B = None
     if self.sigma != None:
         self.rmin = self.sigma * (4 ** (1/12) / 2)
         self.sigma = None
+    if self.rmin != None and self.epsilon != None:
+        self.A = self.epsilon * (2 * self.rmin) ** 12
+        self.B = self.epsilon * 2 * ((2 * self.rmin) ** 6)
+        self.rmin = None
+        self.epsilon = None
+        
 
 @Molecule.Set_Save_SPONGE_Input
 def write_nb14(self, prefix, dirname):
     bonds = []
-    for bond in self.bonded_forces["nb14"]:
+    for bond in self.bonded_forces["nb14_extra"]:
         order = list(range(2))
-        if bond.kLJ != 0 and  bond.kee != 0:
+        if bond.A != 0 and bond.B != 0 and  bond.kee != 0:
             if self.atom_index[bond.atoms[order[0]]] > self.atom_index[bond.atoms[order[-1]]]:
                 temp_order = order[::-1]
             else:
                 temp_order = order
             
-            bonds.append("%d %d %f %f"%(self.atom_index[bond.atoms[temp_order[0]]]
-            , self.atom_index[bond.atoms[temp_order[1]]], bond.kLJ, bond.kee))
+            bonds.append("%d %d %f %f %f"%(self.atom_index[bond.atoms[temp_order[0]]]
+            , self.atom_index[bond.atoms[temp_order[1]]], bond.A, bond.B, bond.kee))
     
     if (bonds):
         towrite = "%d\n"%len(bonds)

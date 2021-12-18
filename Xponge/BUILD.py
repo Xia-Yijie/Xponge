@@ -67,14 +67,19 @@ def _build_bfrc(cls):
                     break
             #没找到再找通用的
             if not finded:
+                leastfindedX = 999
                 for frc_one in frc_ones:
                     tofind = [[atom.type.name, "X"] for atom in frc_one]
                     for p in product(*tofind):
+                        pcountx = p.count("X")
+                        if pcountx > leastfindedX:
+                            continue
                         tofindname = "-".join(p) 
                         if tofindname in frc.types.keys():
-                            finded[tofindname] = [frc.types[tofindname], frc_one]
+                            finded = {tofindname: [frc.types[tofindname], frc_one]}
+                            leastfindedX = pcountx
                             break
-                   
+                
             
             assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s"%(frc.name, "-".join([atom.type.name for atom in frc_one]))
             
@@ -206,14 +211,18 @@ def _build_bfrc_link(cls):
                     break
             #没找到再找通用的
             if not finded:
+                leastfindedX = 999
                 for frc_one in frc_ones:
                     tofind = [[atom.type.name, "X"] for atom in frc_one]
                     for p in product(*tofind):
+                        pcountx = p.count("X")
+                        if pcountx > leastfindedX:
+                            continue
                         tofindname = "-".join(p) 
                         if tofindname in frc.types.keys():
-                            finded[tofindname] = [frc.types[tofindname], frc_one]
+                            finded = {tofindname: [frc.types[tofindname], frc_one]}
+                            leastfindedX = pcountx
                             break
-
             assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s"%(frc.name, "-".join([atom.type.name for atom in frc_one]))
             
             if finded:

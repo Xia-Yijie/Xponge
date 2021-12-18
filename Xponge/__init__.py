@@ -173,6 +173,22 @@ class Type():
         with open(filename) as f:
             New_From_String(f.read(), skip_lines)
 
+    @classmethod
+    def New_From_Dict(cls, Dict):
+        for name, values in Dict.items():
+            type_already_have = False
+            if name in cls.types_different_name.keys():
+                name = cls.types_different_name[name].name
+                type_already_have = True
+            if not type_already_have:
+                if "reset" in values.keys():
+                    values.pop("reset")
+                values["name"] = name
+                cls(**values)
+            else:
+                temp = cls.types[name]
+                temp.update(**values)
+
     def __repr__(self):
         return "Type of " + type(self).name + ": " + self.name
         
