@@ -437,3 +437,76 @@ def Save_Mol2(molecule, filename = None):
 
 
 sys.modules['__main__'].__dict__["Save_Mol2"] = Save_Mol2 
+
+
+def Save_NPZ(molecule, filename = None):
+    import numpy as np
+    bondtypeindex = {}
+    def update_bonddict(dic_to, dic_from):
+        for key, value in dic_from.items():
+            if value is not None:
+                if key in dic_to.keys():
+                    dic_to[key].append(value)
+                else:
+                    dic_to[key] = [value]
+        
+    
+    for bondedforce in GlobalSetting.BondedForces:
+        bonddict = {}
+        count = -1
+        for bondtype in bondedforce.types.values():
+            update_bonddict(bonddict, bondtype.contents)
+            count += 1
+            bondtypeindex[bondtype] = count
+        max_len = {}
+        for key, value in bonddict.items():
+            max_len[key] = 1
+            for vi in value:
+                if isinstance(vi,list) and len(vi) > max_len[key]:
+                    max_len[key] = len(vi)
+        for key, value in bonddict.items():
+            for i, vi in enumerate(value):
+                if isinstance(vi,list) and len(vi) < max_len[key]:
+                    bonddict[key][i] = np.array(vi + [0] * (max_len[key] - len(vi)))
+        np.savez(bondedforce.name, **bonddict)
+        
+    if type(molecule)== Molecule:
+        Build_Bonded_Force(molecule)
+        
+        if not filename:
+            filename = molecule.name
+        
+        molecule.atoms = []
+        molecule.bonded_forces = { frc.name:[] for frc in GlobalSetting.BondedForces}
+        for res in molecule.residues:
+            molecule.atoms.extend(res.atoms)
+            for frc in GlobalSetting.BondedForces:
+                molecule.bonded_forces[frc.name].extend(res.bonded_forces[frc.name])
+                
+        for link in molecule.residue_links:
+            for frc in GlobalSetting.BondedForces:
+                molecule.bonded_forces[frc.name].extend(link.bonded_forces[frc.name])
+                
+        molecule.atom_index = { molecule.atoms[i]: i for i in range(len(molecule.atoms))}
+        
+        bonddict = {}
+        for bondname, bondtypes in molecule.bonded_forces.items():
+            bonddict[bondname] = []
+            for b in bondtypes:
+                bonddict[bondname].append([molecule.atom_index[a] for a in b.atoms])
+                bonddict[bondname][-1].append(bondtypeindex[b.type])
+        np.savez(filename, **bonddict)
+    elif type(molecule) == Residue:
+        mol = Molecule(name = molecule.name)
+        mol.Add_Residue(molecule)
+        Save_NPZ(mol)
+    elif type(molecule) == ResidueType:
+        residue = Residue(molecule, name = molecule.name)
+        for atom in molecule.atoms:
+            residue.Add_Atom(atom)
+        Save_NPZ(residue)
+    
+        
+
+
+sys.modules['__main__'].__dict__["Save_NPZ"] = Save_NPZ 

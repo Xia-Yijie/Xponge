@@ -1,19 +1,17 @@
 Metadata-Version: 2.1
 Name: Xponge
-Version: 0.0.8.4.2
+Version: 0.0.8.5
 Summary: A package for building molecular dynamics inputs for SPONGE
 Home-page: https://gitee.com/gao_hyp_xyj_admin/xponge
 Author: Yijie Xia
 Author-email: yijiexia@pku.edu.cn
 License: UNKNOWN
+Description: # Xponge
+        基于Python语言的建模工具
+        仍在测试开发中，API可能随时会变更
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3 :: Only
 Classifier: Development Status :: 4 - Beta
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.6
 Description-Content-Type: text/markdown
-
-# Xponge
-基于Python语言的建模工具
-仍在测试开发中，API可能随时会变更
-
