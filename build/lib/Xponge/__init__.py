@@ -166,7 +166,7 @@ class Type():
                     cls(**tempkw)
                 else:
                     temp = cls.types[tempkw.pop("name")]
-                    temp.Update(**tempkw)
+                    temp.update(**tempkw)
 
     @classmethod
     def New_From_File(cls, filename, skip_lines = 0):
@@ -187,7 +187,7 @@ class Type():
                 cls(**values)
             else:
                 temp = cls.types[name]
-                temp.Update(**values)
+                temp.update(**values)
 
     def __repr__(self):
         return "Type of " + type(self).name + ": " + self.name
@@ -242,12 +242,6 @@ class ResidueType(Type):
     parameters = {"name":str,}
     types = {}
     types_different_name = {}
-    
-    def __getattribute__(self, attr):
-        if attr not in  ("_name2atom", "contents") and attr in self._name2atom.keys():
-            return self._name2atom[attr]
-        else:
-            return super().__getattribute__(attr)
     
     @property
     def head(self):
@@ -306,13 +300,12 @@ class ResidueType(Type):
         return self.link["tail_link_conditions"]
     
     def __init__(self, **kwargs):
-        self.contents = {}
-        self._name2atom = {}
+        super().__init__(**kwargs)
         self.atoms = []
+        self._name2atom = {}
         self._atom2name = {}
         self.connectivity = {}
         self.bonded_forces = {}
-        super().__init__(**kwargs)
         self.builded = False
         self.bonded_forces = {frc.name:[] for frc in GlobalSetting.BondedForces}
         self.link = {"head": None, "tail": None, "head_next":None, "tail_next":None, 
@@ -374,7 +367,7 @@ class Entity():
         self.name = name
         self.type = entity_type
     
-    def Update(self, **kwargs):
+    def update(self, **kwargs):
         for key in kwargs.keys():
             assert(key in self.contents.keys())
             self.contents[key] = type(self.type).parameters[key](kwargs[key])
@@ -625,7 +618,7 @@ def Generate_New_Bonded_Force_Type(Type_Name, atoms, properties, Compulsory, Mul
                     self.contents[key] = None
                 self.contents["multiple_numbers"] = 1
         
-        def Update(self, **kwargs):
+        def update(self, **kwargs):
             reset = 1
             if "reset" in kwargs.keys():
                 reset = int(kwargs.pop("reset"))
@@ -637,7 +630,7 @@ def Generate_New_Bonded_Force_Type(Type_Name, atoms, properties, Compulsory, Mul
                     for key in self.multiple:
                         self.contents[key + "s"] = []
                     self.contents["multiple_numbers"] = 0 
-            super().Update(**kwargs)
+            super().update(**kwargs)
             if type(self).multiple:
                 for key in type(self).multiple:
                     self.contents[key + "s"].append(self.contents[key])

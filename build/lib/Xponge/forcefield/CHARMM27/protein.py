@@ -1,0 +1,86 @@
+from . import *
+
+import sys
+
+output = LOAD.ffitp(os.path.join(CHARMM27_DATA_DIR, "forcefield.itp"))
+
+AtomType.New_From_String(output["atomtypes"])
+BOND.BondType.New_From_String(output["bonds"])
+output["dihedrals"] += "X-X-X-X 0 0 1 0\n"
+DIHEDRAL.ProperType.New_From_String(output["dihedrals"])
+LJ.LJType.New_From_String(output["LJ"])
+UREY_BRADLEY.UreyBradleyType.New_From_String(output["Urey-Bradley"])
+IMPROPER.ImproperType.New_From_String(output["impropers"])
+NB14_EXTRA.NB14Type.New_From_String(output["nb14_extra"])
+NB14.NB14Type.New_From_String(output["nb14"])
+ACMAP.CMAP.New_From_Dict(output["cmaps"])
+
+CHARM27_PROTEIN = LOAD.mol2(os.path.join(CHARMM27_DATA_DIR, "protein.mol2"))
+
+ResidueType.types.pop("HYP")
+ResidueType.types.pop("CHYP")
+ResidueType.types.pop("NHE")
+
+sys.modules['__main__'].__dict__.pop("HYP")
+sys.modules['__main__'].__dict__.pop("CHYP")
+sys.modules['__main__'].__dict__.pop("NHE")
+
+residues = "ALA ARG ASN ASP CYS CYX GLN GLU GLY HID HIE HIP ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL".split()
+
+for res in residues:
+    ResidueType.types[res].head_next = "CA"
+    ResidueType.types[res].head_length = 1.3
+    ResidueType.types[res].tail_next = "CA"
+    ResidueType.types[res].tail_length = 1.3
+    ResidueType.types[res].head_link_conditions.append({"atoms":["CA", "N"], "parameter": 120/180 * np.pi})
+    ResidueType.types[res].head_link_conditions.append({"atoms":["H", "CA", "N"], "parameter": -np.pi})
+    ResidueType.types[res].tail_link_conditions.append({"atoms":["CA", "C"], "parameter": 120/180 * np.pi})
+    ResidueType.types[res].tail_link_conditions.append({"atoms":["O", "CA", "C"], "parameter": -np.pi})    
+
+
+    ResidueType.types["N" + res].tail_next = "CA"
+    ResidueType.types["N" + res].tail_length = 1.3
+    ResidueType.types["N" + res].tail_link_conditions.append({"atoms":["CA", "C"], "parameter": 120/180 * np.pi})
+    ResidueType.types["N" + res].tail_link_conditions.append({"atoms":["O", "CA", "C"], "parameter": -np.pi})   
+    
+    ResidueType.types["C" + res].head_next = "CA"
+    ResidueType.types["C" + res].head_length = 1.3
+    ResidueType.types["C" + res].head_link_conditions.append({"atoms":["CA", "N"], "parameter": 120/180 * np.pi})
+    ResidueType.types["C" + res].head_link_conditions.append({"atoms":["H", "CA", "N"], "parameter": -np.pi})
+    
+    GlobalSetting.Add_PDB_Residue_Name_Mapping("head", res, "N" + res)
+    GlobalSetting.Add_PDB_Residue_Name_Mapping("tail", res, "C" + res)
+
+ResidueType.types["ACE"].tail_next = "CH3"
+ResidueType.types["ACE"].tail_length = 1.3
+ResidueType.types["ACE"].tail_link_conditions.append({"atoms":["CH3", "C"], "parameter": 120/180 * np.pi})
+ResidueType.types["ACE"].tail_link_conditions.append({"atoms":["O", "CH3", "C"], "parameter": -np.pi})   
+
+ResidueType.types["NME"].head_next = "CH3"
+ResidueType.types["NME"].head_length = 1.3
+ResidueType.types["NME"].head_link_conditions.append({"atoms":["CH3", "N"], "parameter": 120/180 * np.pi})
+ResidueType.types["NME"].head_link_conditions.append({"atoms":["H", "CH3", "N"], "parameter": -np.pi})   
+
+GlobalSetting.HISMap["DeltaH"] = "HD1"
+GlobalSetting.HISMap["EpsilonH"] = "HE2"
+GlobalSetting.HISMap["HIS"].update({"HIS": {"HID":"HID", "HIE":"HIE", "HIP":"HIP"}, 
+                                    "CHIS":{"HID":"CHID", "HIE":"CHIE", "HIP":"CHIP"},
+                                    "NHIS":{"HID":"NHID", "HIE":"NHIE", "HIP":"NHIP"}})
+
+ResidueType.types["CYX"].connect_atoms["ssbond"] = "SG"
+
+
+print("""Reference for protein of CHARMM27:
+    MacKerell, Jr., A. D., Feig, M., Brooks, C.L., III, Extending the
+    treatment of backbone energetics in protein force fields: limitations
+    of gas-phase quantum mechanics in reproducing protein conformational
+    distributions in molecular dynamics simulations, Journal of
+    Computational Chemistry, 25: 1400-1415, 2004.
+
+and 
+
+    MacKerell, Jr., A. D.,  et al. All-atom
+    empirical potential for molecular modeling and dynamics Studies of
+    proteins.  Journal of Physical Chemistry B, 1998, 102, 3586-3616.
+
+""")

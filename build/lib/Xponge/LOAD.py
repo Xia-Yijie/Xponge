@@ -46,9 +46,9 @@ def mol2(filename):
                     current_residue = Residue(ResidueType.types[words[7]])
                 if temp:
                     current_residue.type.Add_Atom(words[1], AtomType.types[words[5]], *words[2:5])
-                    current_residue.type.atoms[-1].Update(**{"charge[e]": float(words[8])})
+                    current_residue.type.atoms[-1].update(**{"charge[e]": float(words[8])})
                 current_residue.Add_Atom(words[1], AtomType.types[words[5]], *words[2:5])
-                current_residue.atoms[-1].Update(**{"charge[e]": float(words[8])})
+                current_residue.atoms[-1].update(**{"charge[e]": float(words[8])})
                 atom_residue_map[words[0]]=[words[1], current_residue, current_residue_index, temp, current_residue.atoms[-1], current_residue.type.atoms[-1]]
             elif flag == "BOND":
                 words = line.split()

@@ -302,12 +302,12 @@ def Save_SPONGE_Input(molecule, prefix = None, dirname = "."):
     elif type(molecule) == Residue:
         mol = Molecule(name = molecule.name)
         mol.Add_Residue(molecule)
-        Save_SPONGE_Input(mol, prefix, dirname)
+        Save_SPONGE_Input(mol)
     elif type(molecule) == ResidueType:
         residue = Residue(molecule, name = molecule.name)
         for atom in molecule.atoms:
             residue.Add_Atom(atom)
-        Save_SPONGE_Input(residue, prefix, dirname)
+        Save_SPONGE_Input(residue)
 
 sys.modules['__main__'].__dict__["Save_SPONGE_Input"] = Save_SPONGE_Input 
 
@@ -499,12 +499,12 @@ def Save_NPZ(molecule, filename = None):
     elif type(molecule) == Residue:
         mol = Molecule(name = molecule.name)
         mol.Add_Residue(molecule)
-        Save_NPZ(mol, filename)
+        Save_NPZ(mol)
     elif type(molecule) == ResidueType:
         residue = Residue(molecule, name = molecule.name)
         for atom in molecule.atoms:
             residue.Add_Atom(atom)
-        Save_NPZ(residue, filename)
+        Save_NPZ(residue)
     
         
 
