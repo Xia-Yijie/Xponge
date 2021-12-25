@@ -209,7 +209,7 @@ WAT.Add_Connectivity(WAT.O, WAT.H2)
 Save_SPONGE_Input(WAT, "TP3")
 ```
 
-### 3. 现有力场，现有力场参数，非现有残基，非现有残基单独成分子，不知残基的各项信息
+### 4. 现有力场，现有力场参数，非现有残基，非现有残基单独成分子，不知残基的各项信息
 以gaff力场下的2,3-二甲基苯甲酸乙酯为例
 - 方案1 通过IUPAC名或SMILE结构式从PubChem中获取基本的结构
 ```python
