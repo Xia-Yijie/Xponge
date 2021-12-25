@@ -62,7 +62,7 @@ vmd -sponge_mass ./protein_mass.txt -sponge_crd ./protein_coordinate.txt
 ```
 可获得如下结果
 
-![输入图片说明](README_PICTURE/1.png)
+![输入图片说明](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/1.png)
 
 - 动力学模拟
 
@@ -138,7 +138,7 @@ import Xponge.forcefield.AMBER.ff14SB
 ```
 
 - 读入现有文件
-> [示例pdb文件](https://gitee.com/gao_hyp_xyj_admin/xponge/blob/master/0.15_80_10_pH6.5_6lzg.result.pdb)：由H++补氢并添加了SSBOND信息的新冠病毒Spike蛋白与ACE2受体结合的PDB
+> [示例pdb文件](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/0.15_80_10_pH6.5_6lzg.result.pdb)：由H++补氢并添加了SSBOND信息的新冠病毒Spike蛋白与ACE2受体结合的PDB
 ```python
 protein = loadpdb("0.15_80_10_pH6.5_6lzg.result.pdb")
 ```
