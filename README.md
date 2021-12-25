@@ -208,3 +208,116 @@ WAT.Add_Connectivity(WAT.O, WAT.H2)
 
 Save_SPONGE_Input(WAT, "TP3")
 ```
+
+### 3. 现有力场，现有力场参数，非现有残基，非现有残基单独成分子，不知残基的各项信息
+以gaff力场下的2,3-二甲基苯甲酸乙酯为例
+- 方案1 通过IUPAC名或SMILE结构式从PubChem中获取基本的结构
+```python
+import Xponge
+
+#从PubChem中获取结构
+assign = Get_Assignment_From_PubChem("ethyl 2,6-dimethylbenzoate", "name")
+#也可以使用SMILES
+#assign = Get_Assignment_From_PubChem("CCOC(=O)C1=C(C=CC=C1C)C", "smiles")
+
+#自动推断原子类别
+import Xponge.forcefield.AMBER.gaff
+assign.Determine_Atom_Type("GAFF")
+
+#保存assignment至mol2文件中
+Save_Mol2(assign, "EDF_ASN.mol2")
+
+#通过vmd判断出等价性
+equivalence = [[9,10], range(16,22), [3,4], [5,6], [13,14]]
+q = assign.Calculate_Charge("RESP", basis = "6-311g*", grid_density = 1, 
+    extra_equivalence = equivalence, opt = True)
+
+EDF = assign.To_ResidueType("EDF", q)
+Save_Mol2(EDF, "EDF.mol2")
+```
+最后获得的"EDF.mol2"即可进行下一步计算
+```mol2
+@<TRIPOS>MOLECULE
+EDF
+ 27 27 1 0 1
+SMALL
+USER_CHARGES
+@<TRIPOS>ATOM
+     1    O    1.826   -0.000    0.361   os     1      EDF  -0.563454
+     2   O1    1.320   -0.002   -1.787    o     1      EDF  -0.656809
+     3    C   -0.453   -0.000   -0.196   ca     1      EDF  -0.456248
+     4   C1   -1.103   -1.216   -0.002   ca     1      EDF   0.283884
+     5   C2   -1.101    1.217   -0.003   ca     1      EDF   0.283884
+     6   C3   -2.432   -1.197    0.395   ca     1      EDF  -0.284050
+     7   C4   -2.431    1.200    0.394   ca     1      EDF  -0.284050
+     8   C5   -3.091    0.002    0.592   ca     1      EDF  -0.137956
+     9   C6    0.979   -0.001   -0.654    c     1      EDF   1.049933
+    10   C7   -0.382   -2.527   -0.219   c3     1      EDF  -0.396791
+    11   C8   -0.379    2.527   -0.221   c3     1      EDF  -0.396791
+    12   C9    3.218   -0.000    0.060   c3     1      EDF   0.506223
+    13  C10    3.968    0.001    1.373   c3     1      EDF  -0.267413
+    14    H   -2.953   -2.125    0.550   ha     1      EDF   0.170890
+    15   H1   -2.951    2.129    0.548   ha     1      EDF   0.170890
+    16   H2   -4.122    0.002    0.899   ha     1      EDF   0.163931
+    17   H3   -0.010   -2.607   -1.234   hc     1      EDF   0.118938
+    18   H4    0.467   -2.623    0.451   hc     1      EDF   0.118938
+    19   H5   -1.041   -3.366   -0.037   hc     1      EDF   0.118938
+    20   H6   -0.007    2.605   -1.236   hc     1      EDF   0.118938
+    21   H7   -1.037    3.366   -0.041   hc     1      EDF   0.118938
+    22   H8    0.470    2.622    0.449   hc     1      EDF   0.118938
+    23   H9    3.449   -0.875   -0.533   h1     1      EDF  -0.046089
+    24  H10    3.449    0.872   -0.535   h1     1      EDF  -0.046089
+    25  H11    5.037    0.001    1.189   hc     1      EDF   0.064160
+    26  H12    3.723    0.880    1.958   hc     1      EDF   0.064160
+    27  H13    3.723   -0.876    1.960   hc     1      EDF   0.064160
+@<TRIPOS>BOND
+     1      1      9 1
+     2      1     12 1
+     3      2      9 1
+     4      3      4 1
+     5      3      5 1
+     6      3      9 1
+     7      4      6 1
+     8      4     10 1
+     9      5      7 1
+    10      5     11 1
+    11      6      8 1
+    12      6     14 1
+    13      7      8 1
+    14      7     15 1
+    15      8     16 1
+    16     10     17 1
+    17     10     18 1
+    18     10     19 1
+    19     11     20 1
+    20     11     21 1
+    21     11     22 1
+    22     12     13 1
+    23     12     23 1
+    24     12     24 1
+    25     13     25 1
+    26     13     26 1
+    27     13     27 1
+@<TRIPOS>SUBSTRUCTURE
+    1      EDF      1 ****               0 ****  **** 
+```
+
+> 目前Xponge不支持自动判断等价原子，因此需要靠vmd来手动判断
+
+![输入图片说明](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/2.png)
+
+
+> 目前Xponge的assignment只支持C、H、O、N的物质
+
+- 方案2 通过其他方式构建assignment的mol2文件
+
+只需将对应的Get_Assignment_From_PubChem更改为Get_Assignment_From_Mol2即可
+```python
+assign = Get_Assignment_From_Mol2("EDF_ASN.mol2")
+```
+
+> 注意，任务（Xponge.assign.Assign）和分子（Xponge.molecule）均可读mol2，但是它们是不一样的，而且文件中的信息有效性也不同
+
+> 任务（Xponge.assign.Assign）使用Get_Assignment_From_Mol2读取，其中的原子类别为元素符号，且bond部分中的键需要明确键级
+
+> 分子（Xponge.molecule）使用loadmol2读取，其中的原子类别为力场中的符号，且bond部分中的键不会读取键级
