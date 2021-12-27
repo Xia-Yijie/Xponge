@@ -35,7 +35,7 @@ class _RING():
         for i in range(len(self.atoms)):
             yield self.atoms[i-2],self.atoms[i-1],self.atoms[i]
             
-class ASSIGN():
+class Assign():
     XX = set("CNOPS")
     XA = set("OS")
     XB = set("NP")
@@ -321,7 +321,7 @@ def Get_Assignment_From_PubChem(parameter, keyword):
     if len(cs) == 0:
         raise pcp.NotFoundError
     elif len(cs) == 1:
-        assign = ASSIGN()
+        assign = Assign()
         c = cs[0]
         for atom in c.atoms:
             assign.Add_Atom(atom.element, atom.x, atom.y, atom.z)
@@ -333,7 +333,7 @@ def Get_Assignment_From_PubChem(parameter, keyword):
         raise NotImplementedError
 
 def Get_Assignment_From_PDB(filename):
-    assign = ASSIGN()
+    assign = Assign()
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
@@ -352,7 +352,7 @@ def Get_Assignment_From_PDB(filename):
     return assign
 
 def Get_Assignment_From_Mol2(filename):
-    assign = ASSIGN()
+    assign = Assign()
     with open(filename) as f:
         flag = None
         for line in f:      

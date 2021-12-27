@@ -359,7 +359,7 @@ def Save_PDB(molecule, filename = None):
         for atom in molecule.atoms:
             residue.Add_Atom(atom)
         Save_PDB(residue, filename)
-    elif type(molecule) == assign.ASSIGN:
+    elif type(molecule) == assign.Assign:
         molecule.Save_As_PDB(filename)
     else:
         raise NotImplementedError
@@ -430,7 +430,7 @@ def Save_Mol2(molecule, filename = None):
         for atom in molecule.atoms:
             residue.Add_Atom(atom)
         Save_Mol2(residue, filename)
-    elif type(molecule) == assign.ASSIGN:
+    elif type(molecule) == assign.Assign:
         molecule.Save_As_Mol2(filename)
     else:
         raise NotImplementedError

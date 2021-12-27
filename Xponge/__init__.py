@@ -170,8 +170,8 @@ class Type():
 
     @classmethod
     def New_From_File(cls, filename, skip_lines = 0):
-        with open(filename) as f:
-            New_From_String(f.read(), skip_lines)
+        with open(filename, encoding='utf-8') as f:
+            cls.New_From_String(f.read(), skip_lines)
 
     @classmethod
     def New_From_Dict(cls, Dict):

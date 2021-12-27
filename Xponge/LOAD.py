@@ -527,6 +527,8 @@ def ffitp(filename, macros = {}):
             elif func == "9":
                 for i in range(5,len(words),20):
                     output["dihedrals"] += "-".join(words[:4]) + " " + " ".join(words[i:i+3]) + " 0\n"
+            else:
+                raise NotImplementedError
         elif iterator.flag == "cmaptypes":
             words = line.split()
             output["cmaps"]["-".join(words[:5])] = {"resolution": int(words[7]), "parameters":list(map(float, words[8:]))}
@@ -534,3 +536,5 @@ def ffitp(filename, macros = {}):
             words = line.split()
             output["LJ"] += "{type1}-{type2} {V} {W}\n".format(type1=words[0], type2=words[1], V=float(words[3]), W=float(words[4]))
     return output
+    
+sys.modules['__main__'].__dict__["loadffitp"] = ffitp
