@@ -345,6 +345,9 @@ Description: # Xponge
         assign.Add_Bond(0,1,1) #0号原子和1号原子之间形成一个单键
         assign.Add_Bond(0,2,1) #0号原子和2号原子之间形成一个单键
         
+        #注意，在推断原子类型前需要推断环和键的信息，虽然对水没有用
+        assign.Determine_Ring_And_Bond_Type()
+        
         assign.Determine_Atom_Type("GAFF")
         q = assign.Calculate_Charge("RESP", extra_equivalence = [[1,2]])
         
@@ -613,15 +616,409 @@ Description: # Xponge
         ##### 类型1 非键
         非键可以看作本身是原子性质，以目前实现的静电和LJ作用为例
         ###### 静电
+        本身实现于Xponge.forcefield.BASE.CHARGE中
+        ```python
+        import Xponge
+        #给原子类别添加性质
+        Xponge.AtomType.Add_Property({"charge":float})
         
+        #给电荷添加单位
+        #三个参数的意义是：性质"charge"的单位是"charge"，程序内部单位是"SPONGE"
+        Xponge.AtomType.Set_Property_Unit("charge", "charge", "SPONGE")
+        
+        #通过修饰器@Xponge.Molecule.Set_Save_SPONGE_Input使得Save_SPONGE_Input时调用该函数
+        #被调用的函数接受三个参数，分别是构建的分子、前缀名和保存的路径
+        @Xponge.Molecule.Set_Save_SPONGE_Input      
+        def write_charge(self, prefix, dirname):
+            towrite = "%d\n"%(len(self.atoms)) #通过self.atoms获取所有原子
+            towrite += "\n".join(["%.6f"%(atom.charge) for atom in self.atoms])  #通过atom.charge可以调用上面Add_Property的性质
+            f = open(os.path.join(dirname, prefix + "_charge.txt"),"w")
+            f.write(towrite)
+            f.close()
+        ```
         ###### LJ作用
+        本身实现于Xponge.forcefield.BASE.LJ中
+        ```python
+        import Xponge
+        #给原子类别添加性质
+        Xponge.AtomType.Add_Property({"LJtype":str})
+        
+        #生成一个新的类型(Xponge.Type)的子类，参数分别是名字、性质
+        LJType = Xponge.Generate_New_Pairwise_Force_Type("LJ", {"epsilon": float, "rmin": float, "sigma":float, "A":float, "B":float})
+        
+        #设置单位（性质、量纲、程序内部单位）
+        LJType.Set_Property_Unit("rmin", "distance", "A")
+        LJType.Set_Property_Unit("sigma", "distance", "A")
+        LJType.Set_Property_Unit("epsilon", "energy", "kcal/mol")
+        LJType.Set_Property_Unit("A", "energy·distance^6", "kcal/mol·A^6")
+        LJType.Set_Property_Unit("B", "energy·distance^12", "kcal/mol·A^12")
+        
+        #通过修饰器Xponge.GlobalSetting.Add_Unit_Transfer_Function(LJType)使得LJType初始化进行单位转化时调用
+        @Xponge.GlobalSetting.Add_Unit_Transfer_Function(LJType)
+        def LJ_Unit_Transfer(self):
+            if self.A != None and self.B != None:
+                self.sigma = (self.A / self.B) ** (1/6)
+                self.epsilon = 0.25 * B * self.sigma ** (-6)
+                self.A = None
+                self.B = None
+            if self.sigma != None:
+                self.rmin = self.sigma * (4 ** (1/12) / 2)
+                self.sigma = None
+        
+        #定义默认的组合规则供内部使用，自己定义的
+        def Lorentz_Berthelot_For_A(epsilon1, rmin1, epsilon2, rmin2):
+            return np.sqrt(epsilon1 * epsilon2) * ((rmin1 + rmin2) ** 12)
+        
+        def Lorents_Berthelot_For_B(epsilon1, rmin1, epsilon2, rmin2):
+            return np.sqrt(epsilon1 * epsilon2) * 2 * ((rmin1 + rmin2) ** 6)
+            
+        #通过修饰器@Xponge.Molecule.Set_Save_SPONGE_Input使得Save_SPONGE_Input时调用该函数
+        #被调用的函数接受三个参数，分别是构建的分子、前缀名和保存的路径
+        @Xponge.Molecule.Set_Save_SPONGE_Input      
+        def write_LJ(self, prefix, dirname):
+            LJtypes = []
+            LJtypemap = {}
+            for atom in self.atoms:
+                if atom.LJtype not in LJtypemap.keys():
+                    LJtypemap[atom.LJtype] = len(LJtypes)
+                    LJtypes.append(atom.LJtype)
+                     
+            As = []
+            Bs = []
+            for i in range(len(LJtypes)):
+                LJ_i = LJType.types[LJtypes[i] + "-" + LJtypes[i]]
+                for j in range(len(LJtypes)):
+                    LJ_j = LJType.types[LJtypes[j] + "-" + LJtypes[j]]
+                    finded = False
+                    findnames = [LJtypes[i] + "-" + LJtypes[j], LJtypes[j] + "-" + LJtypes[i]]
+                    for findname in findnames:
+                        if findname in LJType.types.keys():
+                            finded = True
+                            LJ_ij = LJType.types[findname]
+                            As.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                            Bs.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                            break
+                    if not finded:
+                            As.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+                            Bs.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+            
+            checks = {}
+            count = 0
+            for i in range(len(LJtypes)):
+                check_string_A = ""
+                check_string_B = ""
+                for j in range(len(LJtypes)):
+                    check_string_A += "%16.7e"%As[count] + " "
+                    check_string_B += "%16.7e"%Bs[count] + " "
+                    count += 1
+                    
+                checks[i] = check_string_A+check_string_B
+            
+            same_type = { i: i for i in range(len(LJtypes))}
+            for i in range(len(LJtypes)-1, -1, -1):
+                for j in range(i+1, len(LJtypes)):
+                    if checks[i] == checks[j]:
+                        same_type[j] = i
+        
+            real_LJtypes = []
+            real_As = []
+            real_Bs = []
+            tosub = 0
+            for i in range(len(LJtypes)):
+                
+                if same_type[i] == i:
+                    real_LJtypes.append(LJtypes[i])
+                    same_type[i] -= tosub
+                else:
+                    same_type[i] = same_type[same_type[i]]
+                    tosub += 1
+        
+            for i in range(len(real_LJtypes)):
+                LJ_i = LJType.types[real_LJtypes[i] + "-" + real_LJtypes[i]]
+                for j in range(i+1):
+                    LJ_j = LJType.types[real_LJtypes[j] + "-" + real_LJtypes[j]]
+                    finded = False
+                    findnames = [real_LJtypes[i] + "-" + real_LJtypes[j], real_LJtypes[j] + "-" + real_LJtypes[i]]
+                    for findname in findnames:
+                        if findname in LJType.types.keys():
+                            finded = True
+                            LJ_ij = LJType.types[findname]
+                            real_As.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                            real_Bs.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                            break
+                    if not finded:
+                            real_As.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+                            real_Bs.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+            
+                        
+            
+            towrite = "%d %d\n\n"%(len(self.atoms), len(real_LJtypes))
+            count = 0
+            for i in range(len(real_LJtypes)):
+                for j in range(i+1):
+                    towrite += "%16.7e"%real_As[count] + " "
+                    count += 1
+                towrite +="\n"
+            towrite += "\n"
+            
+            count = 0
+            for i in range(len(real_LJtypes)):
+                for j in range(i+1):
+                    towrite += "%16.7e"%real_Bs[count] + " "
+                    count += 1
+                towrite +="\n"
+            towrite += "\n"
+            towrite += "\n".join(["%d"%(same_type[LJtypemap[atom.LJtype]]) for atom in self.atoms])
+            f = open(os.path.join(dirname, prefix + "_LJ.txt"),"w")
+            f.write(towrite)
+            f.close()
+        
+        ```
         
         ##### 类型2 成键
         ###### 基于原子判断的(atom-specific)
-        ###### 基于残基判断的(residue-specific)
-        ##### 类型3 虚拟原子
-        #### B3. 新的原子类型推断
+        最简单的例子是AMBER力场的简谐bond
+        ```python
+        import Xponge
         
+        #生成一个新的类型(Xponge.Type)的子类，参数分别是名字、成键关系、性质和是否是必须的
+        BondType = Xponge.Generate_New_Bonded_Force_Type("bond", "1-2", {"k":float, "b":float}, True)
+        
+        
+        #设置性质单位
+        BondType.Set_Property_Unit("k", "energy·distance^-2", "kcal/mol·A^-2")
+        BondType.Set_Property_Unit("b", "distance", "A")
+        
+        #保存操作，通过self.bonded_forces["bond"]（"bond"对应于上面的产生类型时输出的字符串）获取相关信息
+        #而对应的self.bonded_forces["bond"]的成员的属性中，atoms是成键的原子，k、b是上面自己定义的
+        #self.atom_index是一个字典，原子为key，原子序号为value
+        @Xponge.Molecule.Set_Save_SPONGE_Input
+        def write_bond(self, prefix, dirname):
+            bonds = []
+            for bond in self.bonded_forces["bond"]:
+                order = list(range(2))
+                if bond.k != 0:
+                    if self.atom_index[bond.atoms[order[0]]] > self.atom_index[bond.atoms[order[-1]]]:
+                        temp_order = order[::-1]
+                    else:
+                        temp_order = order
+                    bonds.append("%d %d %f %f"%(self.atom_index[bond.atoms[temp_order[0]]]
+                    , self.atom_index[bond.atoms[temp_order[1]]], bond.k, bond.b))
+            
+            if (bonds):
+                towrite = "%d\n"%len(bonds)
+                bonds.sort(key = lambda x: list(map(int, x.split()[:2])))
+                towrite += "\n".join(bonds)
+                
+                f = open(os.path.join(dirname, prefix + "_bond.txt"),"w")
+                f.write(towrite)
+                f.close()
+        ```
+        复杂的则以AMBER力场的二面角为例
+        ```python
+        import Xponge
+        
+        #AMBER力场的二面角包括恰当和非恰当两类
+        #恰当二面角参数分别是名字、成键关系、性质、是否是必须的和可重复的参数（恰当二面角部分参数可重复给定并叠加计算）
+        ProperType = Generate_New_Bonded_Force_Type("dihedral", "1-2-3-4", {"k":float, "phi0": float, "periodicity":int}, True, ["k", "phi0", "periodicity"])
+        
+        ProperType.Set_Property_Unit("k", "energy", "kcal/mol")
+        ProperType.Set_Property_Unit("phi0", "angle", "rad")
+        
+        
+        ImproperType = Generate_New_Bonded_Force_Type("improper", "1-3-2-3", {"k":float, "phi0": float, "periodicity":int}, False)
+        #非恰当二面角是复杂的拓扑，需要手动指定
+        #该矩阵的意思是成键的第i个原子和第j个原子之间的关系，只有上三角的值有效，例如ImproperType.topology_matrix[1][2]指成键的第2个原子和第3个原子是1-2关系
+        ImproperType.topology_matrix = [[1, 3, 2, 3],
+                                        [1, 1, 2, 3],
+                                        [1, 1, 1, 2],
+                                        [1, 1, 1, 1]]
+        
+        ImproperType.Set_Property_Unit("k", "energy", "kcal/mol")
+        ImproperType.Set_Property_Unit("phi0", "angle", "rad")
+        
+        #确认相同的力。默认是正倒序，例如ProperType中的A-B-C-D和D-C-B-A是同一种力
+        #如果不是默认情况，需要手动设置，接受两个参数cls（自己的类型，此处即ImproperType）和atom_list（可能是一个"A-B-C-D"的字符串，也可能是[A, B, C, D]的列表）
+        #输出是一个列表，包含了所有的相同的atom_list
+        #例如，对于非恰当二面角，A-B-C-D中A、B、D可以随意互换位置
+        @ImproperType.Set_Same_Force_Function
+        def Improper_Same_Force(cls, atom_list):
+            
+            temp = []
+            if type(atom_list) == str:
+                atom_list_temp = [ atom.strip() for atom in atom_list.split("-")]
+                center_atom = atom_list_temp.pop(2)
+                for atom_permutation in Xponge.permutations(atom_list_temp):
+                    atom_permutation = list(atom_permutation)
+                    atom_permutation.insert(2, center_atom)
+                    temp.append("-".join(atom_permutation))
+            else:
+                atom_list_temp = [ atom for atom in atom_list]
+                center_atom = atom_list_temp.pop(2)
+                for atom_permutation in Xponge.permutations(atom_list_temp):
+                    atom_permutation = list(atom_permutation)
+                    atom_permutation.insert(2, center_atom)
+                    temp.append(atom_permutation)
+            return temp
+        
+        #输出
+        #对于self.bonded_forces["dihedral"]的元素，因为设置了可叠加的性质，叠加度属性由multiple_numbers获取，每个值由对应的性质+"s"获取
+        @Molecule.Set_Save_SPONGE_Input
+        def write_dihedral(self, prefix, dirname):
+            dihedrals = []
+            for dihedral in self.bonded_forces.get("dihedral", []):
+                order = list(range(4))
+                if self.atom_index[dihedral.atoms[order[0]]] > self.atom_index[dihedral.atoms[order[-1]]]:
+                    temp_order = order[::-1]
+                else:
+                    temp_order = order
+                for i in range(dihedral.multiple_numbers):            
+                    if dihedral.ks[i] != 0:
+                        dihedrals.append("%d %d %d %d %d %f %f"%(self.atom_index[dihedral.atoms[temp_order[0]]]
+                        , self.atom_index[dihedral.atoms[temp_order[1]]], self.atom_index[dihedral.atoms[temp_order[2]]]
+                        , self.atom_index[dihedral.atoms[temp_order[3]]], dihedral.periodicitys[i], dihedral.ks[i], dihedral.phi0s[i]))
+         
+            for dihedral in self.bonded_forces.get("improper", []):
+                order = list(range(4))
+                if dihedral.k != 0:
+                    if self.atom_index[dihedral.atoms[order[0]]] > self.atom_index[dihedral.atoms[order[-1]]]:
+                        temp_order = order[::-1]
+                    else:
+                        temp_order = order
+                    dihedrals.append("%d %d %d %d %d %f %f"%(self.atom_index[dihedral.atoms[temp_order[0]]]
+                    , self.atom_index[dihedral.atoms[temp_order[1]]], self.atom_index[dihedral.atoms[temp_order[2]]]
+                    , self.atom_index[dihedral.atoms[temp_order[3]]], dihedral.periodicity, dihedral.k, dihedral.phi0))
+                
+            
+            if (dihedrals):
+                towrite = "%d\n"%len(dihedrals)
+                dihedrals.sort(key = lambda x: list(map(float, x.split())))
+                towrite += "\n".join(dihedrals)
+                
+                f = open(os.path.join(dirname, prefix + "_dihedral.txt"),"w")
+                f.write(towrite)
+                f.close()
+        ```
+        ###### 基于残基判断的(residue-specific)
+        以ff19SB力场中的cmap为例（RCMAP）
+        ```python
+        import Xponge
+        #仍然创建一个种类
+        CMAP = Xponge.Generate_New_Bonded_Force_Type("residue_specific_cmap", "1-2-3-4-5", {}, False)
+        
+        #所有信息相当于都自己处理
+        CMAP.Residue_Map = {}
+        
+        @Xponge.Molecule.Set_Save_SPONGE_Input
+        def write_cmap(self, prefix, dirname):
+            cmaps = []
+            resolutions = []
+            used_types = []
+            used_types_map = {}
+            atoms = []
+            for cmap in self.bonded_forces["residue_specific_cmap"]:
+                resname = cmap.atoms[2].residue.type.name
+                #通过判断2号原子的resname来决定信息
+                if resname in CMAP.Residue_Map.keys():
+                    if CMAP.Residue_Map[resname]["count"] not in used_types_map.keys():
+                        used_types_map[CMAP.Residue_Map[resname]["count"]] = len(used_types)
+                        used_types.append(CMAP.Residue_Map[resname]["parameters"])
+                        resolutions.append(str(CMAP.Residue_Map[resname]["resolution"]))
+                    cmaps.append("%d %d %d %d %d %d"%(self.atom_index[cmap.atoms[0]], self.atom_index[cmap.atoms[1]],
+                    self.atom_index[cmap.atoms[2]], self.atom_index[cmap.atoms[3]], 
+                    self.atom_index[cmap.atoms[4]], used_types_map[CMAP.Residue_Map[resname]["count"]]))
+                    
+            
+            if (cmap):
+                towrite = "%d %d\n"%(len(cmaps), len(resolutions))
+                towrite += " ".join(resolutions) + "\n\n"
+                
+                for i in range(len(used_types_map)):
+                    resol = int(resolutions[i])
+                    for j in range(resol):
+                        for k in range(resol):
+                            towrite += "%f "%used_types[i][j * 24 + k]
+                        towrite += "\n"
+                    towrite += "\n"
+                
+                towrite += "\n".join(cmaps)
+                
+                f = open(os.path.join(dirname, prefix + "_cmap.txt"),"w")
+                f.write(towrite)
+                f.close()
+        ```
+        ##### 类型3 虚拟原子
+        虚拟原子是被当作一种成键作用对待的。目前添加新的虚拟原子需要修改Xponge.forcefield.BASE.VIRTUAL_ATOM
+        ```python
+        import Xponge
+        
+        #创建成键相互作用，其中参数包含atomN，N从0到(依赖的原子数-1)，作为判断依赖的原子
+        VirtualType2 = Xponge.Generate_New_Bonded_Force_Type("vatom2", "1", {"atom0":int, "atom1":int, "atom2":int, "k1":float, "k2":float}, False)
+        #在Xponge.GlobalSetting.VirtualAtomTypes注册：key是名字，value是依赖的原子数
+        Xponge.GlobalSetting.VirtualAtomTypes["vatom2"] = 3
+        
+        @GlobalSetting.Molecule.Set_Save_SPONGE_Input
+        def write_virtual_atoms(self, prefix, dirname):
+            vatoms = []
+            for vatom in self.bonded_forces["vatom2"]:
+                vatoms.append("2 %d %d %d %d %f %f"%(self.atom_index[vatom.atoms[0]],
+                    self.atom_index[vatom.atoms[0]] + vatom.atom0, 
+                    self.atom_index[vatom.atoms[0]] + vatom.atom1,
+                    self.atom_index[vatom.atoms[0]] + vatom.atom2,
+                    vatom.k1, vatom.k2))
+            
+            if (vatoms):
+                towrite = ""
+                towrite += "\n".join(vatoms)
+                
+                f = open(os.path.join(dirname, prefix + "_vatom.txt"),"w")
+                f.write(towrite)
+                f.close()
+        ```
+        
+        #### B3. 新的原子类型推断
+        ```python
+        from Xponge import assign
+        
+        #注册新的推测规则
+        GAFF = assign.Judge_Rule("GAFF")
+        
+        #通过GAFF.Add_Judge_Rule(原子种类)进行判断
+        #程序会按添加顺序从上到下依次判断，直到判断True为止，返回此时的原子种类
+        #判断函数接受两个参数：需要判断的原子的编号i和判断任务Assign
+        #Assign.Atom_Judge(i, "O1"): 判断i号原子是不是氧元素且只有一根键
+        @GAFF.Add_Judge_Rule("o")
+        def temp(i, Assign):
+            return Assign.Atom_Judge(i, "O1")
+        
+        #Assign.Atom_Judge(i, "O2"): 判断i号原子是不是氧元素且只有两根键
+        #"RG3" in Assign.atom_marker[i].keys()：判断"RG3"有没有在i号原子的标志里，也即是不是在三元环上
+        #标志由Assign.Determine_Ring_And_Bond_Type()产生，key是标志，value是标志的数量
+        @GAFF.Add_Judge_Rule("op")
+        def temp(i, Assign):
+            return Assign.Atom_Judge(i, "O2") and "RG3" in Assign.atom_marker[i].keys()
+        
+        @GAFF.Add_Judge_Rule("oq")
+        def temp(i, Assign):
+            return Assign.Atom_Judge(i, "O2") and "RG4" in Assign.atom_marker[i].keys()
+        
+        #更复杂的，寻找连接的原子是否是氢
+        #Assign.bonds[i]是一个字典，key是连接原子的编号，value是成键的键级
+        @GAFF.Add_Judge_Rule("oh")
+        def temp(i, Assign):
+            tofind = False
+            if Assign.Atom_Judge(i, "O2") or Assign.Atom_Judge(i, "O3"):
+                for bonded_atom in Assign.bonds[i].keys():
+                    if Assign.Atom_Judge(bonded_atom, "H1"):
+                        tofind = True
+                        break    
+            return tofind
+        
+        @GAFF.Add_Judge_Rule("os")
+        def temp(i, Assign):
+            return Assign.Atom_Judge(i, "O2")
+        ```
+        定义好后，即可对Assign使用`Determine_Atom_Type("GAFF")`进行原子种类推断
         #### B4. 新的力场组合
         
         ## 结构处理

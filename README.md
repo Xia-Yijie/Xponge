@@ -337,6 +337,9 @@ assign.Add_Atom(element = "H", x = -0.239988, y = 0.926627, z = 0)
 assign.Add_Bond(0,1,1) #0号原子和1号原子之间形成一个单键
 assign.Add_Bond(0,2,1) #0号原子和2号原子之间形成一个单键
 
+#注意，在推断原子类型前需要推断环和键的信息，虽然对水没有用
+assign.Determine_Ring_And_Bond_Type()
+
 assign.Determine_Atom_Type("GAFF")
 q = assign.Calculate_Charge("RESP", extra_equivalence = [[1,2]])
 
@@ -889,13 +892,187 @@ def write_dihedral(self, prefix, dirname):
         f.close()
 ```
 ###### 基于残基判断的(residue-specific)
+以ff19SB力场中的cmap为例（RCMAP）
+```python
+import Xponge
+#仍然创建一个种类
+CMAP = Xponge.Generate_New_Bonded_Force_Type("residue_specific_cmap", "1-2-3-4-5", {}, False)
+
+#所有信息相当于都自己处理
+CMAP.Residue_Map = {}
+
+@Xponge.Molecule.Set_Save_SPONGE_Input
+def write_cmap(self, prefix, dirname):
+    cmaps = []
+    resolutions = []
+    used_types = []
+    used_types_map = {}
+    atoms = []
+    for cmap in self.bonded_forces["residue_specific_cmap"]:
+        resname = cmap.atoms[2].residue.type.name
+        #通过判断2号原子的resname来决定信息
+        if resname in CMAP.Residue_Map.keys():
+            if CMAP.Residue_Map[resname]["count"] not in used_types_map.keys():
+                used_types_map[CMAP.Residue_Map[resname]["count"]] = len(used_types)
+                used_types.append(CMAP.Residue_Map[resname]["parameters"])
+                resolutions.append(str(CMAP.Residue_Map[resname]["resolution"]))
+            cmaps.append("%d %d %d %d %d %d"%(self.atom_index[cmap.atoms[0]], self.atom_index[cmap.atoms[1]],
+            self.atom_index[cmap.atoms[2]], self.atom_index[cmap.atoms[3]], 
+            self.atom_index[cmap.atoms[4]], used_types_map[CMAP.Residue_Map[resname]["count"]]))
+            
+    
+    if (cmap):
+        towrite = "%d %d\n"%(len(cmaps), len(resolutions))
+        towrite += " ".join(resolutions) + "\n\n"
+        
+        for i in range(len(used_types_map)):
+            resol = int(resolutions[i])
+            for j in range(resol):
+                for k in range(resol):
+                    towrite += "%f "%used_types[i][j * 24 + k]
+                towrite += "\n"
+            towrite += "\n"
+        
+        towrite += "\n".join(cmaps)
+        
+        f = open(os.path.join(dirname, prefix + "_cmap.txt"),"w")
+        f.write(towrite)
+        f.close()
+```
 ##### 类型3 虚拟原子
+虚拟原子是被当作一种成键作用对待的。目前添加新的虚拟原子需要修改Xponge.forcefield.BASE.VIRTUAL_ATOM
+```python
+import Xponge
+
+#创建成键相互作用，其中参数包含atomN，N从0到(依赖的原子数-1)，作为判断依赖的原子
+VirtualType2 = Xponge.Generate_New_Bonded_Force_Type("vatom2", "1", {"atom0":int, "atom1":int, "atom2":int, "k1":float, "k2":float}, False)
+#在Xponge.GlobalSetting.VirtualAtomTypes注册：key是名字，value是依赖的原子数
+Xponge.GlobalSetting.VirtualAtomTypes["vatom2"] = 3
+
+@GlobalSetting.Molecule.Set_Save_SPONGE_Input
+def write_virtual_atoms(self, prefix, dirname):
+    vatoms = []
+    for vatom in self.bonded_forces["vatom2"]:
+        vatoms.append("2 %d %d %d %d %f %f"%(self.atom_index[vatom.atoms[0]],
+            self.atom_index[vatom.atoms[0]] + vatom.atom0, 
+            self.atom_index[vatom.atoms[0]] + vatom.atom1,
+            self.atom_index[vatom.atoms[0]] + vatom.atom2,
+            vatom.k1, vatom.k2))
+    
+    if (vatoms):
+        towrite = ""
+        towrite += "\n".join(vatoms)
+        
+        f = open(os.path.join(dirname, prefix + "_vatom.txt"),"w")
+        f.write(towrite)
+        f.close()
+```
+
 #### B3. 新的原子类型推断
+```python
+from Xponge import assign
 
+#注册新的推测规则
+GAFF = assign.Judge_Rule("GAFF")
+
+#通过GAFF.Add_Judge_Rule(原子种类)进行判断
+#程序会按添加顺序从上到下依次判断，直到判断True为止，返回此时的原子种类
+#判断函数接受两个参数：需要判断的原子的编号i和判断任务Assign
+#Assign.Atom_Judge(i, "O1"): 判断i号原子是不是氧元素且只有一根键
+@GAFF.Add_Judge_Rule("o")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "O1")
+
+#Assign.Atom_Judge(i, "O2"): 判断i号原子是不是氧元素且只有两根键
+#"RG3" in Assign.atom_marker[i].keys()：判断"RG3"有没有在i号原子的标志里，也即是不是在三元环上
+#标志由Assign.Determine_Ring_And_Bond_Type()产生，key是标志，value是标志的数量
+@GAFF.Add_Judge_Rule("op")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "O2") and "RG3" in Assign.atom_marker[i].keys()
+
+@GAFF.Add_Judge_Rule("oq")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "O2") and "RG4" in Assign.atom_marker[i].keys()
+
+#更复杂的，寻找连接的原子是否是氢
+#Assign.bonds[i]是一个字典，key是连接原子的编号，value是成键的键级
+@GAFF.Add_Judge_Rule("oh")
+def temp(i, Assign):
+    tofind = False
+    if Assign.Atom_Judge(i, "O2") or Assign.Atom_Judge(i, "O3"):
+        for bonded_atom in Assign.bonds[i].keys():
+            if Assign.Atom_Judge(bonded_atom, "H1"):
+                tofind = True
+                break    
+    return tofind
+
+@GAFF.Add_Judge_Rule("os")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "O2")
+```
+定义好后，即可对Assign使用`Determine_Atom_Type("GAFF")`进行原子种类推断
 #### B4. 新的力场组合
+新的力场组合除了加载新的力场形式和力场参数外，还需要设置一些"描述性"的力场设置，例如
+AMBER力场中，默认的LJ组合规则、14作用设置、排除到4号连接原子
+```python
+from Xponge import *
+from Xponge.forcefield.BASE import CHARGE, MASS, LJ, BOND, ANGLE, DIHEDRAL, NB14, VIRTUAL_ATOM, EXCLUDE
+import os
 
+AMBER_DATA_DIR = os.path.dirname(__file__)
+
+LJ.LJType.combining_method_A = LJ.Lorentz_Berthelot_For_A
+LJ.LJType.combining_method_B = LJ.Lorents_Berthelot_For_B
+
+NB14.NB14Type.New_From_String(r"""
+name    kLJ     kee
+X-X     0.5     0.833333
+""")
+EXCLUDE.Exclude(4)
+```
+CHARMM27力场中，默认的LJ组合规则、二面角设置、不需要的力场判断、排除到4号连接原子
+```python
+from Xponge import *
+from Xponge.forcefield.BASE import CHARGE, MASS, LJ, BOND, DIHEDRAL, NB14, NB14_EXTRA, UREY_BRADLEY, IMPROPER, VIRTUAL_ATOM, ACMAP, EXCLUDE
+import OS
+
+CHARMM27_DATA_DIR = os.path.dirname(__file__)
+
+LJ.LJType.combining_method_A = LJ.Lorentz_Berthelot_For_A
+LJ.LJType.combining_method_B = LJ.Lorents_Berthelot_For_B
+
+GlobalSetting.Set_Invisible_Bonded_Forces(["improper"])
+DIHEDRAL.ProperType.New_From_String(r"""
+name        k reset  phi0 periodicity
+X-X-X-X     0 0      0    0
+""")
+EXCLUDE.Exclude(4)
+```
 ## 结构处理
 ### C. 内坐标更改
+#### C1. 更改键长
+`Impose_Bond`可以更改键长
+```python
+import Xponge
+import Xponge.forcefield.AMBER.ff14SB
+
+t = ACE + NME
+
+Save_Mol2(t, "imposing.mol2")
+
+Impose_Bond(t, t.residues[0].C, t.residues[1].N, 5)
+
+Save_Mol2(t, "imposed.mol2")
+
+#不同残基之间可以impose_bond任意两个原子，按残基分别移动
+Impose_Bond(t, t.residues[0].C, t.residues[1].CH3, 5)
+
+Save_Mol2(t, "imposed2.mol2")
+
+#同一个残基内没有键连的原子、成环互有叠加的不能impose_bond，因为不知道怎么移动
+#Impose_Bond(t, t.residues[0].C, t.residues[0].H2, 5)
+#AssertionError
+```
 
 ### D. 溶剂与离子添加
 

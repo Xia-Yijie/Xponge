@@ -6,7 +6,6 @@ output = LOAD.ffitp(os.path.join(CHARMM27_DATA_DIR, "forcefield.itp"))
 
 AtomType.New_From_String(output["atomtypes"])
 BOND.BondType.New_From_String(output["bonds"])
-output["dihedrals"] += "X-X-X-X 0 0 1 0\n"
 DIHEDRAL.ProperType.New_From_String(output["dihedrals"])
 LJ.LJType.New_From_String(output["LJ"])
 UREY_BRADLEY.UreyBradleyType.New_From_String(output["Urey-Bradley"])

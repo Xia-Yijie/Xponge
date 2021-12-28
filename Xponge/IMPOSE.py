@@ -120,7 +120,7 @@ def Impose_Bond(molecule, atom1, atom2, length):
         crd[molecule.atom_index[atom2]] += (1/3)**(0.5)
         r0 = crd[molecule.atom_index[atom2]] - crd[molecule.atom_index[atom1]]
         L0 = np.linalg.norm(r0)
-    dr = (L0 - length) * r0
+    dr = (length/L0 - 1) * r0
     crd[atom2_friends] += dr
     for atom in molecule.atoms:
         i = molecule.atom_index[atom]

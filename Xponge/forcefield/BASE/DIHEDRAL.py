@@ -49,7 +49,7 @@ def write_dihedral(self, prefix, dirname):
                 dihedrals.append("%d %d %d %d %d %f %f"%(self.atom_index[dihedral.atoms[temp_order[0]]]
                 , self.atom_index[dihedral.atoms[temp_order[1]]], self.atom_index[dihedral.atoms[temp_order[2]]]
                 , self.atom_index[dihedral.atoms[temp_order[3]]], dihedral.periodicitys[i], dihedral.ks[i], dihedral.phi0s[i]))
- 
+                
     for dihedral in self.bonded_forces.get("improper", []):
         order = list(range(4))
         if dihedral.k != 0:
