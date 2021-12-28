@@ -616,14 +616,14 @@ Xponge.AtomType.Add_Property({"charge":float})
 
 #给电荷添加单位
 #三个参数的意义是：性质"charge"的单位是"charge"，程序内部单位是"SPONGE"
-Xponge.AtomType.Set_Property_Unit("charge", "charge", "SPONGE")
+Xponge.AtomType.Set_Property_Unit("charge", "charge", "e")
 
 #通过修饰器@Xponge.Molecule.Set_Save_SPONGE_Input使得Save_SPONGE_Input时调用该函数
 #被调用的函数接受三个参数，分别是构建的分子、前缀名和保存的路径
 @Xponge.Molecule.Set_Save_SPONGE_Input      
 def write_charge(self, prefix, dirname):
     towrite = "%d\n"%(len(self.atoms)) #通过self.atoms获取所有原子
-    towrite += "\n".join(["%.6f"%(atom.charge) for atom in self.atoms])  #通过atom.charge可以调用上面Add_Property的性质
+    towrite += "\n".join(["%.6f"%(atom.charge * 18.2223) for atom in self.atoms])  #通过atom.charge可以调用上面Add_Property的性质
     f = open(os.path.join(dirname, prefix + "_charge.txt"),"w")
     f.write(towrite)
     f.close()
@@ -1049,8 +1049,8 @@ X-X-X-X     0 0      0    0
 EXCLUDE.Exclude(4)
 ```
 ## 结构处理
-### C. 内坐标更改
-#### C1. 更改键长
+### A. 内坐标更改
+#### A1. 更改键长
 `Impose_Bond`可以更改键长
 ```python
 import Xponge
@@ -1074,10 +1074,13 @@ Save_Mol2(t, "imposed2.mol2")
 #AssertionError
 ```
 上述产生的mol2文件在vmd中观察
+
 ![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/3.png)
+
 ![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/4.png)
+
 ![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/5.png)
-#### C2. 更改键角
+#### A2. 更改键角
 `Impose_Angle`可以更改键角
 ```python
 import Xponge
@@ -1092,8 +1095,9 @@ Impose_Angle(t, t.residues[0].C, t.residues[1].N, t.residues[1].CH3, 3.1415926 /
 Save_Mol2(t, "imposed.mol2")
 ```
 产生的mol2文件在vmd中观察
+
 ![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/6.png)
-#### C3. 更改二面角
+#### A3. 更改二面角
 `Imporse_Dihedral`可以更改二面角
 ```python
 import Xponge
@@ -1102,7 +1106,7 @@ import Xponge.forcefield.AMBER.ff14SB
 t = ACE + ALA * 10 + NME
 
 Save_Mol2(t, "imposing.mol2")
-#Impose_Dihedral要求第3、4个原子之间符合Impose_Bond的要求
+#Impose_Dihedral要求第2、3个原子之间符合Impose_Bond的要求
 for i in range(1,len(t.residues)-1):
     head = t.residues[i-1]
     res = t.residues[i]
@@ -1113,17 +1117,116 @@ for i in range(1,len(t.residues)-1):
 Save_Mol2(t, "imposed.mol2")
 ```
 改变前的mol2文件在vmd中观察（Draw Method分别使用Line、Ribbon）
+
 ![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/7.png)
+
 ![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/8.png)
+
 改变后的mol2文件在vmd中观察（Draw Method分别使用Line、Ribbon）
+
 ![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/9.png)
+
 ![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/10.png)
-### D. 溶剂与离子添加
+### B. 溶剂与离子添加
+```python
+import Xponge
+import Xponge.forcefield.AMBER.ff14SB
+import Xponge.forcefield.AMBER.tip3p
 
-### E. 重复结构产生
+t = NALA + ARG + NME
+c = round(t.charge)
 
-### F. 主轴旋转
+#添加溶剂盒子，距离边界x<0的5埃，y<0的10埃，z<15的埃，x>0的30埃，y>0的25埃，z>0的20埃
+Process_Box(t, WAT, [5,10,15,30,25,20])
+
+#也可以简单的提供一个数
+#Process_Box(t, WAT, 30)
+
+#替代，将残基名为"WAT"的部分替代为钾离子和氯原子
+Ion_Replace(t, lambda res: res.type.name == "WAT", {CL:30 + c, K:30})
+
+#重新排序
+#非必要，只为好看
+t.residues.sort(key = lambda residue: {"CL":2, "K":1, "WAT":3}.get(residue.type.name, 0))
+
+#打印出电荷，确保没错
+print(t.charge)
+
+
+Save_PDB(t, "test.pdb")
+Save_SPONGE_Input(t, "test")
+```
+
+### C. 重复结构产生
+暂未实现
+
+### D. 主轴旋转
+```python
+import Xponge
+import Xponge.forcefield.AMBER.ff14SB
+
+t = ACE + ALA * 100 + NME
+
+Save_Mol2(t,"before.mol2")
+
+Molecule_Rotate(t)
+
+Save_Mol2(t,"after.mol2")
+```
+旋转前图像（从z轴看过去）
+
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/11.png)
+
+旋转后图像（从z轴看过去）
+
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/12.png)
+
+旋转后图像稍旋转观察角度
+
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/13.png)
+
+### E. 质量重分配
+```python
+import Xponge
+import Xponge.forcefield.AMBER.ff14SB
+
+t = ACE + ALA + NME
+
+import Xponge.forcefield.AMBER.tip3p
+Process_Box(t, WAT, [5,10,15,30,25,20])
+
+HMass_Repartition(t)
+
+Save_SPONGE_Input(t, "test")
+```
+
+### F. 残基突变
+暂未实现
+
+### G. 结构堆叠
+暂未实现
 
 ## 后处理
-### G. 轨迹分析
-### H. 格式转化
+### A. 轨迹分析
+调用MDAnalysis库进行计算，需自行安装MDAnalysis
+```python
+#从Xponge中import Universe来加载
+from Xponge.analysis.MDAnalysis import Universe
+u = Universe("test.pdb", "mdcrd.dat", "mdbox.txt")
+
+#下面都是MDAnalysis的语法
+O = u.select_atoms("resname WAT and name O")
+from MDAnalysis.analysis import rdf as RDF
+rdf = RDF.InterRDF(O, O)
+rdf.run()
+import matplotlib.pyplot as plt
+plt.plot(rdf.results.bins[1:], rdf.results.rdf[1:])
+plt.show()
+```
+最终画出来的图像为
+
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/14.png)
+
+
+### B. 格式转化
+暂未整合

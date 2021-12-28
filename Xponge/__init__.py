@@ -246,6 +246,8 @@ class ResidueType(Type):
     def __getattribute__(self, attr):
         if attr not in  ("_name2atom", "contents") and attr in self._name2atom.keys():
             return self._name2atom[attr]
+        elif  attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
+            return np.sum([getattr(atom, attr) for atom in self.atoms ])
         else:
             return super().__getattribute__(attr)
     
@@ -304,6 +306,8 @@ class ResidueType(Type):
     @property
     def tail_link_conditions(self):
         return self.link["tail_link_conditions"]
+    
+    
     
     def __init__(self, **kwargs):
         self.contents = {}
@@ -406,6 +410,8 @@ class Residue(Entity):
     def __getattribute__(self, attr):
         if attr not in  ("_name2atom", "contents") and attr in self._name2atom.keys():
             return self._name2atom[attr]
+        elif  attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
+            return np.sum([getattr(atom, attr) for atom in self.atoms ])
         else:
             return super().__getattribute__(attr)
     def __init__(self, entity_type, name = None):
@@ -504,6 +510,7 @@ class Molecule():
         Molecule.all[self.name] = self
         self.residues = []
         self.atoms = []
+        
         self.residue_links = []
         self.bonded_forces = []
         self.builded = False
@@ -512,9 +519,13 @@ class Molecule():
             for i in name.atoms:
                 new_residue.Add_Atom(i)
             self.Add_Residue(new_residue)
-            
-            
-        
+
+    def __getattribute__(self, attr):
+        if attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
+            return np.sum([getattr(atom, attr) for res in self.residues for atom in res.atoms ])
+        else:
+            return super().__getattribute__(attr)
+
     def Add_Residue(self, residue):
         self.residues.append(residue)
         

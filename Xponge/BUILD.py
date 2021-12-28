@@ -405,7 +405,7 @@ def Save_Mol2(molecule, filename = None):
                 res_count += 1
                 residue_start.append(count)
             resname = atom.residue.name
-            towrite += "%6d %4s %8.3f %8.3f %8.3f %4s %5d %8s %10.6f\n"%(count, atom.name, atom.x, atom.y, atom.z, atom.type.name, res_count, resname, atom.charge/18.2223)
+            towrite += "%6d %4s %8.3f %8.3f %8.3f %4s %5d %8s %10.6f\n"%(count, atom.name, atom.x, atom.y, atom.z, atom.type.name, res_count, resname, atom.charge)
         
         towrite += "@<TRIPOS>BOND\n"
         for i, bond in enumerate(bonds):

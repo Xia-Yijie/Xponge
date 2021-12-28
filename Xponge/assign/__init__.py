@@ -232,7 +232,7 @@ class Assign():
                 self.names[i] = atom_name
             temp.Add_Atom(atom_name, self.atom_types[i], x = self.coordinate[i][0],
                 y = self.coordinate[i][1],  z = self.coordinate[i][2])
-            temp.atoms[-1].charge = charge[i] * 18.2223
+            temp.atoms[-1].charge = charge[i]
         for i, bondi in self.bonds.items():
             for j in bondi.keys():
                 temp.Add_Connectivity(temp.atoms[i], temp.atoms[j])

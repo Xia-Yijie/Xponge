@@ -2,9 +2,13 @@ from . import *
 
 def Box(molecule, solutions, distance):
     try:
-        distance[0]
+        distance[0]            
     except:
-        distance = [distance, distance, distance]
+        distance = [distance] * 6
+    
+    if len(distance) == 3:
+        distance = distance + distance
+        
     
     if type(molecule) == ResidueType:
         new_molecule = Molecule(molecule.name)
@@ -35,11 +39,11 @@ def Box(molecule, solutions, distance):
     solshape = solmax - solmin + 3
     
     x0 = molmin[0] - solshape[0] - distance[0]
-    while x0 < molmax[0] + distance[0] + solshape[0]:
+    while x0 < molmax[0] + distance[3] + solshape[0]:
         y0 = molmin[1] - solshape[1] - distance[1]
-        while y0 < molmax[1] + distance[1] + solshape[1]:
+        while y0 < molmax[1] + distance[4] + solshape[1]:
             z0 = molmin[2] - solshape[2] - distance[2]
-            while z0 < molmax[2] + distance[2] + solshape[2]:
+            while z0 < molmax[2] + distance[5] + solshape[2]:
                 if (x0 > molmin[0] - 3 - solshape[0] and x0 < molmax[0] + 3 + solshape[0] and 
                    y0 > molmin[1] - 3 - solshape[1] and y0 < molmax[1] + 3 + solshape[1] and
                    z0 > molmin[2] - 3 - solshape[2] and z0 < molmax[2] + 3 + solshape[2]):
