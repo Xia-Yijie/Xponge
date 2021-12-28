@@ -1073,6 +1073,31 @@ Save_Mol2(t, "imposed2.mol2")
 #Impose_Bond(t, t.residues[0].C, t.residues[0].H2, 5)
 #AssertionError
 ```
+上述产生的mol2文件在vmd中观察
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/3.png)
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/4.png)
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/5.png)
+#### C2. 更改键角
+`Impose_Angle`可以更改键角
+```python
+import Xponge
+import Xponge.forcefield.AMBER.ff14SB
+
+t = ACE + NME
+
+#不同残基之间可以impose_bond任意两个原子，按残基分别移动
+#Impose_Angle只会连接第3个原子及其连接原子移动，要求第2、3个原子之间符合Impose_Bond的要求
+Impose_Angle(t, t.residues[0].C, t.residues[1].N, t.residues[1].CH3, 3.1415926 / 2)
+
+Save_Mol2(t, "imposed.mol2")
+```
+产生的mol2文件在vmd中观察
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/6.png)
+#### C3. 更改二面角
+`Imporse_Dihedral`可以更改二面角
+```python
+
+```
 
 ### D. 溶剂与离子添加
 
