@@ -1086,7 +1086,7 @@ import Xponge.forcefield.AMBER.ff14SB
 t = ACE + NME
 
 #不同残基之间可以impose_bond任意两个原子，按残基分别移动
-#Impose_Angle只会连接第3个原子及其连接原子移动，要求第2、3个原子之间符合Impose_Bond的要求
+#Impose_Angle要求第2、3个原子之间符合Impose_Bond的要求
 Impose_Angle(t, t.residues[0].C, t.residues[1].N, t.residues[1].CH3, 3.1415926 / 2)
 
 Save_Mol2(t, "imposed.mol2")
@@ -1096,9 +1096,28 @@ Save_Mol2(t, "imposed.mol2")
 #### C3. 更改二面角
 `Imporse_Dihedral`可以更改二面角
 ```python
+import Xponge
+import Xponge.forcefield.AMBER.ff14SB
 
+t = ACE + ALA * 10 + NME
+
+Save_Mol2(t, "imposing.mol2")
+#Impose_Dihedral要求第3、4个原子之间符合Impose_Bond的要求
+for i in range(1,len(t.residues)-1):
+    head = t.residues[i-1]
+    res = t.residues[i]
+    tail = t.residues[i+1]
+    Impose_Dihedral(t, head.C, res.N, res.CA, res.C, -3.1415926/3)
+    Impose_Dihedral(t, res.N, res.CA, res.C, tail.N, -3.1415926/3)
+
+Save_Mol2(t, "imposed.mol2")
 ```
-
+改变前的mol2文件在vmd中观察（Draw Method分别使用Line、Ribbon）
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/7.png)
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/8.png)
+改变后的mol2文件在vmd中观察（Draw Method分别使用Line、Ribbon）
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/9.png)
+![imposing.mol2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/10.png)
 ### D. 溶剂与离子添加
 
 ### E. 重复结构产生
