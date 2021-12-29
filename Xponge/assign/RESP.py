@@ -22,7 +22,8 @@ def Get_Fibonacci_Grid(N, origin, radius):
 
 #Pay Attention To !!!UNIT!!!
 default_radius = {"H": 1.2, "C":1.5, "N":1.5, 
-                  "O": 1.4, "P":1.8, "S":1.75}
+                  "O": 1.4, "P":1.8, "S":1.75,
+                  "F": 1.89,"Cl":2.38,"Br":3.22}
 
 #Pay Attention To !!!UNIT!!!
 def Get_MK_Grid(Assign, crd, area_density = 1.0, layer = 4, radius = None):
