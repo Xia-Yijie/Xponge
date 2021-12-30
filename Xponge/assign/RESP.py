@@ -28,7 +28,7 @@ default_radius = {"H": 1.2, "C":1.5, "N":1.5,
 #Pay Attention To !!!UNIT!!!
 def Get_MK_Grid(Assign, crd, area_density = 1.0, layer = 4, radius = None):
     grids = []
-    factor = area_density * 0.52918 * 0.52918 * 4 * np.pi
+    factor = area_density * 0.52918 * 0.52918 * np.pi
     real_radius = {}
     real_radius.update(default_radius)
     if radius:
@@ -77,7 +77,7 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 
     
     fun.run()
     grids = Get_MK_Grid(Assign, mol.atom_coords(), grid_density, grid_cell_layer, radius)
-
+    #print(len(grids))
     #step1
     #fit all atoms    
     Vnuc = 0
@@ -136,6 +136,7 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 
         for i in range(mol.natm):
             if Assign.atoms[i] != "H":
                 A[i][i] = A0[i][i] + a / np.sqrt(q_last_step[i] *q_last_step[i] + b * b)
+
         Ainv = np.linalg.inv(A)
         q = np.dot(Ainv, B)
         q = q[:-1]
