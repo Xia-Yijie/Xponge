@@ -215,8 +215,10 @@ class Assign():
     def To_ResidueType(self, name, charge = None):
         temp = ResidueType(name = name)
         if not charge:
-            assert type(self.charge) != type(None)
-            charge = self.charge
+            if self.charge is None:
+                charge = np.zeros(self.atom_numbers)        
+            else:
+                charge = self.charge
         count = {}
         for i in range(self.atom_numbers):
             assert self.atom_types[i] != None
@@ -290,7 +292,6 @@ class Assign():
         bonds.sort(key = lambda x: list(map(int, x.split())))
         count = {}
         for i in range(self.atom_numbers):
-            assert self.atom_types[i] != None
             if self.names[i]:
                 atom_name = self.names[i]
             elif self.atoms[i] in count.keys():
