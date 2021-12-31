@@ -6,6 +6,7 @@ Xponge/IMPOSE.py
 Xponge/LOAD.py
 Xponge/PROCESS.py
 Xponge/__init__.py
+Xponge/__main__.py
 Xponge.egg-info/PKG-INFO
 Xponge.egg-info/SOURCES.txt
 Xponge.egg-info/dependency_links.txt
@@ -73,3 +74,5 @@ Xponge/forcefield/CHARMM27/ffnonbonded.itp
 Xponge/forcefield/CHARMM27/forcefield.itp
 Xponge/forcefield/CHARMM27/protein.mol2
 Xponge/forcefield/CHARMM27/protein.py
+Xponge/tools/__init__.py
+Xponge/tools/dat2nc.py

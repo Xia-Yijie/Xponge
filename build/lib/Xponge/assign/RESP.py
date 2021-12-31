@@ -22,7 +22,8 @@ def Get_Fibonacci_Grid(N, origin, radius):
 
 #Pay Attention To !!!UNIT!!!
 default_radius = {"H": 1.2, "C":1.5, "N":1.5, 
-                  "O": 1.4, "P":1.8, "S":1.75}
+                  "O": 1.4, "P":1.8, "S":1.75,
+                  "F": 1.35,"Cl":1.7,"Br":2.3}
 
 #Pay Attention To !!!UNIT!!!
 def Get_MK_Grid(Assign, crd, area_density = 1.0, layer = 4, radius = None):
@@ -52,7 +53,7 @@ def force_equivalence_q(q, extra_equivalence):
     return q
 
 #Pay Attention To !!!UNIT!!!
-def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_equivalence = [], grid_density = 6, grid_cell_layer = 4, 
+def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 0, spin = 0, extra_equivalence = [], grid_density = 6, grid_cell_layer = 4, 
     radius = None, a1 = 0.0005, a2 = 0.001, two_stage = True, only_ESP  = False):
     from pyscf import gto, scf
     mols = ""
@@ -76,7 +77,7 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
     
     fun.run()
     grids = Get_MK_Grid(Assign, mol.atom_coords(), grid_density, grid_cell_layer, radius)
-
+    #print(len(grids))
     #step1
     #fit all atoms    
     Vnuc = 0
@@ -99,11 +100,18 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
     A[:] = A0
     Ainv = np.linalg.inv(A)
 
-    
-    from pyscf import df
-    fakemol = gto.fakemol_for_charges(grids)
-    Vele = np.einsum('ijp,ij->p', df.incore.aux_e2(mol, fakemol), fun.make_rdm1())
-    
+    try:
+        from pyscf import df
+        fakemol = gto.fakemol_for_charges(grids)
+        Vele = np.einsum('ijp,ij->p', df.incore.aux_e2(mol, fakemol), fun.make_rdm1())
+    except:
+        dm = fun.make_rdm1()
+        Vele = []
+        for p in grids:
+            mol.set_rinv_orig_(p)
+            Vele.append(np.einsum('ij,ij', mol.intor('int1e_rinv'),dm))
+        Vele = np.array(Vele)
+
     MEP = Vnuc - Vele
     
     B = np.zeros((mol.natm + 1))
@@ -128,6 +136,7 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, charge = 0, spin = 0, extra_
         for i in range(mol.natm):
             if Assign.atoms[i] != "H":
                 A[i][i] = A0[i][i] + a / np.sqrt(q_last_step[i] *q_last_step[i] + b * b)
+
         Ainv = np.linalg.inv(A)
         q = np.dot(Ainv, B)
         q = q[:-1]

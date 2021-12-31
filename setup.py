@@ -16,7 +16,7 @@ setuptools.setup(
     url="https://gitee.com/gao_hyp_xyj_admin/xponge",
     packages=setuptools.find_packages(),
     package_data = {"":['*.mol2', '*.frcmod', '*.dat', '*.itp']},
-    install_requires = ["numpy", "pubchempy"],
+    install_requires = ["numpy", "pubchempy", "NetCDF4"],
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
         "Development Status :: 4 - Beta",

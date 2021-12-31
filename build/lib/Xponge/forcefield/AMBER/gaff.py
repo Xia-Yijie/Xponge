@@ -29,22 +29,42 @@ def temp(i, Assign):
 
 @GAFF.Add_Judge_Rule("c")
 def temp(i, Assign):
-    tofind = False
-    for bonded_atom in Assign.bonds[i].keys():
-        if Assign.Atom_Judge(bonded_atom, "O1") or Assign.Atom_Judge(bonded_atom, "S1"):
-            tofind = True
-            break
-    return Assign.Atom_Judge(i, "C3") and tofind
+    tofind = Assign.Atom_Judge(i, "C3")
+    if tofind:
+        tofind = False
+        for bonded_atom in Assign.bonds[i].keys():
+            if Assign.Atom_Judge(bonded_atom, "O1") or Assign.Atom_Judge(bonded_atom, "S1"):
+                tofind = True
+                break
+    return tofind
 
 @GAFF.Add_Judge_Rule("cz")
 def temp(i, Assign):
-    tofind = False
+    tofind = Assign.Atom_Judge(i, "C3")
+    if tofind:
+        for bonded_atom in Assign.bonds[i].keys():
+            if not Assign.Atom_Judge(bonded_atom, "N3"):
+                tofind = False
+                break 
+    return tofind
+
+@GAFF.Add_Judge_Rule("cq")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "C3") and "AR1" in Assign.atom_marker[i] and Assign.atom_marker[i].get("RG6") == 1
     for bonded_atom in Assign.bonds[i].keys():
-        if Assign.Atom_Judge(bonded_atom, "N3"):
-            tofind = True
+        if not tofind:
             break
-            
-    return Assign.Atom_Judge(i, "C3") and tofind
+        if Assign.atoms[bonded_atom] not in Assign.XX or "AR1" not in Assign.atom_marker[bonded_atom].keys():
+            tofind = False
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if tofind:
+                break
+            if (Assign.atom_types[bonded_atom] == AtomType.types["cp"] and "AB" in Assign.bond_marker[bonded_atom][i]):
+                tofind = True
+                break
+    return tofind
 
 @GAFF.Add_Judge_Rule("cp")
 def temp(i, Assign):
@@ -61,13 +81,81 @@ def temp(i, Assign):
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C3") and "AR1" in Assign.atom_marker[i]
 
+@GAFF.Add_Judge_Rule("cd")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and ("AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if tofind:
+                break
+            if ((Assign.atom_types[bonded_atom] == AtomType.types["cc"] and bond_order == 2) or
+                (Assign.atom_types[bonded_atom] == AtomType.types["cd"] and bond_order == 1)):
+                tofind = True
+                break
+    return tofind
+ 
+
 @GAFF.Add_Judge_Rule("cc")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and ("AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
 
+@GAFF.Add_Judge_Rule("cf")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if tofind:
+                break
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    if tofind:
+        tofind = False  
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if tofind:
+                break
+            if ((Assign.atom_types[bonded_atom] == AtomType.types["ce"] and bond_order == 2) or
+                (Assign.atom_types[bonded_atom] == AtomType.types["cf"] and bond_order == 1)):
+                tofind = True
+                break
+    return tofind
+
 @GAFF.Add_Judge_Rule("ce")
 def temp(i, Assign):
-    return Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
+    tofind = Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if tofind:
+                break
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    return tofind
 
 @GAFF.Add_Judge_Rule("cu")
 def temp(i, Assign):
@@ -83,7 +171,22 @@ def temp(i, Assign):
 
 @GAFF.Add_Judge_Rule("cg")
 def temp(i, Assign):
-    return Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "tb" in Assign.atom_marker[i]
+    tofind = Assign.Atom_Judge(i, "C2") and "sb" in Assign.atom_marker[i] and "tb" in Assign.atom_marker[i]
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if tofind:
+                break
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                   Assign.Atom_Judge(bonded_atom, "N1"))
+                  ):
+                tofind = True
+                break 
+    return tofind
 
 @GAFF.Add_Judge_Rule("c1")
 def temp(i, Assign):
@@ -206,14 +309,6 @@ def temp(i, Assign):
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "O1")
 
-@GAFF.Add_Judge_Rule("op")
-def temp(i, Assign):
-    return Assign.Atom_Judge(i, "O2") and "RG3" in Assign.atom_marker[i].keys()
-
-@GAFF.Add_Judge_Rule("oq")
-def temp(i, Assign):
-    return Assign.Atom_Judge(i, "O2") and "RG4" in Assign.atom_marker[i].keys()
-
 @GAFF.Add_Judge_Rule("oh")
 def temp(i, Assign):
     tofind = False
@@ -224,9 +319,18 @@ def temp(i, Assign):
                 break    
     return tofind
 
+@GAFF.Add_Judge_Rule("op")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "O2") and "RG3" in Assign.atom_marker[i].keys()
+
+@GAFF.Add_Judge_Rule("oq")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "O2") and "RG4" in Assign.atom_marker[i].keys()
+
+
 @GAFF.Add_Judge_Rule("os")
 def temp(i, Assign):
-    return Assign.Atom_Judge(i, "O2")
+    return Assign.atoms[i] == "O"
 
 @GAFF.Add_Judge_Rule("ni")
 def temp(i, Assign):
@@ -235,7 +339,7 @@ def temp(i, Assign):
         for bonded_atom in Assign.bonds[i].keys():
             if Assign.Atom_Judge(bonded_atom, "C3"):
                 for bonded_atom_bonded in Assign.bonds[bonded_atom].keys():
-                    if Assign.atoms[bonded_atom_bonded] in Assign.XA:
+                    if Assign.Atom_Judge(bonded_atom_bonded, "O1") or Assign.Atom_Judge(bonded_atom_bonded, "S1"):
                         tofind = True
                         break
             if tofind:
@@ -249,7 +353,7 @@ def temp(i, Assign):
         for bonded_atom in Assign.bonds[i].keys():
             if Assign.Atom_Judge(bonded_atom, "C3"):
                 for bonded_atom_bonded in Assign.bonds[bonded_atom].keys():
-                    if Assign.atoms[bonded_atom_bonded] in Assign.XA:
+                    if Assign.Atom_Judge(bonded_atom_bonded, "O1") or Assign.Atom_Judge(bonded_atom_bonded, "S1"):
                         tofind = True
                         break
             if tofind:
@@ -263,7 +367,7 @@ def temp(i, Assign):
         for bonded_atom in Assign.bonds[i].keys():
             if Assign.Atom_Judge(bonded_atom, "C3"):
                 for bonded_atom_bonded in Assign.bonds[bonded_atom].keys():
-                    if Assign.atoms[bonded_atom_bonded] in Assign.XA:
+                    if Assign.Atom_Judge(bonded_atom_bonded, "O1") or Assign.Atom_Judge(bonded_atom_bonded, "S1"):
                         tofind = True
                         break
             if tofind:
@@ -293,24 +397,65 @@ def temp(i, Assign):
 
 @GAFF.Add_Judge_Rule("na")
 def temp(i, Assign):
-    tofind = 0
-    if Assign.Atom_Judge(i, "N3"):
-         for bonded_atom in Assign.bonds[i].keys():
-            if Assign.Atom_Judge(bonded_atom, "O1"):
-                tofind += 1
     return Assign.Atom_Judge(i, "N3") and ("AR1" in Assign.atom_marker[i].keys() or "AR2" in Assign.atom_marker[i].keys() or "AR3" in Assign.atom_marker[i].keys())
 
 @GAFF.Add_Judge_Rule("nm")
 def temp(i, Assign):
-    pass
+    tofind = False
+    if Assign.Atom_Judge(i, "N3") and "RG3" in Assign.atom_marker[i].keys():
+        for bonded_atom in Assign.bonds[i].keys():
+            if  ("DB" in Assign.atom_marker[bonded_atom].keys() and 
+                     (Assign.Atom_Judge(bonded_atom, "C3") or
+                      Assign.Atom_Judge(bonded_atom, "N2") or
+                      Assign.Atom_Judge(bonded_atom, "P2"))):
+                tofind = True
+                break
+            if  (("AR1" in Assign.atom_marker[bonded_atom].keys() or 
+                  "AR2" in Assign.atom_marker[bonded_atom].keys() or 
+                  "AR3" in Assign.atom_marker[bonded_atom].keys()) and
+                Assign.atoms[bonded_atom] in Assign.XX):
+                tofind = True
+                break
+    return tofind
 
 @GAFF.Add_Judge_Rule("nn")
 def temp(i, Assign):
-    pass
+    tofind = False
+    if Assign.Atom_Judge(i, "N3") and "RG4" in Assign.atom_marker[i].keys():
+        for bonded_atom in Assign.bonds[i].keys():
+            if  ("DB" in Assign.atom_marker[bonded_atom].keys() and 
+                     (Assign.Atom_Judge(bonded_atom, "C3") or
+                      Assign.Atom_Judge(bonded_atom, "N2") or
+                      Assign.Atom_Judge(bonded_atom, "P2"))):
+                tofind = True
+                break
+            if  (("AR1" in Assign.atom_marker[bonded_atom].keys() or 
+                  "AR2" in Assign.atom_marker[bonded_atom].keys() or 
+                  "AR3" in Assign.atom_marker[bonded_atom].keys()) and
+                Assign.atoms[bonded_atom] in Assign.XX):
+                tofind = True
+                break
+    return tofind
 
 @GAFF.Add_Judge_Rule("nh")
 def temp(i, Assign):
-    pass
+    tofind = False
+    if Assign.Atom_Judge(i, "N3"):
+        for bonded_atom in Assign.bonds[i].keys():
+            if  ("DB" in Assign.atom_marker[bonded_atom].keys() and 
+                     (Assign.Atom_Judge(bonded_atom, "C3") or
+                      Assign.Atom_Judge(bonded_atom, "N2") or
+                      Assign.Atom_Judge(bonded_atom, "P2"))):
+                tofind = True
+                break
+            if  (("AR1" in Assign.atom_marker[bonded_atom].keys() or 
+                  "AR2" in Assign.atom_marker[bonded_atom].keys() or 
+                  "AR3" in Assign.atom_marker[bonded_atom].keys()) and
+                Assign.atoms[bonded_atom] in Assign.XX):
+                tofind = True
+                break
+    return tofind
+
 
 @GAFF.Add_Judge_Rule("np")
 def temp(i, Assign):
@@ -328,13 +473,134 @@ def temp(i, Assign):
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N2") and "AR1" in Assign.atom_marker[i].keys()
 
+@GAFF.Add_Judge_Rule("nd")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and ("AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break
+            if  (Assign.Atom_Judge(bonded_atom, "C3") or
+                 Assign.Atom_Judge(bonded_atom, "C2") or
+                 Assign.Atom_Judge(bonded_atom, "N2") or
+                 Assign.Atom_Judge(bonded_atom, "P2")):
+                for bonded_atom_bonded in Assign.bonds[bonded_atom].keys():
+                    if (Assign.Atom_Judge(bonded_atom_bonded, "C3") or
+                        Assign.Atom_Judge(bonded_atom_bonded, "C2") or
+                        Assign.Atom_Judge(bonded_atom_bonded, "N2") or
+                        Assign.Atom_Judge(bonded_atom_bonded, "P2")):
+                        tofind = True
+                        break
+                if tofind:
+                    break 
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if ((Assign.atom_types[bonded_atom] == AtomType.types["nc"] and bond_order == 2) or
+                (Assign.atom_types[bonded_atom] == AtomType.types["nd"] and bond_order == 1)):
+                tofind = True
+                break
+    return tofind
+ 
+
 @GAFF.Add_Judge_Rule("nc")
 def temp(i, Assign):
-    return Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and ("AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
+    tofind = Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and ("AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break
+            if  (Assign.Atom_Judge(bonded_atom, "C3") or
+                 Assign.Atom_Judge(bonded_atom, "C2") or
+                 Assign.Atom_Judge(bonded_atom, "N2") or
+                 Assign.Atom_Judge(bonded_atom, "P2")):
+                for bonded_atom_bonded in Assign.bonds[bonded_atom].keys():
+                    if (Assign.Atom_Judge(bonded_atom_bonded, "C3") or
+                        Assign.Atom_Judge(bonded_atom_bonded, "C2") or
+                        Assign.Atom_Judge(bonded_atom_bonded, "N2") or
+                        Assign.Atom_Judge(bonded_atom_bonded, "P2")):
+                        tofind = True
+                        break
+                if tofind:
+                    break
+    return tofind
+
+@GAFF.Add_Judge_Rule("nf")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    if tofind:
+        tofind = False  
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if ((Assign.atom_types[bonded_atom] == AtomType.types["ne"] and bond_order == 2) or
+                (Assign.atom_types[bonded_atom] == AtomType.types["nf"] and bond_order == 1)):
+                tofind = True
+                break
+    return tofind
 
 @GAFF.Add_Judge_Rule("ne")
 def temp(i, Assign):
-    return Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
+    tofind = Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    return tofind
 
 @GAFF.Add_Judge_Rule("n1")
 def temp(i, Assign):
@@ -346,12 +612,254 @@ def temp(i, Assign):
 
 @GAFF.Add_Judge_Rule("s")
 def temp(i, Assign):
-    pass
+    return Assign.Atom_Judge(i, "S1")
+
+@GAFF.Add_Judge_Rule("s2")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "S2") and ("DB" in Assign.atom_marker[i] or "TB" in Assign.atom_marker[i])
+
+@GAFF.Add_Judge_Rule("sh")
+def temp(i, Assign):
+    tofind = False
+    if Assign.Atom_Judge(i, "S2"):
+        for bonded_atom in Assign.bonds[i].keys():
+            if Assign.Atom_Judge(bonded_atom, "H1"):
+                tofind = True
+                break    
+    return tofind
+
+@GAFF.Add_Judge_Rule("sp")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "S2") and "RG3" in Assign.atom_marker[i].keys()
+
+@GAFF.Add_Judge_Rule("sq")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "S2") and "RG4" in Assign.atom_marker[i].keys()
+
+@GAFF.Add_Judge_Rule("ss")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "S2")
+
+@GAFF.Add_Judge_Rule("sx")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "S3") and "db" in Assign.atom_marker[i].keys()
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    return tofind
+
+@GAFF.Add_Judge_Rule("s4")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "S3")
+
+@GAFF.Add_Judge_Rule("sy")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "S4") and "db" in Assign.atom_marker[i].keys()
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    return tofind
+
+@GAFF.Add_Judge_Rule("s6")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "S4") or Assign.Atom_Judge(i, "S5") or Assign.Atom_Judge(i, "S6")  
+
+@GAFF.Add_Judge_Rule("pd")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "P2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and ("AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if ((Assign.atom_types[bonded_atom] == AtomType.types["nc"] and bond_order == 2) or
+                (Assign.atom_types[bonded_atom] == AtomType.types["nd"] and bond_order == 1)):
+                tofind = True
+                break
+    return tofind
+ 
+@GAFF.Add_Judge_Rule("pb")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "P2") and "AR1" in Assign.atom_marker[i].keys()
 
 @GAFF.Add_Judge_Rule("pc")
 def temp(i, Assign):
-    pass
+    tofind = Assign.Atom_Judge(i, "P2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and ("AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    return tofind
 
+@GAFF.Add_Judge_Rule("pf")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "P2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    if tofind:
+        tofind = False  
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if ((Assign.atom_types[bonded_atom] == AtomType.types["ne"] and bond_order == 2) or
+                (Assign.atom_types[bonded_atom] == AtomType.types["nf"] and bond_order == 1)):
+                tofind = True
+                break
+    return tofind
+
+@GAFF.Add_Judge_Rule("pe")
+def temp(i, Assign):
+    tofind = Assign.Atom_Judge(i, "P2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
+    if tofind:
+        tofind = False
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    return tofind
+
+@GAFF.Add_Judge_Rule("p2")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "P1") or Assign.Atom_Judge(i, "P2")
+
+
+@GAFF.Add_Judge_Rule("px")
+def temp(i, Assign):
+    tofind = False
+    if Assign.Atom_Judge(i, "P3") and "db" in Assign.atom_marker[i].keys():
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break
+    return tofind
+
+@GAFF.Add_Judge_Rule("p4")
+def temp(i, Assign):
+    tofind = False
+    if  Assign.Atom_Judge(i, "P3") and "db" in Assign.atom_marker[i].keys():
+         for bonded_atom in Assign.bonds[i].keys():
+             if Assign.Atom_Judge(bonded_atom, "O1") or Assign.Atom_Judge(bonded_atom, "S1"):
+                 tofind = True
+                 break
+    return tofind
+
+@GAFF.Add_Judge_Rule("p3")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "P3")
+
+@GAFF.Add_Judge_Rule("py")
+def temp(i, Assign):
+    tofind = False
+    if Assign.Atom_Judge(i, "P4") and "db" in Assign.atom_marker[i].keys():
+        for bonded_atom, bond_order in Assign.bonds[i].items():
+            if  ( bond_order == 1 and 
+                  (Assign.Atom_Judge(bonded_atom, "C3") or
+                   Assign.Atom_Judge(bonded_atom, "C2") or
+                   Assign.Atom_Judge(bonded_atom, "N2") or
+                   Assign.Atom_Judge(bonded_atom, "P2") or
+                      (Assign.Atom_Judge(bonded_atom, "S3") or
+                       Assign.Atom_Judge(bonded_atom, "S4") or
+                       Assign.Atom_Judge(bonded_atom, "P3") or 
+                       Assign.Atom_Judge(bonded_atom, "P4"))
+                       and "db" in Assign.atom_marker[bonded_atom]
+                       )
+                  ):
+                tofind = True
+                break 
+    return tofind
+
+@GAFF.Add_Judge_Rule("p5")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "P4") or Assign.Atom_Judge(i, "P5") or Assign.Atom_Judge(i, "P6")
 
 print("""Reference for gaff.py:
   Wang, J., Wolf, R.M., Caldwell, J.W., Kollman, P.A. and Case, D.A.

@@ -1,2 +1,3 @@
 numpy
 pubchempy
+NetCDF4

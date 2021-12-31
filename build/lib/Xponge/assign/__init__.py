@@ -35,13 +35,13 @@ class _RING():
         for i in range(len(self.atoms)):
             yield self.atoms[i-2],self.atoms[i-1],self.atoms[i]
             
-class ASSIGN():
+class Assign():
     XX = set("CNOPS")
     XA = set("OS")
     XB = set("NP")
     XC = set(["F", "Cl", "Br", "I"])
     XD = set("SP")
-    XE = set(["N", "O", "F", "Cl", "Br"])
+    XE = set(["N", "O", "F", "Cl", "Br", "S", "I"])
     def __init__(self):
         self.atom_numbers = 0
         self.atoms = []
@@ -138,19 +138,34 @@ class ASSIGN():
                             current_path_sons[father_atom] -= 1
         
         for ring in have_found_rings:
+            for atom in ring.atoms:
+                self.Add_Atom_Marker(atom, "RG")
+                self.Add_Atom_Marker(atom, "RG%d"%len(ring.atoms))
+        for ring in have_found_rings:
             if len(ring.atoms) == 6:
                 ring.is_pure_aromatic_ring = True
                 for atom in ring.atoms:
                     if not self.Atom_Judge(atom, "C3") and not self.Atom_Judge(atom, "N2") and not self.Atom_Judge(atom, "N3"):
                         ring.is_pure_aromatic_ring = False
                         break
+                    if self.Atom_Judge(atom, "N3"):
+                        temp = 0
+                        for bonded_atom, bond_order in self.bonds[atom].items():
+                            temp += bond_order
+                        if temp == 3:
+                            ring.is_pure_aromatic_ring = False
+                            break
+                    for bonded_atom, bond_order in self.bonds[atom].items():
+                        if bond_order == 2 and "RG" not in self.atom_marker[bonded_atom].keys():
+                            ring.is_pure_aromatic_ring = False
+                            break
+                    if ring.is_pure_aromatic_ring == False:
+                        break
             else:
                 ring.is_pure_aromatic_ring = False      
             ring.is_pure_aliphatic_ring = True
             ring.is_planar_ring = True
             for atom in ring.atoms:
-                self.Add_Atom_Marker(atom, "RG")
-                self.Add_Atom_Marker(atom, "RG%d"%len(ring.atoms))
                 if ring.is_pure_aromatic_ring:
                     self.Add_Atom_Marker(atom, "AR1")
                     for i in range(6):
@@ -182,15 +197,29 @@ class ASSIGN():
                         self.Add_Atom_Marker(atom, "AR4")
         
         for atom in range(len(self.atoms)):
+            DLO = 0
+            NOTO = 0
             for atom2, order in self.bonds[atom].items():
-                if order == 1:
-                    self.Add_Bond_Marker(atom, atom2, "SB", True)
+                if self.Atom_Judge(atom2, "O1"):
+                    DLO += 1
+                else:
+                    NOTO += 1
+            if DLO >= 1 and NOTO <= 1:
+                for atom2, order in self.bonds[atom].items():
+                    if self.Atom_Judge(atom2, "O1"):
+                        self.Add_Bond_Marker(atom, atom2, "DLB")
+            for atom2, order in self.bonds[atom].items():
+                if "DLB" in self.bond_marker[atom][atom2]:
+                    self.Add_Bond_Marker(atom, atom2, "DL", True)
+                    self.Add_Bond_Marker(atom, atom2, "sb", True)
+                elif order == 1:
+                    self.Add_Bond_Marker(atom, atom2, "sb", True)
                     if "AB" not in self.bond_marker[atom][atom2]:
-                        self.Add_Bond_Marker(atom, atom2, "sb", True)
+                        self.Add_Bond_Marker(atom, atom2, "SB", True)
                 elif order == 2:
-                    self.Add_Bond_Marker(atom, atom2, "DB", True)
+                    self.Add_Bond_Marker(atom, atom2, "db", True)
                     if "AB" not in self.bond_marker[atom][atom2]:
-                        self.Add_Bond_Marker(atom, atom2, "db", True)
+                        self.Add_Bond_Marker(atom, atom2, "DB", True)
                 else:
                     self.Add_Bond_Marker(atom, atom2, "tb", True)
                 
@@ -215,8 +244,10 @@ class ASSIGN():
     def To_ResidueType(self, name, charge = None):
         temp = ResidueType(name = name)
         if not charge:
-            assert type(self.charge) != type(None)
-            charge = self.charge
+            if self.charge is None:
+                charge = np.zeros(self.atom_numbers)        
+            else:
+                charge = self.charge
         count = {}
         for i in range(self.atom_numbers):
             assert self.atom_types[i] != None
@@ -232,7 +263,7 @@ class ASSIGN():
                 self.names[i] = atom_name
             temp.Add_Atom(atom_name, self.atom_types[i], x = self.coordinate[i][0],
                 y = self.coordinate[i][1],  z = self.coordinate[i][2])
-            temp.atoms[-1].charge = charge[i] * 18.2223
+            temp.atoms[-1].charge = charge[i]
         for i, bondi in self.bonds.items():
             for j in bondi.keys():
                 temp.Add_Connectivity(temp.atoms[i], temp.atoms[j])
@@ -290,7 +321,6 @@ class ASSIGN():
         bonds.sort(key = lambda x: list(map(int, x.split())))
         count = {}
         for i in range(self.atom_numbers):
-            assert self.atom_types[i] != None
             if self.names[i]:
                 atom_name = self.names[i]
             elif self.atoms[i] in count.keys():
@@ -321,7 +351,7 @@ def Get_Assignment_From_PubChem(parameter, keyword):
     if len(cs) == 0:
         raise pcp.NotFoundError
     elif len(cs) == 1:
-        assign = ASSIGN()
+        assign = Assign()
         c = cs[0]
         for atom in c.atoms:
             assign.Add_Atom(atom.element, atom.x, atom.y, atom.z)
@@ -333,7 +363,7 @@ def Get_Assignment_From_PubChem(parameter, keyword):
         raise NotImplementedError
 
 def Get_Assignment_From_PDB(filename):
-    assign = ASSIGN()
+    assign = Assign()
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
@@ -352,7 +382,7 @@ def Get_Assignment_From_PDB(filename):
     return assign
 
 def Get_Assignment_From_Mol2(filename):
-    assign = ASSIGN()
+    assign = Assign()
     with open(filename) as f:
         flag = None
         for line in f:      
