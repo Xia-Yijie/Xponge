@@ -41,7 +41,7 @@ class Assign():
     XB = set("NP")
     XC = set(["F", "Cl", "Br", "I"])
     XD = set("SP")
-    XE = set(["N", "O", "F", "Cl", "Br"])
+    XE = set(["N", "O", "F", "Cl", "Br", "S", "I"])
     def __init__(self):
         self.atom_numbers = 0
         self.atoms = []
@@ -138,19 +138,34 @@ class Assign():
                             current_path_sons[father_atom] -= 1
         
         for ring in have_found_rings:
+            for atom in ring.atoms:
+                self.Add_Atom_Marker(atom, "RG")
+                self.Add_Atom_Marker(atom, "RG%d"%len(ring.atoms))
+        for ring in have_found_rings:
             if len(ring.atoms) == 6:
                 ring.is_pure_aromatic_ring = True
                 for atom in ring.atoms:
                     if not self.Atom_Judge(atom, "C3") and not self.Atom_Judge(atom, "N2") and not self.Atom_Judge(atom, "N3"):
                         ring.is_pure_aromatic_ring = False
                         break
+                    if self.Atom_Judge(atom, "N3"):
+                        temp = 0
+                        for bonded_atom, bond_order in self.bonds[atom].items():
+                            temp += bond_order
+                        if temp == 3:
+                            ring.is_pure_aromatic_ring = False
+                            break
+                    for bonded_atom, bond_order in self.bonds[atom].items():
+                        if bond_order == 2 and "RG" not in self.atom_marker[bonded_atom].keys():
+                            ring.is_pure_aromatic_ring = False
+                            break
+                    if ring.is_pure_aromatic_ring == False:
+                        break
             else:
                 ring.is_pure_aromatic_ring = False      
             ring.is_pure_aliphatic_ring = True
             ring.is_planar_ring = True
             for atom in ring.atoms:
-                self.Add_Atom_Marker(atom, "RG")
-                self.Add_Atom_Marker(atom, "RG%d"%len(ring.atoms))
                 if ring.is_pure_aromatic_ring:
                     self.Add_Atom_Marker(atom, "AR1")
                     for i in range(6):
@@ -182,15 +197,29 @@ class Assign():
                         self.Add_Atom_Marker(atom, "AR4")
         
         for atom in range(len(self.atoms)):
+            DLO = 0
+            NOTO = 0
             for atom2, order in self.bonds[atom].items():
-                if order == 1:
-                    self.Add_Bond_Marker(atom, atom2, "SB", True)
+                if self.Atom_Judge(atom2, "O1"):
+                    DLO += 1
+                else:
+                    NOTO += 1
+            if DLO >= 1 and NOTO <= 1:
+                for atom2, order in self.bonds[atom].items():
+                    if self.Atom_Judge(atom2, "O1"):
+                        self.Add_Bond_Marker(atom, atom2, "DLB")
+            for atom2, order in self.bonds[atom].items():
+                if "DLB" in self.bond_marker[atom][atom2]:
+                    self.Add_Bond_Marker(atom, atom2, "DL", True)
+                    self.Add_Bond_Marker(atom, atom2, "sb", True)
+                elif order == 1:
+                    self.Add_Bond_Marker(atom, atom2, "sb", True)
                     if "AB" not in self.bond_marker[atom][atom2]:
-                        self.Add_Bond_Marker(atom, atom2, "sb", True)
+                        self.Add_Bond_Marker(atom, atom2, "SB", True)
                 elif order == 2:
-                    self.Add_Bond_Marker(atom, atom2, "DB", True)
+                    self.Add_Bond_Marker(atom, atom2, "db", True)
                     if "AB" not in self.bond_marker[atom][atom2]:
-                        self.Add_Bond_Marker(atom, atom2, "db", True)
+                        self.Add_Bond_Marker(atom, atom2, "DB", True)
                 else:
                     self.Add_Bond_Marker(atom, atom2, "tb", True)
                 
