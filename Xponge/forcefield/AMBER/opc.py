@@ -7,7 +7,7 @@ AtomType.New_From_String(
 name mass    charge[e]      LJtype
 HW   1.008   0.52422        HW
 OW   16      0              OW
-EPW  0      -1.04844        EPW
+EP   0      -1.04844        EPW
 """)
 
 
@@ -34,11 +34,11 @@ EPW-EPW 0                   0
 
 VIRTUAL_ATOM.VirtualType2.New_From_String(r"""
 name   atom0    atom1   atom2   k1         k2
-EPW    -3       -2      -1      0.1477206  0.1477206
+EP     -3       -2      -1      0.1477206  0.1477206
 """)
 
 
-TIP3P = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "tip4pew.mol2"))
+TIP3P = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "opc.mol2"))
 
 atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(os.path.join(AMBER_DATA_DIR, "ions1lm_126_tip4pew.frcmod"))
 AtomType.New_From_String(atoms)

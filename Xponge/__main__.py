@@ -24,8 +24,8 @@ nc2rst7.add_argument("-nc", required=True, help="the name of the .nc restart fil
 nc2rst7.set_defaults(func = tools.nc2rst7)
 
 maskgen = subparsers.add_parser("maskgen", help = "use VMD to generate a file to record the atom indexes of the corresponding mask")
-maskgen.add_argument("-p",required=True, help="the parm file")
-maskgen.add_argument("-c", help="the restart file")
+maskgen.add_argument("-p",required=True, help="the topology file")
+maskgen.add_argument("-c", help="the coordinate file")
 maskgen.add_argument("-o",required=True, help="the output file")
 maskgen.add_argument("--vmd", metavar = "vmd", default="vmd", help="the command to start vmd")
 maskgen.set_defaults(func = tools.maskgen)

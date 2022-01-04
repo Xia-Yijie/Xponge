@@ -89,7 +89,7 @@ def Replace(molecule, select, toreplace):
         assert type(key) == ResidueType or (type(key) == Molecule and len(key.residues) == 1)
         if type(key) == Molecule:
             key = key.residues[0].type
-        
+
         tempi = solutions[count:count+value]
         count += value
         for i in tempi:

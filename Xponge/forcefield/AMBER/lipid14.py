@@ -12,7 +12,7 @@ LJ.LJType.New_From_String(LJs)
 
 lipid14 = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "lipid14.mol2"))
 
-for res in "LAL PA MY OL".split():
+for res in "LA PA MY OL".split():
     ResidueType.types[res].head = "C12"
     ResidueType.types[res].tail = "C12"
     ResidueType.types[res].head_next = "C13"

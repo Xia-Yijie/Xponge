@@ -331,6 +331,7 @@ def Save_PDB(molecule, filename = None):
         
         chain_atom0 = -1
         chain_residue0 = -1
+        real_chain_residue0 = -1
         chain_counter = 0
         for atom in molecule.atoms:          
             resname = atom.residue.name
@@ -342,8 +343,11 @@ def Save_PDB(molecule, filename = None):
             if atom == atom.residue.atoms[-1] and  molecule.link_to_next[molecule.residue_index[atom.residue]] == False:
                 towrite += "TER\n"
                 chain_atom0 = molecule.atom_index[atom]
-                chain_residue0 = molecule.residue_index[atom.residue]
-                
+                if molecule.residue_index[atom.residue] - real_chain_residue0 != 1:
+                    chain_residue0 = molecule.residue_index[atom.residue]
+                    real_chain_residue0 = chain_residue0
+                else:
+                    real_chain_residue0 = molecule.residue_index[atom.residue]
         if not filename:
             filename = molecule.name + ".pdb"
         

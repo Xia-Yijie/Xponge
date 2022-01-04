@@ -111,10 +111,11 @@ def maskgen(args):
   if args.c:
     c = args.c.split(os.path.sep)
     c = "/".join(c)
+    c = "mol addfile " + c
 
   temp_write = """set f [open "{0}" "w"]
-mol load parm7 {1}
-mol addfile {2} type rst7
+mol new {1}
+{2}
 atomselect top "{3}"
 puts $f [atomselect0 list]
 close $f

@@ -44,7 +44,7 @@ class _GlobalSetting():
                   }
     PDBResidueNameMap = {"head" : {}, "tail": {}, "save":{}}
     HISMap = {"DeltaH": "", "EpsilonH": "",   "HIS": {}}
-    
+    nocenter = False
     def Add_PDB_Residue_Name_Mapping(self, place, pdb_name, real_name):
         assert place in ("head", "tail")
         self.PDBResidueNameMap[place][pdb_name] = real_name
@@ -514,6 +514,8 @@ class Molecule():
         self.residue_links = []
         self.bonded_forces = []
         self.builded = False
+        self.box_length = None
+        self.box_angle = [90.0, 90.0, 90.0]
         if type(name) == ResidueType:
             new_residue = Residue(name)
             for i in name.atoms:
@@ -560,7 +562,7 @@ def write_residue(self, prefix, dirname):
 @Molecule.Set_Save_SPONGE_Input     
 def write_coordinate(self, prefix, dirname):
     towrite = "%d\n"%(len(self.atoms))
-    boxlength = [0, 0, 0, 90, 90, 90]
+    boxlength = [0, 0, 0, self.box_angle[0], self.box_angle[1], self.box_angle[2]]
     maxi = [-float("inf"), -float("inf"), -float("inf")]
     mini = [ float("inf"),  float("inf"),  float("inf")]
     for atom in self.atoms:
@@ -576,12 +578,18 @@ def write_coordinate(self, prefix, dirname):
             mini[1] = atom.y
         if atom.z < mini[2]:
             mini[2] = atom.z
-
-    towrite += "\n".join(["%f %f %f"%(atom.x - mini[0] + 3, atom.y - mini[1] + 3, atom.z - mini[2] + 3) for atom in self.atoms])
-    
-    boxlength[0] = maxi[0] - mini[0] + 6
-    boxlength[1] = maxi[1] - mini[1] + 6
-    boxlength[2] = maxi[2] - mini[2] + 6
+    if not GlobalSetting.nocenter:
+        towrite += "\n".join(["%f %f %f"%(atom.x - mini[0] + 3, atom.y - mini[1] + 3, atom.z - mini[2] + 3) for atom in self.atoms])
+    else:
+        towrite += "\n".join(["%f %f %f"%(atom.x, atom.y, atom.z) for atom in self.atoms])
+    if self.box_length is None:
+        boxlength[0] = maxi[0] - mini[0] + 6
+        boxlength[1] = maxi[1] - mini[1] + 6
+        boxlength[2] = maxi[2] - mini[2] + 6
+    else:
+        boxlength[0] = self.box_length[0]
+        boxlength[1] = self.box_length[1]
+        boxlength[2] = self.box_length[2]
     towrite += "\n%f %f %f %f %f %f"%(boxlength[0], boxlength[1], boxlength[2], boxlength[3], boxlength[4], boxlength[5])
     f = open(os.path.join(dirname, prefix + "_coordinate.txt"),"w")
     f.write(towrite)
