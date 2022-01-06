@@ -38,7 +38,7 @@ for res in "PC PE PS PGR PH-".split():
     ResidueType.types[res].tail_link_conditions.append({"atoms":["O22", "O21", "C21"], "parameter": np.pi})
 
 
-print("""Reference for lipid17.py:
+print("""Reference for lipid17:
   Gould, I.R., Skjevik A.A., Dickson, C.J., Madej, B.D., Walker, R.C.
     Lipid17: A Comprehensive AMBER Force Field for the Simulation of Zwitterionic and Anionic Lipids
     2018, in prep.

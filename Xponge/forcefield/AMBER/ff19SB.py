@@ -83,7 +83,7 @@ GlobalSetting.HISMap["HIS"].update({"HIS": {"HID":"HID", "HIE":"HIE", "HIP":"HIP
 ResidueType.types["CYX"].connect_atoms["ssbond"] = "SG"
 
 
-print("""Reference for ff19SB.py:
+print("""Reference for ff19SB:
   Chuan Tian, Koushik Kasavajhala, Kellon A. A. Belfon, Lauren Raguette, He Huang, Angela N. Migues, John Bickel, Yuzhang Wang, Jorge Pincay, Qin Wu, and Carlos Simmerling
     ff19SB: Amino-Acid-Specific Protein Backbone Parameters Trained against Quantum Mechanics Energy Surfaces in Solution
     The Journal of Chemical Physics 2020 16 (1), 528-552, 

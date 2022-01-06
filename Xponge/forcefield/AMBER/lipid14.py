@@ -36,7 +36,7 @@ for res in "PC PE".split():
     ResidueType.types[res].tail_link_conditions.append({"atoms":["O21", "C21"], "parameter": 120/180 * np.pi})
     ResidueType.types[res].tail_link_conditions.append({"atoms":["O22", "O21", "C21"], "parameter": np.pi})
 
-print("""Reference for lipid14.py:
+print("""Reference for lipid14:
   Dickson, C.J., Madej, B.D., Skjevik, A.A., Betz, R.M., Teigen, K., Gould, I.R., Walker, R.C. 
     Lipid14: The Amber Lipid Force Field.
     Journal of Chemical Theory and Computation 2014 10(2), 865-879,

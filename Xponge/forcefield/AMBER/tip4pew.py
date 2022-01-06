@@ -67,7 +67,7 @@ LJ.LJType.New_From_String(LJs)
 
 LOAD.mol2(os.path.join(AMBER_DATA_DIR, "atomic_ions.mol2"))
 
-print("""Reference for tip4pew.py:
+print("""Reference for tip4pew:
 1. Water:
   Hans W. Horn, William C. Swope, and Jed W. Pitera
     Development of an improved four-site water model for biomolecular simulations: TIP4P-Ew

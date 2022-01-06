@@ -18,6 +18,11 @@ dat2nc.add_argument("-dt", type=float, default=1.0, help="the time difference be
 dat2nc.add_argument("--title",default="DEFAULT", help="the title of the traj.")
 dat2nc.set_defaults(func = tools.dat2nc)
 
+gro2crd = subparsers.add_parser("gro2crd", help = "convert a coordinate file from gromacs to SPONGE")
+gro2crd.add_argument("-i",required=True, help="the name of the .gro file.")
+gro2crd.add_argument("-o", required=True, help="the name of the SPONGE coordinate file.")
+gro2crd.set_defaults(func = tools.gro2crd)
+
 nc2rst7 = subparsers.add_parser("nc2rst7", help = "convert a rst7 file from .nc to .rst7")
 nc2rst7.add_argument("-rst7",required=True, help="the name of the .rst7 restart file.")
 nc2rst7.add_argument("-nc", required=True, help="the name of the .nc restart file.")
@@ -29,7 +34,6 @@ maskgen.add_argument("-c", help="the coordinate file")
 maskgen.add_argument("-o",required=True, help="the output file")
 maskgen.add_argument("--vmd", metavar = "vmd", default="vmd", help="the command to start vmd")
 maskgen.set_defaults(func = tools.maskgen)
-
 
 exgen = subparsers.add_parser("exgen", help = 'process bond-like, angle-like, dihedral-like files to get the atoms to exclude')
 exgen.add_argument('-n', type = int, required = True, help='the atom numbers')
@@ -50,7 +54,8 @@ dat1frame.add_argument('-dat', required = True, help='dat traj file name')
 dat1frame.set_defaults(func = tools.dat1frame)
 
 args = parser.parse_args()
+
 try:
   args.func(args)
-except:
+except AttributeError:
   parser.print_help()

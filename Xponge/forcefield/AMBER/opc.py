@@ -66,7 +66,7 @@ LJ.LJType.New_From_String(LJs)
 
 LOAD.mol2(os.path.join(AMBER_DATA_DIR, "atomic_ions.mol2"))
 
-print("""Reference for opc.py:
+print("""Reference for opc:
 1. Water:
   Saeed Izadi, Ramu Anandakrishnan, and Alexey V. Onufriev
     Building Water Models: A Different Approach

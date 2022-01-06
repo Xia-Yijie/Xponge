@@ -55,7 +55,7 @@ LJ.LJType.New_From_String(LJs)
 
 LOAD.mol2(os.path.join(AMBER_DATA_DIR, "atomic_ions.mol2"))
 
-print("""Reference for tip3p.py:
+print("""Reference for tip3p:
 1. Water:
   William L. Jorgensen, Jayaraman Chandrasekhar, and Jeffry D. Madura
     Comparison of simple potential functions for simulating liquid water

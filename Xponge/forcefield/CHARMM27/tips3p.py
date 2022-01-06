@@ -15,8 +15,8 @@ OW-HW  553                0.9572
 HW-HW  553                1.5136
 """)
 
-ANGLE.AngleType.New_From_String(r"""
-name      k   b
+UREY_BRADLEY.UreyBradleyType.New_From_String(r"""
+name      k   kUB  
 HW-OW-HW  0   0
 OW-HW-HW  0   0
 """)
@@ -32,7 +32,7 @@ TIPS3P = LOAD.mol2(os.path.join(CHARMM27_DATA_DIR, "tip3p.mol2"))
 
 LOAD.mol2(os.path.join(CHARMM27_DATA_DIR, "atomic_ions.mol2"))
 
-print("""Reference for tips3p.py:
+print("""Reference for CHARMM modified tip3p:
   to do
 """)
 

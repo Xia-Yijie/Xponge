@@ -2,6 +2,7 @@ from ... import *
 
 
 ImproperType = Generate_New_Bonded_Force_Type("harmonic_improper", "1-3-2-3", {"k":float, "phi0": float}, False)
+
 ImproperType.topology_matrix = [[1, 3, 2, 3],
                                 [1, 1, 2, 3],
                                 [1, 1, 1, 2],
@@ -9,6 +10,8 @@ ImproperType.topology_matrix = [[1, 3, 2, 3],
 
 ImproperType.Set_Property_Unit("k", "energy·angle^-2", "kcal/mol·rad^-2")
 ImproperType.Set_Property_Unit("phi0", "angle", "rad")
+
+
 
 @ImproperType.Set_Same_Force_Function
 def Improper_Same_Force(cls, atom_list):
@@ -34,12 +37,8 @@ def write_dihedral(self, prefix, dirname):
     dihedrals = []
 
     for dihedral in self.bonded_forces["harmonic_improper"]:
-        order = list(range(4))
         if dihedral.k != 0:
-            if self.atom_index[dihedral.atoms[order[0]]] > self.atom_index[dihedral.atoms[order[-1]]]:
-                temp_order = order[::-1]
-            else:
-                temp_order = order
+            temp_order = [2, 0, 1, 3]
             dihedrals.append("%d %d %d %d %f %f"%(self.atom_index[dihedral.atoms[temp_order[0]]],
             self.atom_index[dihedral.atoms[temp_order[1]]], self.atom_index[dihedral.atoms[temp_order[2]]],
             self.atom_index[dihedral.atoms[temp_order[3]]], dihedral.k, dihedral.phi0))
@@ -50,6 +49,7 @@ def write_dihedral(self, prefix, dirname):
         dihedrals.sort(key = lambda x: list(map(float, x.split())))
         towrite += "\n".join(dihedrals)
         
-        f = open(os.path.join(dirname, prefix + "_improper.txt"),"w")
+        f = open(os.path.join(dirname, prefix + "_improper_dihedral.txt"),"w")
         f.write(towrite)
         f.close()
+

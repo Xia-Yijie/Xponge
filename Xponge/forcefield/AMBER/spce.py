@@ -55,7 +55,7 @@ LJ.LJType.New_From_String(LJs)
 
 LOAD.mol2(os.path.join(AMBER_DATA_DIR, "atomic_ions.mol2"))
 
-print("""Reference for spce.py:
+print("""Reference for spce:
 1. Water:
   H. J. C. Berendsen, J. R. Grigera, and T. P. Straatsma
     The missing term in effective pair potentials

@@ -34,6 +34,6 @@ def write_cmap(self, prefix, dirname):
         bonds.sort(key = lambda x: list(map(int, x.split()[:5])))
         towrite += "\n".join(bonds)
         
-        f = open(os.path.join(dirname, prefix + "_acmap.txt"),"w")
+        f = open(os.path.join(dirname, prefix + "_cmap.txt"),"w")
         f.write(towrite)
         f.close()

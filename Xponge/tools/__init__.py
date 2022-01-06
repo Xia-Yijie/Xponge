@@ -140,27 +140,15 @@ def exgen(args):
 
   def exclude_3_atoms(words):
     i, j, k = int(words[0]), int(words[1]), int(words[2])
-    partners[i].add(j)
     partners[i].add(k)
-    partners[j].add(i)
-    partners[j].add(k)
     partners[k].add(i)
-    partners[k].add(j)
+
 
   def exclude_4_atoms(words):
     i, j, k, l= int(words[0]), int(words[1]), int(words[2]), int(words[3])
-    partners[i].add(j)
-    partners[i].add(k)
     partners[i].add(l)
-    partners[j].add(i)
-    partners[j].add(k)
-    partners[j].add(l)
-    partners[k].add(i)
-    partners[k].add(j)
-    partners[k].add(l)
     partners[l].add(i)
-    partners[l].add(j)
-    partners[l].add(k)
+
 
   if args.bond:
     for bond in args.bond:
@@ -235,3 +223,17 @@ def dat1frame(args):
     crds = np.fromfile(args.dat, np.float32, count = args.n * 3, offset = args.n * 12 * args.frame).reshape(-1,3)
     with open(args.o, "w") as f:
         f.write("%d\n"%args.n + "".join(list(map(lambda crd: "%12.7f %12.7f %12.7f\n"%(crd[0], crd[1], crd[2]), crds))) + BOX)
+
+def gro2crd(args):
+    with open(args.i) as f:
+        f.readline()
+        towrite = f.readline().strip() + "\n"
+        t = int(towrite.strip())
+        for i in range(t):
+            towrite += " ".join([ "%f"%(float(s) * 10) for s in f.readline().split()[3:]]) + "\n"
+        t = f.readline()
+        assert len(t.split()) == 3, "orthogonal box needed"
+        towrite += " ".join([ "%f"%(float(s) * 10) for s in t.split()[:3]]) + " 90 90 90"  
+    with open(args.o, "w") as fo:
+        fo.write(towrite)
+        #print(towrite)

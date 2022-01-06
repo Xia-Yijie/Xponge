@@ -505,16 +505,16 @@ def ffitp(filename, macros = {}):
             words = line.split()
             func = words[2]
             if func == "1":
-                output["bonds"] += "{atom1}-{atom2} {b} {k}\n".format(atom1 = words[0], atom2 = words[1], b = float(words[3]), k = float(words[4]))
+                output["bonds"] += "{atom1}-{atom2} {b} {k}\n".format(atom1 = words[0], atom2 = words[1], b = float(words[3]), k = float(words[4])/2)
             else:
                 raise NotImplementedError
         elif iterator.flag == "angletypes":
             words = line.split()
             func = words[3]
             if func == "1":
-                output["angles"] += "-".join(words[:3]) + " " + " ".join(words[4:]) + "\n"
+                output["angles"] += "-".join(words[:3]) + " {b} {k}".format(b = float(words[4]), k = float(words[5])/2)  + "\n"
             elif func == "5":
-                output["Urey-Bradley"] += "-".join(words[:3]) + " " + " ".join(words[4:])  + "\n"
+                output["Urey-Bradley"] += "-".join(words[:3]) + " {b} {k} {b2} {k2}".format(b = float(words[4]), k = float(words[5])/2, b2 = float(words[6]), k2 = float(words[7])/2)  + "\n"
             else:
                 raise NotImplementedError
         elif iterator.flag == "dihedraltypes":
@@ -523,7 +523,12 @@ def ffitp(filename, macros = {}):
             if func == "1":
                 output["dihedrals"] += "-".join(words[:4]) + " " + " ".join(words[5:]) + " 0\n"
             elif func == "2":
-                output["impropers"] += "-".join([words[1], words[2], words[0], words[3]]) + " " + " ".join(words[5:]) + "\n"
+                temp1 = [words[1], words[2], words[0], words[3]]
+                temp2 = [words[1], words[2], words[3], words[0]]
+                if words[0][0].upper() in ("C", "N", "S"):
+                    output["impropers"] += "-".join(temp1) + " {b} {k}".format(b = float(words[5]), k = float(words[6])/2)  + "\n"
+                else:
+                    output["impropers"] += "-".join(temp2) + " {b} {k}".format(b = float(words[5]), k = float(words[6])/2)  + "\n"
             elif func == "9":
                 for i in range(5,len(words),20):
                     output["dihedrals"] += "-".join(words[:4]) + " " + " ".join(words[i:i+3]) + " 0\n"
@@ -531,7 +536,7 @@ def ffitp(filename, macros = {}):
                 raise NotImplementedError
         elif iterator.flag == "cmaptypes":
             words = line.split()
-            output["cmaps"]["-".join(words[:5])] = {"resolution": int(words[7]), "parameters":list(map(float, words[8:]))}
+            output["cmaps"]["-".join(words[:5])] = {"resolution": int(words[7]), "parameters":list(map(lambda x:float(x) / 4.184, words[8:]))}
         elif iterator.flag == "nonbond_params":
             words = line.split()
             output["LJ"] += "{type1}-{type2} {V} {W}\n".format(type1=words[0], type2=words[1], V=float(words[3]), W=float(words[4]))
