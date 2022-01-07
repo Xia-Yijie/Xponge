@@ -43,6 +43,7 @@ Xponge/forcefield/AMBER/lipid14.py
 Xponge/forcefield/AMBER/lipid17.dat
 Xponge/forcefield/AMBER/lipid17.mol2
 Xponge/forcefield/AMBER/lipid17.py
+Xponge/forcefield/AMBER/opc.mol2
 Xponge/forcefield/AMBER/opc.py
 Xponge/forcefield/AMBER/parm10.dat
 Xponge/forcefield/AMBER/parm19.dat
@@ -68,11 +69,14 @@ Xponge/forcefield/BASE/UREY_BRADLEY.py
 Xponge/forcefield/BASE/VIRTUAL_ATOM.py
 Xponge/forcefield/BASE/__init__.py
 Xponge/forcefield/CHARMM27/__init__.py
+Xponge/forcefield/CHARMM27/atomic_ions.mol2
 Xponge/forcefield/CHARMM27/cmap.itp
 Xponge/forcefield/CHARMM27/ffbonded.itp
 Xponge/forcefield/CHARMM27/ffnonbonded.itp
 Xponge/forcefield/CHARMM27/forcefield.itp
 Xponge/forcefield/CHARMM27/protein.mol2
 Xponge/forcefield/CHARMM27/protein.py
+Xponge/forcefield/CHARMM27/tip3p.mol2
+Xponge/forcefield/CHARMM27/tip3p.py
+Xponge/forcefield/CHARMM27/tips3p.py
 Xponge/tools/__init__.py
-Xponge/tools/dat2nc.py

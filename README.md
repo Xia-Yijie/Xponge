@@ -310,7 +310,7 @@ USER_CHARGES
 ![输入图片说明](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/2.png)
 
 
-> 目前Xponge的assignment只支持C、H、O、N的物质
+> 目前Xponge的assignment只支持只由C、H、O、N、S、P、F、Cl、Br、I元素构成的物质
 
 ##### 方案2 其他方式构建assignment的mol2文件
 
@@ -1214,7 +1214,7 @@ Save_SPONGE_Input(t, "test")
 from Xponge.analysis.MDAnalysis import Universe
 u = Universe("test.pdb", "mdcrd.dat", "mdbox.txt")
 
-#下面都是MDAnalysis的语法
+#下面都是MDAnalysis的API
 O = u.select_atoms("resname WAT and name O")
 from MDAnalysis.analysis import rdf as RDF
 rdf = RDF.InterRDF(O, O)
@@ -1229,4 +1229,26 @@ plt.show()
 
 
 ### B. 格式转化
+使用`python -m Xponge -h`可以获得更多信息
+
+#### B1. dat2nc
+将SPONGE的.dat轨迹文件转化为AMBER的.nc文件，详情见`python -m Xponge dat2nc -h`
+
+#### B2. gro2crd
+将GROMACS的.gro坐标文件转化为SPONGE的_coordinate.txt文件，详情见`python -m Xponge gro2crd -h`
+
+#### B3. nc2rst7
+将AMBER的.nc重开文件转化为AMBER的可读重开文件，详情见`python -m Xponge nc2rst7 -h`
+
+#### B4. maskgen
+调用VMD，选择原子，生成对应的原子序号，详情见`python -m Xponge maskgen -h`
+
+#### B5. exgen
+输入SPONGE的bond-like, angle-like, dihedral-like和约束文件来获得排除文件，详情见`python -m Xponge exgen -h`
+
+#### B6. dat1frame
+从SPONGE的.dat文件中抽出一帧作为SPONGE的_coordinate.txt文件，详情见`python -m Xponge dat1frame -h`
+
+
+### C. FEP处理
 暂未整合
