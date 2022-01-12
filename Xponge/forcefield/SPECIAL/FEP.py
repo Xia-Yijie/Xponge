@@ -1,0 +1,460 @@
+from ... import *
+from ..BASE import CHARGE, MASS, LJ
+from ..BASE import NB14, NB14_EXTRA, EXCLUDE
+
+LJType = LJ.LJType
+
+LJType.New_From_String("""name A  B
+ZERO_LJ_ATOM-ZERO_LJ_ATOM  0  0
+""")
+
+AtomType.Add_Property({"LJtypeB":str})
+
+def _find_common_forces(forcetype, Aforces, Bforces, molB2molA):
+    toret = []
+    temp_map = {}
+    temp_map2 = {}
+    for force in Bforces:
+        temp_map2[force] = True
+        for fatoms in forcetype.Same_Force(force.atoms):
+            temp_map["-".join(list(map(lambda atom: str(molB2molA[atom]),fatoms)))] = force
+    for force in Aforces:
+        tofind = "-".join(list(map(str,force.atoms)))
+        Bforce = temp_map.get(tofind, None)
+        toret.append([force, Bforce])
+        temp_map2[Bforce] = False
+    for force in Bforces:
+        if temp_map2[force]:
+            toret.append([None, force])
+    return toret
+
+FEP_Bonded_Force_Merge_Rule = {}    
+def nb14_extra_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, molR2molA, molA2molR, molR2molB, molB2molR):
+    TINY = 1e-20
+    forcepair = _find_common_forces(forcetype, Rforces, Bforces, molB2molR)
+    for fR, fB in forcepair:
+        if fB is None:
+            temp_charge0 = fR.atoms[0].charge if abs(fR.atoms[0].charge) > TINY else TINY
+            temp_charge1 = fR.atoms[1].charge if abs(fR.atoms[1].charge) > TINY else TINY
+            
+            fR.kee = fR.kee * molR2molA[fR.atoms[0]].charge * molR2molA[fR.atoms[1]].charge / temp_charge0 / temp_charge1
+            
+            fR.kee *= _lambda
+            fR.A   *= _lambda
+            fR.B   *= _lambda
+        elif fR is None:
+            fR = NB14_EXTRA.NB14Type.entity(list(map(lambda x:molB2molR[x], fB.atoms)), fB.type, fB.name)
+            
+            temp_charge0 = fR.atoms[0].charge if abs(fR.atoms[0].charge) > TINY else TINY
+            temp_charge1 = fR.atoms[1].charge if abs(fR.atoms[1].charge) > TINY else TINY
+            
+            fR.kee = fB.kee * fB.atoms[0].charge * fB.atoms[1].charge / temp_charge0 / temp_charge1
+            
+            fR.A = fB.A * (1 - _lambda)
+            fR.B = fB.B * (1 - _lambda)
+            fR.kee = f2.kee * (1 - _lambda)
+            molR.Add_Bonded_Force(fR)
+        else:
+            temp_charge0 = fR.atoms[0].charge if abs(fR.atoms[0].charge) > TINY else TINY
+            temp_charge1 = fR.atoms[1].charge if abs(fR.atoms[1].charge) > TINY else TINY
+            
+            fR.kee = fR.kee * molR2molA[fR.atoms[0]].charge * molR2molA[fR.atoms[1]].charge / temp_charge0 / temp_charge1
+            kee = fB.kee * fB.atoms[0].charge * fB.atoms[1].charge / temp_charge0 / temp_charge1
+            
+            fR.kee = fR.kee * _lambda +    kee * (1 - _lambda)
+            fR.A   = fR.A   * _lambda + fB.A   * (1 - _lambda)
+            fR.B   = fR.B   * _lambda + fB.B   * (1 - _lambda)
+FEP_Bonded_Force_Merge_Rule["nb14_extra"] = {"lambda_name": "dihedral", "merge_function": nb14_extra_merge_rule}
+
+from ..BASE import BOND, SOFT_BOND
+def bond_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, molR2molA, molA2molR, molR2molB, molB2molR):
+    forcepair = _find_common_forces(forcetype, Rforces, Bforces, molB2molR)
+    for fR, fB in forcepair:
+        if fB is None:
+            molR.bonded_forces["bond"].remove(fR)
+            fR.from_AorB = 0
+            molR.Add_Bonded_Force(fR, "soft_bond")
+        elif fR is None:
+            fR = BOND.BondType.entity(list(map(lambda x:molB2molR[x], fB.atoms)), fB.type, fB.name)
+            fR.k = fB.k
+            fR.b = fB.b
+            fR.from_AorB = 1
+            molR.Add_Bonded_Force(fR, "soft_bond")
+        elif abs(fR.b - fB.b) < 1e-5:
+            fR.k = fR.k * _lambda + fB.k * (1 - _lambda)
+        else:
+            fR2 = BOND.BondType.entity(list(map(lambda x:molB2molR[x], fB.atoms)), fB.type, fB.name)
+            fR2.k = fB.k * (1 - _lambda)
+            fR.b = fB.b
+            fR.k *= _lambda
+            molR.Add_Bonded_Force(fR2)
+FEP_Bonded_Force_Merge_Rule["bond"] = {"lambda_name": "bond", "merge_function": bond_merge_rule}
+
+from ..BASE import ANGLE
+def angle_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, molR2molA, molA2molR, molR2molB, molB2molR):
+    forcepair = _find_common_forces(forcetype, Rforces, Bforces, molB2molR)
+    for fR, fB in forcepair:
+        if fB is None:
+            fR.k *= _lambda
+        elif fR is None:
+            fR = ANGLE.AngleType.entity(list(map(lambda x:molB2molR[x], fB.atoms)), fB.type, fB.name)
+            fR.k *= (1 - _lambda)
+            fR.b = fB.b
+            molR.Add_Bonded_Force(fR)
+        elif abs(fR.b - fB.b) < 1e-5:
+            fR.k = fR.k * _lambda + fB.k * (1 - _lambda)
+        else:
+            fR2 = ANGLE.AngleType.entity(list(map(lambda x:molB2molR[x], fB.atoms)), fB.type, fB.name)
+            fR2.k = fB.k * (1 - _lambda)
+            fR2.b = fB.b
+            fR.k *= _lambda
+            molR.Add_Bonded_Force(fR2)
+FEP_Bonded_Force_Merge_Rule["angle"] = {"lambda_name": "angle", "merge_function": angle_merge_rule}
+
+from ..BASE import DIHEDRAL
+def dihedral_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, molR2molA, molA2molR, molR2molB, molB2molR):
+    forcepair = _find_common_forces(forcetype, Rforces, Bforces, molB2molR)
+    for fR, fB in forcepair:
+        if fB is None:
+            for i in range(fR.multiple_numbers):
+                fR.ks[i] *= _lambda
+        elif fR is None:
+            fR2 = DIHEDRAL.ProperType.entity(list(map(lambda x:molB2molR[x], fB.atoms)), fB.type, fB.name)
+            fR2.multiple_numbers = fB.multiple_numbers
+            for i in range(fB.multiple_numbers):
+                fR2.ks.append(fB.ks[i] * (1-_lambda))
+                fR2.phi0s.append(fB.phi0s[i])
+                fR2.periodicitys.append(fB.periodicitys[i])
+            molR.Add_Bonded_Force(fR2)
+        else:
+            sameforce = fR.multiple_numbers == fB.multiple_numbers
+            if sameforce:
+                check_map = {}
+                for i in range(fB.multiple_numbers):
+                    check_map[fB.periodicitys[i]] = fB.phi0s[i]
+                for i in range(fR.multiple_numbers):
+                    if abs(check_map.get(fR.periodicitys[i], float("Inf")) - fR.phi0s[i]) > 1e-5:
+                        sameforce = False
+                        break
+            if sameforce:
+                for i in range(fR.multiple_numbers):
+                    fR.ks[i] = fR.ks[i] * _lambda + check_map[fR.periodicitys[i]] * (1 - _lambda)
+            else:
+                for i in range(fR.multiple_numbers):
+                    fR.ks[i] *= _lambda
+                fR2 = DIHEDRAL.ProperType.entity(list(map(lambda x:molB2molR[x], fB.atoms)), fB.type, fB.name)
+                fR2.multiple_numbers = fB.multiple_numbers
+                for i in range(fB.multiple_numbers):
+                    fR2.ks.append(fB.ks[i] * (1-_lambda))
+                    fR2.phi0s.append(fB.phi0s[i])
+                    fR2.periodicitys.append(fB.periodicitys[i])
+                molR.Add_Bonded_Force(fR2)
+FEP_Bonded_Force_Merge_Rule["dihedral"] = {"lambda_name": "dihedral", "merge_function": dihedral_merge_rule}
+
+def improper_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, molR2molA, molA2molR, molR2molB, molB2molR):
+    forcepair = _find_common_forces(forcetype, Rforces, Bforces, molB2molR)
+    for fR, fB in forcepair:
+        if fB is None:
+            fR.k *= _lambda
+        elif fR is None:
+            fR = DIHEDRAL.ImproperType.entity(list(map(lambda x:molB2molR[x], fB.atoms)), fB.type, fB.name)
+            fR.k = fB.k * (1 - _lambda)
+            fR.phi0 = fB.phi0
+            fR.periodicity = fB.periodicity
+            molR.Add_Bonded_Force(fR)
+        elif abs(fR.phi0 - fB.phi0) < 1e-5 and fR.periodicity == fB.periodicity:
+            fR.k = fR.k * _lambda + fB.k * (1 - _lambda)
+        else:
+            fR2 = DIHEDRAL.ImproperType.entity(list(map(lambda x:molB2molR[x], fB.atoms)), fB.type, fB.name)
+            fR2.k = fB.k * (1 - _lambda)
+            fR2.phi0 = fB.phi0
+            fR2.periodicity = fB.periodicity
+            fR.k *= _lambda
+            molR.Add_Bonded_Force(fR2)
+FEP_Bonded_Force_Merge_Rule["improper"] = {"lambda_name": "dihedral", "merge_function": improper_merge_rule}
+
+def Save_Hard_Core_LJ():
+    Molecule.Set_Save_SPONGE_Input("LJ")(LJ.write_LJ)
+    Molecule.Del_Save_SPONGE_Input("LJ_soft_core")
+    
+def Save_Soft_Core_LJ():
+    Molecule.Del_Save_SPONGE_Input("LJ")
+    @Molecule.Set_Save_SPONGE_Input("LJ_soft_core")
+    def write_LJ(self):
+        LJtypes = []
+        LJtypemap = {}
+        LJtypesB = []
+        LJtypemapB = {}
+        for atom in self.atoms:
+            if atom.LJtype not in LJtypemap.keys():
+                LJtypemap[atom.LJtype] = len(LJtypes)
+                LJtypes.append(atom.LJtype)
+            if atom.LJtypeB is None:
+                atom.LJtypeB = atom.LJtype
+            if atom.LJtypeB not in LJtypemapB.keys():
+                LJtypemapB[atom.LJtypeB] = len(LJtypesB)
+                LJtypesB.append(atom.LJtypeB)
+                 
+        As = []
+        Bs = []
+        for i in range(len(LJtypes)):
+            LJ_i = LJType.types[LJtypes[i] + "-" + LJtypes[i]]
+            for j in range(len(LJtypes)):
+                LJ_j = LJType.types[LJtypes[j] + "-" + LJtypes[j]]
+                finded = False
+                findnames = [LJtypes[i] + "-" + LJtypes[j], LJtypes[j] + "-" + LJtypes[i]]
+                for findname in findnames:
+                    if findname in LJType.types.keys():
+                        finded = True
+                        LJ_ij = LJType.types[findname]
+                        As.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                        Bs.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                        break
+                if not finded:
+                        As.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+                        Bs.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+
+        AsB = []
+        BsB = []
+        for i in range(len(LJtypesB)):
+            LJ_i = LJType.types[LJtypesB[i] + "-" + LJtypesB[i]]
+            for j in range(len(LJtypesB)):
+                LJ_j = LJType.types[LJtypesB[j] + "-" + LJtypesB[j]]
+                finded = False
+                findnames = [LJtypesB[i] + "-" + LJtypesB[j], LJtypesB[j] + "-" + LJtypesB[i]]
+                for findname in findnames:
+                    if findname in LJType.types.keys():
+                        finded = True
+                        LJ_ij = LJType.types[findname]
+                        AsB.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                        BsB.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                        break
+                if not finded:
+                        AsB.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+                        BsB.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+        
+
+        checks = {}
+        count = 0
+        for i in range(len(LJtypes)):
+            check_string_A = ""
+            check_string_B = ""
+            for j in range(len(LJtypes)):
+                check_string_A += "%16.7e"%As[count] + " "
+                check_string_B += "%16.7e"%Bs[count] + " "
+                count += 1
+                
+            checks[i] = check_string_A+check_string_B
+        
+        same_type = { i: i for i in range(len(LJtypes))}
+        for i in range(len(LJtypes)-1, -1, -1):
+            for j in range(i+1, len(LJtypes)):
+                if checks[i] == checks[j]:
+                    same_type[j] = i
+
+        real_LJtypes = []
+        real_As = []
+        real_Bs = []
+        tosub = 0
+        for i in range(len(LJtypes)):
+            
+            if same_type[i] == i:
+                real_LJtypes.append(LJtypes[i])
+                same_type[i] -= tosub
+            else:
+                same_type[i] = same_type[same_type[i]]
+                tosub += 1
+
+        for i in range(len(real_LJtypes)):
+            LJ_i = LJType.types[real_LJtypes[i] + "-" + real_LJtypes[i]]
+            for j in range(i+1):
+                LJ_j = LJType.types[real_LJtypes[j] + "-" + real_LJtypes[j]]
+                finded = False
+                findnames = [real_LJtypes[i] + "-" + real_LJtypes[j], real_LJtypes[j] + "-" + real_LJtypes[i]]
+                for findname in findnames:
+                    if findname in LJType.types.keys():
+                        finded = True
+                        LJ_ij = LJType.types[findname]
+                        real_As.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                        real_Bs.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                        break
+                if not finded:
+                        real_As.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+                        real_Bs.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+        
+        checks = {}
+        count = 0
+        for i in range(len(LJtypesB)):
+            check_string_A = ""
+            check_string_B = ""
+            for j in range(len(LJtypesB)):
+                check_string_A += "%16.7e"%AsB[count] + " "
+                check_string_B += "%16.7e"%BsB[count] + " "
+                count += 1
+                
+            checks[i] = check_string_A+check_string_B
+        
+        same_typeB = { i: i for i in range(len(LJtypesB))}
+        for i in range(len(LJtypesB)-1, -1, -1):
+            for j in range(i+1, len(LJtypesB)):
+                if checks[i] == checks[j]:
+                    same_typeB[j] = i
+
+        real_LJtypesB = []
+        real_AsB = []
+        real_BsB = []
+        tosub = 0
+        for i in range(len(LJtypesB)):
+            if same_typeB[i] == i:
+                real_LJtypesB.append(LJtypesB[i])
+                same_typeB[i] -= tosub
+            else:
+                same_typeB[i] = same_typeB[same_typeB[i]]
+                tosub += 1      
+                
+        for i in range(len(real_LJtypesB)):
+            LJ_i = LJType.types[real_LJtypesB[i] + "-" + real_LJtypesB[i]]
+            for j in range(i+1):
+                LJ_j = LJType.types[real_LJtypesB[j] + "-" + real_LJtypesB[j]]
+                finded = False
+                findnames = [real_LJtypesB[i] + "-" + real_LJtypesB[j], real_LJtypesB[j] + "-" + real_LJtypesB[i]]
+                for findname in findnames:
+                    if findname in LJType.types.keys():
+                        finded = True
+                        LJ_ij = LJType.types[findname]
+                        real_AsB.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                        real_BsB.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                        break
+                if not finded:
+                        real_AsB.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+                        real_BsB.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+        
+        
+        towrite = "%d %d %d\n\n"%(len(self.atoms), len(real_LJtypes), len(real_LJtypesB))
+        count = 0
+        for i in range(len(real_LJtypes)):
+            for j in range(i+1):
+                towrite += "%16.7e"%real_As[count] + " "
+                count += 1
+            towrite +="\n"
+        towrite += "\n"
+        
+        count = 0
+        for i in range(len(real_LJtypes)):
+            for j in range(i+1):
+                towrite += "%16.7e"%real_Bs[count] + " "
+                count += 1
+            towrite +="\n"
+        towrite += "\n"
+        
+        count = 0
+        for i in range(len(real_LJtypesB)):
+            for j in range(i+1):
+                towrite += "%16.7e"%real_AsB[count] + " "
+                count += 1
+            towrite +="\n"
+        towrite += "\n"
+        
+        count = 0
+        for i in range(len(real_LJtypesB)):
+            for j in range(i+1):
+                towrite += "%16.7e"%real_BsB[count] + " "
+                count += 1
+            towrite +="\n"
+
+        towrite += "\n"
+        towrite += "\n".join(["%d %d"%(same_type[LJtypemap[atom.LJtype]], same_typeB[LJtypemapB[atom.LJtypeB]]) for atom in self.atoms])
+        return towrite
+
+def Intramolecule_NB_To_NB14(molA, perturbing_residues):
+    if isinstance(perturbing_residues,Residue):
+        perturbing_residues = [perturbing_residues]
+    BUILD.Build_Bonded_Force(molA)
+    A_Exclude = EXCLUDE.Exclude.current.Get_Excluded_Atoms(molA)
+    for residue1 in perturbing_residues:
+        for atomA1 in residue1.atoms:
+            for residue2 in perturbing_residues:
+                for atomA2 in residue2.atoms:
+                    if atomA1 == atomA2:
+                        continue
+                    if atomA2 not in A_Exclude[atomA1]:
+                        A, B = NB14_EXTRA.Get_NB14EXTRA_AB(atomA1, atomA2)
+                        new_force = NB14_EXTRA.NB14Type.entity([atomA1, atomA2], NB14_EXTRA.NB14Type.types["UNKNOWNS"])
+                        new_force.A = A
+                        new_force.B = B
+                        new_force.kee = 1
+                        molA.Add_Bonded_Force(new_force)
+                        
+                        atomA1.Extra_Exclude_Atom(atomA2)
+                        A_Exclude[atomA1].add(atomA2)
+                        A_Exclude[atomA2].add(atomA1) 
+
+def Get_Free_Molecule(molA, perturbing_residues, intra_FEP = False):
+    if isinstance(perturbing_residues,Residue):
+        perturbing_residues = [perturbing_residues]
+    BUILD.Build_Bonded_Force(molA)
+    NB14_EXTRA.NB14_To_NB14EXTRA(molA)
+    molB = molA.deepcopy()
+    molA2molB = {}
+    for i, atomA in enumerate(molA.atoms):
+        molA2molB[atomA] = molB.atoms[i]
+        
+    for residue in perturbing_residues:
+        for atomA in residue.atoms:
+            atom = molA2molB[atomA]
+            atom.charge = 0
+            atom.LJtype = "ZERO_LJ_ATOM"
+
+    return molB
+
+def Merge(molA, molB, default_lambda, specific_lambda = {}, intra_FEP = False):
+    BUILD.Build_Bonded_Force(molA)
+    BUILD.Build_Bonded_Force(molB)
+    
+    #处理NB14，全变NB14_extra
+    #不用怕重复处理，因为是原位操作的，molAB处理过一次后就都没有两参数nb14了
+    NB14_EXTRA.NB14_To_NB14EXTRA(molA)
+    NB14_EXTRA.NB14_To_NB14EXTRA(molB)
+    
+    assert len(molA.atoms) == len(molB.atoms)
+    molA2molB = {}
+    for i, atomA in enumerate(molA.atoms):
+        molA2molB[atomA] = molB.atoms[i]
+        
+
+    molR = molA.deepcopy()
+    BUILD.Build_Bonded_Force(molR)
+    
+    molR2molA = {}
+    molR2molB = {}
+    for i, atomRet in enumerate(molR.atoms):
+        molR2molA[atomRet] = molA.atoms[i]
+        molR2molB[atomRet] = molB.atoms[i]
+    molB2molR = {value:key for key, value in molR2molB.items()}
+    molA2molR = {value:key for key, value in molR2molA.items()}
+    
+    charge_lambda = specific_lambda.get("charge", default_lambda)
+    mass_lambda = specific_lambda.get("mass", default_lambda)
+    
+    for i, atom in enumerate(molR.atoms):
+        atom.charge = molR2molA[atom].charge * charge_lambda + molR2molB[atom].charge * (1 - charge_lambda)
+        atom.mass = molR2molA[atom].mass * mass_lambda + molR2molB[atom].mass * (1 - mass_lambda)
+        atom.LJtypeB = molR2molB[atom].LJtype
+    
+    for forcename, Rforces in molR.bonded_forces.items():
+        if forcename in FEP_Bonded_Force_Merge_Rule.keys():
+            temp_lambda = specific_lambda.get(FEP_Bonded_Force_Merge_Rule[forcename]["lambda_name"], default_lambda)
+            Bforces = molB.bonded_forces.get(forcename, [])
+            FEP_Bonded_Force_Merge_Rule[forcename]["merge_function"](molR, molA, molB, GlobalSetting.BondedForcesMap[forcename], 
+                Rforces, Bforces, temp_lambda, molR2molA, molA2molR, molR2molB, molB2molR)
+        else:
+            #pass
+            raise NotImplementedError(forcename + " is not supported yet.")
+    
+    for forcename, parameters in FEP_Bonded_Force_Merge_Rule.items():
+        temp_lambda = specific_lambda.get(parameters["lambda_name"], default_lambda)
+        
+    
+    return molR
+
+sys.modules['__main__'].__dict__["FEP_Merge"] = Merge 

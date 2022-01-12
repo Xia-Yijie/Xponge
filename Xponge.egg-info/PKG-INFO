@@ -1238,10 +1238,29 @@ Description: # Xponge
         
         ### B. 格式转化
         使用`python -m Xponge -h`可以获得更多信息
-        #### B1. 
+        
+        #### B1. dat2nc
+        将SPONGE的.dat轨迹文件转化为AMBER的.nc文件，详情见`python -m Xponge dat2nc -h`
+        
+        #### B2. gro2crd
+        将GROMACS的.gro坐标文件转化为SPONGE的_coordinate.txt文件，详情见`python -m Xponge gro2crd -h`
+        
+        #### B3. nc2rst7
+        将AMBER的.nc重开文件转化为AMBER的可读重开文件，详情见`python -m Xponge nc2rst7 -h`
+        
+        #### B4. maskgen
+        调用VMD，选择原子，生成对应的原子序号，详情见`python -m Xponge maskgen -h`
+        
+        #### B5. exgen
+        输入SPONGE的bond-like, angle-like, dihedral-like和约束文件来获得排除文件，详情见`python -m Xponge exgen -h`
+        
+        #### B6. dat1frame
+        从SPONGE的.dat文件中抽出一帧作为SPONGE的_coordinate.txt文件，详情见`python -m Xponge dat1frame -h`
+        
         
         ### C. FEP处理
         暂未整合
+        
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3 :: Only
 Classifier: Development Status :: 4 - Beta

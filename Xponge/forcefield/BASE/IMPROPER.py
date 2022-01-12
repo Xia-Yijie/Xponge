@@ -32,11 +32,11 @@ def Improper_Same_Force(cls, atom_list):
             temp.append(atom_permutation)
     return temp
 
-@Molecule.Set_Save_SPONGE_Input
-def write_dihedral(self, prefix, dirname):
+@Molecule.Set_Save_SPONGE_Input("improper_dihedral")
+def write_dihedral(self):
     dihedrals = []
 
-    for dihedral in self.bonded_forces["harmonic_improper"]:
+    for dihedral in self.bonded_forces.get("harmonic_improper",[]):
         if dihedral.k != 0:
             temp_order = [2, 0, 1, 3]
             dihedrals.append("%d %d %d %d %f %f"%(self.atom_index[dihedral.atoms[temp_order[0]]],
@@ -49,7 +49,5 @@ def write_dihedral(self, prefix, dirname):
         dihedrals.sort(key = lambda x: list(map(float, x.split())))
         towrite += "\n".join(dihedrals)
         
-        f = open(os.path.join(dirname, prefix + "_improper_dihedral.txt"),"w")
-        f.write(towrite)
-        f.close()
+        return towrite
 

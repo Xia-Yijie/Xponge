@@ -131,7 +131,7 @@ def Rotate(molecule, direction_long = [0,0,1], direction_middle = [0,1,0], direc
         atom.z = molcrd[i][2]
 
 sys.modules['__main__'].__dict__["Molecule_Rotate"] = Rotate
-        
+ 
 
 def Mutation(molecule, residue, tomutate):
     pass

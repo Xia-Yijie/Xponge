@@ -13,8 +13,12 @@ LJType.Set_Property_Unit("B", "energy·distance^12", "kcal/mol·A^12")
 @GlobalSetting.Add_Unit_Transfer_Function(LJType)
 def LJ_Unit_Transfer(self):
     if self.A != None and self.B != None:
-        self.sigma = (self.A / self.B) ** (1/6)
-        self.epsilon = 0.25 * B * self.sigma ** (-6)
+        if self.B == 0 or self.A == 0:
+            self.sigma = 0
+            self.epsilon = 0
+        else:
+            self.sigma = (self.A / self.B) ** (1/6)
+            self.epsilon = 0.25 * self.B * self.sigma ** (-6)
         self.A = None
         self.B = None
     if self.sigma != None:
@@ -28,10 +32,7 @@ def Lorentz_Berthelot_For_A(epsilon1, rmin1, epsilon2, rmin2):
 def Lorents_Berthelot_For_B(epsilon1, rmin1, epsilon2, rmin2):
     return np.sqrt(epsilon1 * epsilon2) * 2 * ((rmin1 + rmin2) ** 6)
     
-
-
-@Molecule.Set_Save_SPONGE_Input      
-def write_LJ(self, prefix, dirname):
+def write_LJ(self):
     LJtypes = []
     LJtypemap = {}
     for atom in self.atoms:
@@ -125,6 +126,6 @@ def write_LJ(self, prefix, dirname):
         towrite +="\n"
     towrite += "\n"
     towrite += "\n".join(["%d"%(same_type[LJtypemap[atom.LJtype]]) for atom in self.atoms])
-    f = open(os.path.join(dirname, prefix + "_LJ.txt"),"w")
-    f.write(towrite)
-    f.close()
+    return towrite
+
+Molecule.Set_Save_SPONGE_Input("LJ")(write_LJ)

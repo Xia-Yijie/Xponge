@@ -79,4 +79,6 @@ Xponge/forcefield/CHARMM27/protein.py
 Xponge/forcefield/CHARMM27/tip3p.mol2
 Xponge/forcefield/CHARMM27/tip3p.py
 Xponge/forcefield/CHARMM27/tips3p.py
+Xponge/forcefield/SPECIAL/FEP.py
+Xponge/forcefield/SPECIAL/__init__.py
 Xponge/tools/__init__.py

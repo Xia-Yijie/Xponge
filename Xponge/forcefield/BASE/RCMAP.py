@@ -4,14 +4,14 @@ CMAP = Generate_New_Bonded_Force_Type("residue_specific_cmap", "1-2-3-4-5", {}, 
 
 CMAP.Residue_Map = {}
 
-@Molecule.Set_Save_SPONGE_Input
-def write_cmap(self, prefix, dirname):
+@Molecule.Set_Save_SPONGE_Input("cmap")
+def write_cmap(self):
     cmaps = []
     resolutions = []
     used_types = []
     used_types_map = {}
     atoms = []
-    for cmap in self.bonded_forces["residue_specific_cmap"]:
+    for cmap in self.bonded_forces.get("residue_specific_cmap",[]):
         resname = cmap.atoms[2].residue.type.name
         if resname in CMAP.Residue_Map.keys():
             if CMAP.Residue_Map[resname]["count"] not in used_types_map.keys():
@@ -37,6 +37,4 @@ def write_cmap(self, prefix, dirname):
         
         towrite += "\n".join(cmaps)
         
-        f = open(os.path.join(dirname, prefix + "_cmap.txt"),"w")
-        f.write(towrite)
-        f.close()
+        return towrite

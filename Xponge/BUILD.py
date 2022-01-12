@@ -1,8 +1,7 @@
 from . import *
 from time import time
 
-def _build_bfrc(cls):
-    #t = time()
+def _analyze_connectivity(cls):
     for atom0, c in cls.connectivity.items():
         index_dict = {}.fromkeys(c, atom0)
         for i in range(2,GlobalSetting.farthest_bonded_force+1):
@@ -13,6 +12,10 @@ def _build_bfrc(cls):
                 index_temp.pop(from_atom)
                 index_next.update(index_temp)
             index_dict = index_next
+
+def _build_bfrc(cls):
+    #t = time()
+    _analyze_connectivity(cls)
     #print("analysis of connectivity: %f"%(time()-t))
     for frc in GlobalSetting.BondedForces:
         top = frc.topology_like
@@ -112,12 +115,12 @@ def _build_bfrc_from_type(cls):
                 atom.linked_atoms[key].append(res_type_atom_map[atom0.linked_atoms[key][i]])
         
     for frc in GlobalSetting.BondedForces:
-        frc_entities = cls.type.bonded_forces[frc.name]
+        frc_entities = cls.type.bonded_forces.get(frc.name,[])
         for frc_entity in frc_entities:
             finded_atoms = [res_type_atom_map[atom] for atom in frc_entity.atoms]
             finded_type = frc_entity.type
             cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
-        
+
 def _build_bfrc_link(cls):
     atom1 = cls.atom1
     atom2 = cls.atom2
@@ -143,7 +146,6 @@ def _build_bfrc_link(cls):
         atom2.linked_atoms[i+1].extend(temp_atom2_linked[i+1]) 
     atom1.linked_atoms[2].append(atom2)
     atom2.linked_atoms[2].append(atom1)
-
     
     for i in range(2, far):
         for j in range(2, far + 1 - i):
@@ -233,7 +235,6 @@ def _build_bfrc_link(cls):
 def Build_Bonded_Force(cls):
     if cls.builded:
         return
-
     if type(cls) == ResidueType:
         _build_bfrc(cls)
         cls.builded = True  
@@ -252,11 +253,34 @@ def Build_Bonded_Force(cls):
             Build_Bonded_Force(res)
         for link in cls.residue_links:
             Build_Bonded_Force(link)
-            cls.builded = True
-    
+            
+        cls.atoms = []
+        cls.bonded_forces = { frc.name:[] for frc in GlobalSetting.BondedForces}
+        for res in cls.residues:
+            cls.atoms.extend(res.atoms)
+            for frc in GlobalSetting.BondedForces:
+                cls.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name,[]))
+        for link in cls.residue_links:
+            for frc in GlobalSetting.BondedForces:
+                cls.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name,[]))
+        cls.atom_index = { cls.atoms[i]: i for i in range(len(cls.atoms))}
         
-
- 
+        
+        for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
+            for vatom in cls.bonded_forces.get(vatom_type_name,[]):
+                this_vatoms = [vatom.atoms[0]]
+                for i in range(vatom_type_atom_numbers):
+                    this_vatoms.append(cls.atoms[cls.atom_index[vatom.atoms[0]] + getattr(vatom, "atom%d"%i)]) 
+                this_vatoms.sort(key = lambda x:cls.atom_index[x])
+                while this_vatoms:
+                    tolink = this_vatoms.pop(0)
+                    for i in this_vatoms:
+                        if "v" not in tolink.linked_atoms.keys():
+                            tolink.linked_atoms["v"] = []
+                        tolink.linked_atoms["v"].append(i)
+        
+        cls.builded = True
+        
     else:
         raise NotImplementedError
 
@@ -266,38 +290,18 @@ def Build_Bonded_Force(cls):
 def Save_SPONGE_Input(molecule, prefix = None, dirname = "."):
     if type(molecule)== Molecule:
         Build_Bonded_Force(molecule)
-        
+ 
         if not prefix:
             prefix = molecule.name
-        
-        molecule.atoms = []
-        molecule.bonded_forces = { frc.name:[] for frc in GlobalSetting.BondedForces}
-        for res in molecule.residues:
-            molecule.atoms.extend(res.atoms)
-            for frc in GlobalSetting.BondedForces:
-                molecule.bonded_forces[frc.name].extend(res.bonded_forces[frc.name])
-                
-        for link in molecule.residue_links:
-            for frc in GlobalSetting.BondedForces:
-                molecule.bonded_forces[frc.name].extend(link.bonded_forces[frc.name])
-                
-        molecule.atom_index = { molecule.atoms[i]: i for i in range(len(molecule.atoms))}
-        
-        for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
-            for vatom in molecule.bonded_forces[vatom_type_name]:
-                this_vatoms = [vatom.atoms[0]]
-                for i in range(vatom_type_atom_numbers):
-                    this_vatoms.append(molecule.atoms[molecule.atom_index[vatom.atoms[0]] + getattr(vatom, "atom%d"%i)]) 
-                this_vatoms.sort(key = lambda x:molecule.atom_index[x])
-                while this_vatoms:
-                    tolink = this_vatoms.pop(0)
-                    for i in this_vatoms:
-                        if "v" not in tolink.linked_atoms.keys():
-                            tolink.linked_atoms["v"] = []
-                        tolink.linked_atoms["v"].append(i) 
+                                           
+
                         
-        for func in Molecule.save_functions:
-            func(molecule, prefix, dirname)
+        for key, func in Molecule.save_functions.items():
+            towrite = func(molecule)
+            if towrite:
+                f = open(os.path.join(dirname, prefix + "_" + key + ".txt"),"w")
+                f.write(towrite)
+                f.close()
 
     elif type(molecule) == Residue:
         mol = Molecule(name = molecule.name)
@@ -511,6 +515,4 @@ def Save_NPZ(molecule, filename = None):
         Save_NPZ(residue, filename)
     
         
-
-
-sys.modules['__main__'].__dict__["Save_NPZ"] = Save_NPZ 
+sys.modules['__main__'].__dict__["Save_NPZ"] = Save_NPZ

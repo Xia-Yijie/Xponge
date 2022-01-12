@@ -341,10 +341,12 @@ class ResidueType(Type):
         self.connectivity[atom0].add(atom1)
         self.connectivity[atom1].add(atom0)
     
-    def Add_Bonded_Force(self, bonded_force_entity):
+    def Add_Bonded_Force(self, bonded_force_entity, typename = None):
+        if typename is None:
+            typename = type(bonded_force_entity).name
         if type(bonded_force_entity).name not in self.bonded_forces.keys():
-            self.bonded_forces[type(bonded_force_entity).name] = []
-        self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
+            self.bonded_forces[typename] = []
+        self.bonded_forces[typename].append(bonded_force_entity)
     
 
 
@@ -394,14 +396,23 @@ class Atom(Entity):
         super().__init__(entity_type, name)
         self.linked_atoms = { i+1 : [] for i in range(1,GlobalSetting.farthest_bonded_force)}
         self.residue = None
+        self.extra_excluded_atoms = set()
         self.copied = {}
+    
     def deepcopy(self, forcopy = None):
         new_atom = Atom(self.entity)
         new_atom.contents = {**self.contents}
         if forcopy:
             self.copied[forcopy] = new_atom
         return new_atom
+    
+    def Extra_Exclude_Atom(self, atom):
+        self.extra_excluded_atoms.add(atom)
+        atom.extra_excluded_atoms.add(self)
 
+    def Extra_Exclude_Atoms(self, lists):
+        for atom in lists:
+            self.Extra_Exclude_Atom(atom)
 
 class Residue(Entity):
     name = "Residue"
@@ -494,12 +505,18 @@ class ResidueLink():
         
 class Molecule():
     all = {}
-    save_functions = []
+    save_functions = {}
     
     @classmethod
-    def Set_Save_SPONGE_Input(cls, func):
-        cls.save_functions.append(func)
-        
+    def Set_Save_SPONGE_Input(cls, keyname):
+        def wrapper(func):
+            cls.save_functions[keyname] = func
+        return wrapper
+
+    @classmethod
+    def Del_Save_SPONGE_Input(cls, keyname):
+        cls.save_functions.pop(keyname)
+    
     def __repr__(self):
         return "Entity of Molecule: " + self.name
     def __init__(self, name):
@@ -510,9 +527,8 @@ class Molecule():
         Molecule.all[self.name] = self
         self.residues = []
         self.atoms = []
-        
         self.residue_links = []
-        self.bonded_forces = []
+        self.bonded_forces = {}
         self.builded = False
         self.box_length = None
         self.box_angle = [90.0, 90.0, 90.0]
@@ -529,6 +545,7 @@ class Molecule():
             return super().__getattribute__(attr)
 
     def Add_Residue(self, residue):
+        self.builded = False
         self.residues.append(residue)
         
     def Add_Bonded_Force(self, bonded_force_entity):
@@ -537,6 +554,7 @@ class Molecule():
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
     
     def Add_Residue_Link(self, atom1, atom2):
+        self.builded = False
         self.residue_links.append(ResidueLink(atom1, atom2))
 
     def deepcopy(self):
@@ -544,23 +562,39 @@ class Molecule():
         forcopy = hash(str(time.time()))
         for res in self.residues:
             new_molecule.Add_Residue(res.deepcopy(forcopy))
+
         for link in self.residue_links:
             new_molecule.residue_links.append(link.deepcopy(forcopy))
+
+        for res in self.residues:
+            for atom in res.atoms:
+                atom.copied[forcopy].Extra_Exclude_Atoms(map(lambda aton: aton.copied[forcopy], atom.extra_excluded_atoms))
+                
+        if self.builded == True:
+            for bond_entities in self.bonded_forces.values():
+                for bond_entity in bond_entities:
+                    new_molecule.Add_Bonded_Force(bond_entity.deepcopy(forcopy))
+            new_molecule.builded = True
+            new_molecule.atoms = [atom for residue in new_molecule.residues for atom in residue.atoms]
+            new_molecule.atom_index = { new_molecule.atoms[i]: i for i in range(len(new_molecule.atoms))}
+            for atom in self.atoms:
+                atom.copied[forcopy].linked_atoms = {key:list(map(lambda aton: aton.copied[forcopy],value)) for key, value in atom.linked_atoms.items() }
+            
+            
         for res in self.residues:
             for atom in res.atoms:
                 atom.copied.pop(forcopy)
         return new_molecule
         
-@Molecule.Set_Save_SPONGE_Input     
-def write_residue(self, prefix, dirname):
+@Molecule.Set_Save_SPONGE_Input("residue")
+def write_residue(self):
     towrite = "%d %d\n"%(len(self.atoms), len(self.residues))
     towrite += "\n".join([str(len(res.atoms)) for res in self.residues])
-    f = open(os.path.join(dirname, prefix + "_residue.txt"),"w")
-    f.write(towrite)
-    f.close()
+    return towrite
 
-@Molecule.Set_Save_SPONGE_Input     
-def write_coordinate(self, prefix, dirname):
+
+@Molecule.Set_Save_SPONGE_Input("coordinate")   
+def write_coordinate(self):
     towrite = "%d\n"%(len(self.atoms))
     boxlength = [0, 0, 0, self.box_angle[0], self.box_angle[1], self.box_angle[2]]
     maxi = [-float("inf"), -float("inf"), -float("inf")]
@@ -591,9 +625,7 @@ def write_coordinate(self, prefix, dirname):
         boxlength[1] = self.box_length[1]
         boxlength[2] = self.box_length[2]
     towrite += "\n%f %f %f %f %f %f"%(boxlength[0], boxlength[1], boxlength[2], boxlength[3], boxlength[4], boxlength[5])
-    f = open(os.path.join(dirname, prefix + "_coordinate.txt"),"w")
-    f.write(towrite)
-    f.close()
+    return towrite
 
 def Generate_New_Bonded_Force_Type(Type_Name, atoms, properties, Compulsory, Multiple = None):
     
@@ -603,6 +635,11 @@ def Generate_New_Bonded_Force_Type(Type_Name, atoms, properties, Compulsory, Mul
         def __init__(self, atoms, entity_type, name = None):
             super().__init__(entity_type, name)
             self.atoms = atoms
+        def deepcopy(self, forcopy):
+            atoms = [atom.copied[forcopy] for atom in self.atoms]
+            newone = type(self)(atoms, self.type, self.name)
+            newone.contents = {**self.contents}
+            return newone
             
     temp = [int(i) for i in atoms.split("-")]
     class BondedForceType(Type):
@@ -664,7 +701,8 @@ def Generate_New_Bonded_Force_Type(Type_Name, atoms, properties, Compulsory, Mul
                 self.multiple_numbers += 1
         
     BondedForceType.Add_Property(properties)
-    
+    BondedForceType.New_From_String("""name
+    UNKNOWNS""")
     global GlobalSetting
     GlobalSetting.BondedForces.append(BondedForceType)
     GlobalSetting.BondedForcesMap[BondedForceType.name] = BondedForceType
