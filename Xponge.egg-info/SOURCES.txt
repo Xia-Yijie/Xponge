@@ -14,6 +14,7 @@ Xponge.egg-info/requires.txt
 Xponge.egg-info/top_level.txt
 Xponge/analysis/MDAnalysis.py
 Xponge/analysis/__init__.py
+Xponge/assign/RDKit_tools.py
 Xponge/assign/RESP.py
 Xponge/assign/__init__.py
 Xponge/forcefield/__init__.py
@@ -65,6 +66,7 @@ Xponge/forcefield/BASE/MASS.py
 Xponge/forcefield/BASE/NB14.py
 Xponge/forcefield/BASE/NB14_EXTRA.py
 Xponge/forcefield/BASE/RCMAP.py
+Xponge/forcefield/BASE/SOFT_BOND.py
 Xponge/forcefield/BASE/UREY_BRADLEY.py
 Xponge/forcefield/BASE/VIRTUAL_ATOM.py
 Xponge/forcefield/BASE/__init__.py

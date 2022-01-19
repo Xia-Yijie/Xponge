@@ -29,7 +29,8 @@ def _build_bfrc(cls):
                     for backup in backups[i-1]:
                         good_backup = True
                         for j, atomj in enumerate(backup):
-                            if atomj == atom1 or abs(top_matrix[j][i]) <= 1 or atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
+                            if atomj == atom1 or abs(top_matrix[j][i]) <= 1 \
+                                    or atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
                                 good_backup = False
                                 break
                             if top_matrix[j][i] <= -1:

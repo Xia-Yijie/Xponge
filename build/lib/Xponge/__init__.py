@@ -381,7 +381,7 @@ class Atom(Entity):
     count = 0
     def __init__(self, entity_type, name = None):
         super().__init__(entity_type, name)
-        self.linked_atoms = { i+1 : [] for i in range(1,GlobalSetting.farthest_bonded_force)}
+        self.linked_atoms = {i + 1: ()for i in range(1, GlobalSetting.farthest_bonded_force)}
         self.residue = None
         self.copied = {}
     def deepcopy(self, forcopy = None):
