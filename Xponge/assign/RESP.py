@@ -59,7 +59,7 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 
     mols = ""
     for i, atom in enumerate(Assign.atoms):
         mols += "%s %f %f %f\n"%(atom, Assign.coordinate[i][0], Assign.coordinate[i][1], Assign.coordinate[i][2])
-    mol = gto.M(atom = mols, verbose = 0, basis = basis, charge = charge, spin = spin, symmetry = True)
+    mol = gto.M(atom = mols, verbose = 0, basis = basis, charge = charge, spin = spin)
 
     if spin == 0:
         fun = scf.RHF(mol)

@@ -113,7 +113,6 @@ def _build_bfrc_from_type(cls):
     for atom in cls.atoms:
         atom0 = res_type_atom_map_inverse[atom]
         for key in atom0.linked_atoms.keys():
-            atom.linked_atoms[key] = set()
             for atomi in atom0.linked_atoms[key]:
                 atom.Link_Atom(key, res_type_atom_map[atomi])
 
@@ -144,11 +143,11 @@ def _build_bfrc_link(cls):
             atom1_friends.add(atom)
         for atom in atom2.linked_atoms[i]:
             atom.Link_Atom(i + 1, atom1)
-            temp_atom1_linked[i + 1].append(atom)
+            temp_atom1_linked[i + 1].add(atom)
             atom2_friends.add(atom)
     for i in range(far - 1, 1, -1):
-        atom1.linked_atoms[i + 1] &= temp_atom1_linked[i + 1]
-        atom2.linked_atoms[i + 1] &= temp_atom2_linked[i + 1]
+        atom1.linked_atoms[i + 1] |= temp_atom1_linked[i + 1]
+        atom2.linked_atoms[i + 1] |= temp_atom2_linked[i + 1]
 
     atom1.Link_Atom(2, atom2)
     atom2.Link_Atom(2, atom1)
@@ -160,7 +159,6 @@ def _build_bfrc_link(cls):
                     if atom1_linked_atom not in atom2_friends and atom2_linked_atom not in atom1_friends:
                         atom1_linked_atom.Link_Atom(i + j, atom2_linked_atom)
                         atom2_linked_atom.Link_Atom(i + j, atom1_linked_atom)
-
     # print("analysis of connectivity: %f"%(time()-t))
     atom12_friends = atom1_friends | atom2_friends
     for frc in GlobalSetting.BondedForces:
@@ -174,21 +172,21 @@ def _build_bfrc_link(cls):
             for i, d in enumerate(top):
                 if i == 0:
                     continue
-                for atom1 in atom0.linked_atoms[d]:
+                for _atom1 in atom0.linked_atoms[d]:
                     for backup in backups[i - 1]:
                         good_backup = True
                         for j, atomj in enumerate(backup):
-                            if atomj == atom1 or abs(top_matrix[j][i]) <= 1 or \
-                                    atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
+                            if atomj == _atom1 or abs(top_matrix[j][i]) <= 1 or \
+                                    _atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
                                 good_backup = False
                                 break
                             if top_matrix[j][i] <= -1:
                                 for d2 in range(2, d):
-                                    if atom1 in atomj.linked_atoms[d2]:
+                                    if _atom1 in atomj.linked_atoms[d2]:
                                         good_backup = False
                                         break
                         if good_backup:
-                            backups[i].append([*backup, atom1])
+                            backups[i].append([*backup, _atom1])
             for backup in backups[len(top) - 1]:
                 backupset = set(backup)
                 if atom1_friends & backupset and backupset & atom2_friends:
@@ -211,6 +209,7 @@ def _build_bfrc_link(cls):
         # print(frc.name, "analysis of same force: %f"%(time()-t))
         # t = time()
         for frc_ones in frc_all_final:
+           
             finded = {}
             # 先直接找
             for frc_one in frc_ones:
@@ -232,7 +231,8 @@ def _build_bfrc_link(cls):
                             finded = {tofindname: [frc.types[tofindname], frc_one]}
                             leastfindedX = pcountx
                             break
-            assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s" % (
+            
+            assert (not frc.compulsory or len(finded) > 0), "None of %s type found for %s" % (
                 frc.name, "-".join([atom.type.name for atom in frc_one]))
 
             if finded:

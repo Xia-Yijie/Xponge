@@ -321,6 +321,8 @@ def Molecule_Add(self, other):
         resB = new_molecule2.residues[0]
         for res in new_molecule2.residues:
             new_molecule.Add_Residue(res)
+        for reslink in new_molecule2.residue_links:
+            new_molecule.Add_Residue_Link(reslink.atom1, reslink.atom2)
         if resA.type.tail and resB.type.head:
             atom1 = resA._name2atom[resA.type.tail]
             atom2 = resB._name2atom[resB.type.head]
@@ -351,6 +353,8 @@ def iMolecule_Add(self, other):
         resB = new_molecule2.residues[0]
         for res in new_molecule2.residues:
             self.Add_Residue(res)
+        for reslink in new_molecule2.residue_links:
+            self.Add_Residue_Link(reslink.atom1, reslink.atom2)
         if resA.type.tail and resB.type.head:
             atom1 = resA._name2atom[resA.type.tail]
             atom2 = resB._name2atom[resB.type.head]
@@ -373,7 +377,7 @@ def Muls(self, other):
             t += self
         return t
     else:
-        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
+        raise TypeError("unsupported operand type(s) for *: '%s' and '%s'"%(type(self), type(other)))
 
 def iMuls(self, other):
     if type(other) == int:
@@ -382,7 +386,7 @@ def iMuls(self, other):
             self += self
         return self
     else:
-        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
+        raise TypeError("unsupported operand type(s) for *: '%s' and '%s'"%(type(self), type(other)))
 
 ResidueType.__add__ = ResidueType_Add
 ResidueType.__radd__ = ResidueType_Add

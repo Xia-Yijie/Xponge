@@ -82,12 +82,13 @@ def pdb(filename, judge_HIS = True):
     residue_type_map = []
     current_residue_count = -1
     current_residue_index = None
+    current_resname = None
     current_HIS = {"DeltaH":False, "EpsilonH":False}
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
                 resindex = int(line[22:26])
-                resname = line[17:20]
+                resname = line[17:20].strip()
                 atomname = line[12:16].strip()
                 if current_residue_index == None:
                     current_residue_count += 1
@@ -104,8 +105,9 @@ def pdb(filename, judge_HIS = True):
                         resname = GlobalSetting.PDBResidueNameMap["head"][resname]
                     residue_type_map.append(resname)
                     current_residue_index = resindex
+                    current_resname = resname
                     chain[chr(ord("A") + len(chain.keys()))] = {resindex:current_residue_count}
-                elif current_residue_index != resindex:
+                elif current_residue_index != resindex or current_resname != resname:
                     if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
                         if current_HIS["DeltaH"]: 
                             if current_HIS["EpsilonH"]:
@@ -118,6 +120,7 @@ def pdb(filename, judge_HIS = True):
                     current_residue_count += 1
                     residue_type_map.append(resname)
                     current_residue_index = resindex
+                    current_resname = resname
                     chain[chr(ord("A") + len(chain.keys()) - 1)][resindex] = current_residue_count
                 if judge_HIS and resname in GlobalSetting.HISMap["HIS"].keys():
                     if atomname == GlobalSetting.HISMap["DeltaH"]:
@@ -126,6 +129,7 @@ def pdb(filename, judge_HIS = True):
                         current_HIS["EpsilonH"] = True
             elif line.startswith("TER"):
                 current_residue_index = None
+                current_resname = None
                 if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
                    residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
                 if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
@@ -156,26 +160,31 @@ def pdb(filename, judge_HIS = True):
 
     current_residue_count = -1
     current_residue = None
+    current_resname = None
     links = []
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
                 resindex = int(line[22:26])
+                resname = line[17:20].strip()
                 atomname = line[12:16].strip()
                 x = float(line[30:38])
                 y = float(line[38:46])
                 z = float(line[46:54])
-                if not current_residue_index or current_residue_index != resindex:
+                if current_residue_index is None or current_residue_index != resindex or \
+                   current_resname != resname:
                     current_residue_count += 1
                     if current_residue:
                         molecule.Add_Residue(current_residue)
-                        if current_residue.type.tail and ResidueType.types[residue_type_map[current_residue_count]].head:
-                            links.append(current_residue_count)
+                        if current_residue_index is not None and current_residue.type.tail and ResidueType.types[residue_type_map[current_residue_count]].head:
+                            links.append(len(molecule.residues))
                     current_residue = Residue(ResidueType.types[residue_type_map[current_residue_count]])
                     current_residue_index = resindex
+                    current_resname = resname
                 current_residue.Add_Atom(atomname, x = x, y = y, z = z)
             elif line.startswith("TER"):
                 current_residue_index = None
+                current_resname = None
                 
     if current_residue:
         molecule.Add_Residue(current_residue)

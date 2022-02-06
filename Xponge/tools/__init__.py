@@ -237,3 +237,53 @@ def gro2crd(args):
     with open(args.o, "w") as fo:
         fo.write(towrite)
         #print(towrite)
+
+def crd2rst7(args):
+    towrite = args.title + "\n"
+    atom_numbers = 0
+    start_time = None
+    crds = []
+    vels = []
+    box = [0, 0, 0, 90, 90, 90]
+    with open(args.crd) as f:
+        t = f.readline().split()
+        atom_numbers = int(t[0])
+        if len(t) > 1:
+            start_time = float(t[1])
+        for i in range(atom_numbers):
+            t = list(map(float, f.readline().split()))
+            crds.append(t)
+        box = [float(i) for i in f.readline().split()]
+        
+    if args.vel:
+        second_line = " %d %f\n"%(atom_numbers, start_time)
+        with open(args.vel) as f:
+            t = f.readline().split()
+            for i in range(atom_numbers):
+                t = list(map(float, f.readline().split()))
+                vels.append(t)
+    
+    else:
+        second_line = " %d\n"%atom_numbers
+        
+
+    towrite += second_line
+    for i in range(0, atom_numbers):
+        towrite += "%12.7f%12.7f%12.7f"%(crds[i][0], crds[i][1], crds[i][2])
+        if i % 2 == 1:
+            towrite += "\n"
+    if atom_numbers % 2 == 1:
+        towrite += "\n"
+
+    if args.vel:
+      for i in range(0, atom_numbers):
+        towrite += "%12.7f%12.7f%12.7f"%(vels[i][0], vels[i][1], vels[i][2])
+        if i % 2 == 1:
+            towrite += "\n"
+    if atom_numbers % 2 == 1:
+        towrite += "\n"
+    towrite += "%12.7f%12.7f%12.7f%12.7f%12.7f%12.7f\n"%(box[0], box[1], box[2], box[3], box[4], box[5])
+
+    with open(args.rst7, "w") as f:
+        f.write(towrite)
+        

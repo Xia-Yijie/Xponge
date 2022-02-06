@@ -556,13 +556,13 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
 
     for i in range(len(restypeAB.atoms)):
         if i < len(ResidueTypeA.atoms):
-            restypeAB.atoms[i].contents.update(ResidueTypeA.atoms[i].contents)
+            restypeAB.atoms[i].contents.update({key: value for key, value in ResidueTypeA.atoms[i].contents.items() if key != "name" })
         else:
             restypeAB.atoms[i].LJtype = "ZERO_LJ_ATOM"
             restypeAB.atoms[i].charge = 0
 
         if i in RBmap:
-            restypeBA.atoms[i].contents.update(ResidueTypeB.atoms[RBmap[i]].contents)
+            restypeBA.atoms[i].contents.update({key: value for key, value in ResidueTypeB.atoms[RBmap[i]].contents.items() if key != "name" })
         else:
             restypeBA.atoms[i].LJtype = "ZERO_LJ_ATOM"
             restypeBA.atoms[i].charge = 0

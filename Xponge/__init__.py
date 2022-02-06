@@ -329,6 +329,7 @@ class ResidueType(Type):
         # 连接功能
         self.link = {"head": None, "tail": None, "head_next": None, "tail_next": None,
                      "head_length": 1.5, "tail_length": 1.5, "head_link_conditions": [], "tail_link_conditions": []}
+        self.connect_atoms = {}
 
     def Add_Atom(self, name, atom_type, x, y, z):
         new_atom = Atom(atom_type, name)
@@ -498,7 +499,7 @@ class Residue(Entity):
         if directly_copy:
             forcopy = hash(int(time.time()))
             for atom in self.type.atoms:
-                self.Add_Atom(atom)
+                self.Add_Atom(atom.name, atom.type, atom.x, atom.y, atom.z)
                 atom.copied[forcopy] = self.atoms[-1]
             for atom in self.type.atoms:
                 for aton in atom.extra_excluded_atoms:

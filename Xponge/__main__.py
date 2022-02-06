@@ -53,6 +53,14 @@ dat1frame.add_argument('-box', required = True, help='box traj file name')
 dat1frame.add_argument('-dat', required = True, help='dat traj file name')
 dat1frame.set_defaults(func = tools.dat1frame)
 
+crd2rst7 = subparsers.add_parser("crd2rst7", help = 'convert a coordinate file from SPONGE .txt to .rst7')
+crd2rst7.add_argument("-title", default = "converted by Xponge", help='the title of the rst7 file')
+crd2rst7.add_argument("-crd", required = True, help = 'the SPONGE coordinate file')
+crd2rst7.add_argument("-vel", help = 'the SPONGE velocity file')
+crd2rst7.add_argument("-rst7", required = True, help = 'the output rst7 file')
+crd2rst7.set_defaults(func = tools.crd2rst7)
+
+
 args = parser.parse_args()
 
 try:
