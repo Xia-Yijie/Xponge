@@ -30,7 +30,7 @@ PyModuleDef_HEAD_INIT,
 XpongeLibMethods
 };
 
-PyMODINIT_FUNC PyInit_XpongeLib(void)
+PyMODINIT_FUNC PyInit_backend(void)
 {
     return PyModule_Create(&XpongeLibModule);
 }

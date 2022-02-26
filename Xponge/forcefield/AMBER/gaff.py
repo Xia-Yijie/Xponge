@@ -864,7 +864,7 @@ def temp(i, Assign):
 def parmchk2_gaff(ifname, ofname):
     import XpongeLib as xlib
     import os
-
+    print(xlib.__file__)
     datapath = os.path.split(xlib.__file__)[0]
     xlib._parmchk2(ifname, "mol2", ofname, datapath, 0, 1, 1)
 
