@@ -10,7 +10,7 @@ ZERO_LJ_ATOM-ZERO_LJ_ATOM  0  0
 """)
 
 AtomType.Add_Property({"LJtypeB": str})
-
+AtomType.Add_Property({"subsys": int})
 
 def _find_common_forces(forcetype, Aforces, Bforces, molB2molA):
     toret = []
@@ -50,9 +50,9 @@ def nb14_extra_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda
                                  molR2molA[fR.atoms[1]].charge
             fR.kee = nb14_ee_factor / temp_charge0 / temp_charge1
 
-            fR.kee *= _lambda
-            fR.A *= _lambda
-            fR.B *= _lambda
+            fR.kee *= 1 - _lambda
+            fR.A *= 1 - _lambda
+            fR.B *= 1 - _lambda
         elif fR is None:
             fR = NB14_EXTRA.NB14Type.entity(list(map(lambda x: molB2molR[x], fB.atoms)), fB.type, fB.name)
 
@@ -66,9 +66,9 @@ def nb14_extra_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda
                                  fB.atoms[1].charge
             fR.kee = nb14_ee_factor / temp_charge0 / temp_charge1
 
-            fR.A = fB.A * (1 - _lambda)
-            fR.B = fB.B * (1 - _lambda)
-            fR.kee = f2.kee * (1 - _lambda)
+            fR.A = fB.A * _lambda
+            fR.B = fB.B * _lambda
+            fR.kee = f2.kee * _lambda
             molR.Add_Bonded_Force(fR)
         else:
             temp_charge0 = fR.atoms[0].charge if abs(fR.atoms[0].charge) > TINY else TINY
@@ -88,9 +88,9 @@ def nb14_extra_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda
                                  fB.atoms[1].charge
             kee = nb14_ee_factor / temp_charge0 / temp_charge1
 
-            fR.kee = fR.kee * _lambda + kee * (1 - _lambda)
-            fR.A = fR.A * _lambda + fB.A * (1 - _lambda)
-            fR.B = fR.B * _lambda + fB.B * (1 - _lambda)
+            fR.kee = fR.kee * (1 - _lambda) + kee * _lambda
+            fR.A = fR.A * (1 - _lambda) + fB.A * _lambda
+            fR.B = fR.B * (1 - _lambda) + fB.B * _lambda
 
 
 FEP_Bonded_Force_Merge_Rule["nb14_extra"] = {"lambda_name": "dihedral", "merge_function": nb14_extra_merge_rule}
@@ -110,12 +110,12 @@ def bond_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, molR
             fR.from_AorB = 1
             molR.Add_Bonded_Force(fR, "soft_bond")
         elif abs(fR.b - fB.b) < 1e-5:
-            fR.k = fR.k * _lambda + fB.k * (1 - _lambda)
+            fR.k = fR.k * (1 - _lambda) + fB.k * _lambda
         else:
             fR2 = BOND.BondType.entity(list(map(lambda x: molB2molR[x], fB.atoms)), fB.type, fB.name)
-            fR2.k = fB.k * (1 - _lambda)
+            fR2.k = fB.k * _lambda
             fR.b = fB.b
-            fR.k *= _lambda
+            fR.k *= (1 - _lambda)
             molR.Add_Bonded_Force(fR2)
 
 
@@ -129,19 +129,19 @@ def angle_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, mol
     forcepair = _find_common_forces(forcetype, Rforces, Bforces, molB2molR)
     for fR, fB in forcepair:
         if fB is None:
-            fR.k *= _lambda
+            fR.k *= 1 - _lambda
         elif fR is None:
             fR = ANGLE.AngleType.entity(list(map(lambda x: molB2molR[x], fB.atoms)), fB.type, fB.name)
-            fR.k *= (1 - _lambda)
+            fR.k *= _lambda
             fR.b = fB.b
             molR.Add_Bonded_Force(fR)
         elif abs(fR.b - fB.b) < 1e-5:
-            fR.k = fR.k * _lambda + fB.k * (1 - _lambda)
+            fR.k = fR.k * (1 - _lambda) + fB.k * _lambda 
         else:
             fR2 = ANGLE.AngleType.entity(list(map(lambda x: molB2molR[x], fB.atoms)), fB.type, fB.name)
-            fR2.k = fB.k * (1 - _lambda)
+            fR2.k = fB.k * _lambda
             fR2.b = fB.b
-            fR.k *= _lambda
+            fR.k *= (1 - _lambda)
             molR.Add_Bonded_Force(fR2)
 
 
@@ -156,12 +156,12 @@ def dihedral_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, 
     for fR, fB in forcepair:
         if fB is None:
             for i in range(fR.multiple_numbers):
-                fR.ks[i] *= _lambda
+                fR.ks[i] *= 1 - _lambda
         elif fR is None:
             fR2 = DIHEDRAL.ProperType.entity(list(map(lambda x: molB2molR[x], fB.atoms)), fB.type, fB.name)
             fR2.multiple_numbers = fB.multiple_numbers
             for i in range(fB.multiple_numbers):
-                fR2.ks.append(fB.ks[i] * (1 - _lambda))
+                fR2.ks.append(fB.ks[i] * _lambda)
                 fR2.phi0s.append(fB.phi0s[i])
                 fR2.periodicitys.append(fB.periodicitys[i])
             molR.Add_Bonded_Force(fR2)
@@ -177,14 +177,14 @@ def dihedral_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, 
                         break
             if sameforce:
                 for i in range(fR.multiple_numbers):
-                    fR.ks[i] = fR.ks[i] * _lambda + check_map[fR.periodicitys[i]] * (1 - _lambda)
+                    fR.ks[i] = fR.ks[i] * (1 - _lambda) + check_map[fR.periodicitys[i]] * _lambda
             else:
                 for i in range(fR.multiple_numbers):
-                    fR.ks[i] *= _lambda
+                    fR.ks[i] *= (1 - _lambda)
                 fR2 = DIHEDRAL.ProperType.entity(list(map(lambda x: molB2molR[x], fB.atoms)), fB.type, fB.name)
                 fR2.multiple_numbers = fB.multiple_numbers
                 for i in range(fB.multiple_numbers):
-                    fR2.ks.append(fB.ks[i] * (1 - _lambda))
+                    fR2.ks.append(fB.ks[i] * _lambda)
                     fR2.phi0s.append(fB.phi0s[i])
                     fR2.periodicitys.append(fB.periodicitys[i])
                 molR.Add_Bonded_Force(fR2)
@@ -198,21 +198,21 @@ def improper_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, 
     forcepair = _find_common_forces(forcetype, Rforces, Bforces, molB2molR)
     for fR, fB in forcepair:
         if fB is None:
-            fR.k *= _lambda
+            fR.k *= 1 - _lambda
         elif fR is None:
             fR = DIHEDRAL.ImproperType.entity(list(map(lambda x: molB2molR[x], fB.atoms)), fB.type, fB.name)
-            fR.k = fB.k * (1 - _lambda)
+            fR.k = fB.k * _lambda
             fR.phi0 = fB.phi0
             fR.periodicity = fB.periodicity
             molR.Add_Bonded_Force(fR)
         elif abs(fR.phi0 - fB.phi0) < 1e-5 and fR.periodicity == fB.periodicity:
-            fR.k = fR.k * _lambda + fB.k * (1 - _lambda)
+            fR.k = fR.k * (1 - _lambda) + fB.k * _lambda
         else:
             fR2 = DIHEDRAL.ImproperType.entity(list(map(lambda x: molB2molR[x], fB.atoms)), fB.type, fB.name)
-            fR2.k = fB.k * (1 - _lambda)
+            fR2.k = fB.k * _lambda
             fR2.phi0 = fB.phi0
             fR2.periodicity = fB.periodicity
-            fR.k *= _lambda
+            fR.k *= (1 - _lambda)
             molR.Add_Bonded_Force(fR2)
 
 
@@ -222,10 +222,20 @@ FEP_Bonded_Force_Merge_Rule["improper"] = {"lambda_name": "dihedral", "merge_fun
 def Save_Hard_Core_LJ():
     Molecule.Set_Save_SPONGE_Input("LJ")(LJ.write_LJ)
     Molecule.Del_Save_SPONGE_Input("LJ_soft_core")
-
+    Molecule.Del_Save_SPONGE_Input("subsys_division")
 
 def Save_Soft_Core_LJ():
     Molecule.Del_Save_SPONGE_Input("LJ")
+
+    @Molecule.Set_Save_SPONGE_Input("subsys_division")
+    def write_subsys_division(self):
+        towrite = "%d\n"%len(self.atoms)
+        for atom in self.atoms:
+            if getattr(atom, "subsys", None) is None:
+                towrite += "%d\n"%0
+            else:
+                towrite += "%d\n"%atom.subsys
+        return towrite
 
     @Molecule.Set_Save_SPONGE_Input("LJ_soft_core")
     def write_LJ(self):
@@ -454,6 +464,8 @@ def Get_Free_Molecule(molA, perturbing_residues, intra_FEP=False):
             atom = molA2molB[atomA]
             atom.charge = 0
             atom.LJtype = "ZERO_LJ_ATOM"
+            atom.subsys = 1
+            atomA.subsys = 1
 
     return molB
 
@@ -502,6 +514,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
         if i not in matchA:
             atom = ResidueTypeA.atoms[i]
             extraA.append(atom.copied[forcopy])
+            extraA[-1].subsys = 1
 
     for i in range(len(ResidueTypeB.atoms)):
         if i not in matchB:
@@ -512,6 +525,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
             atom.copied[forcopy].contents = {key: value for key, value in atom.contents.items()}
             atom.copied[forcopy].name = atom.name + "R2"
             extraB.append(atom.copied[forcopy])
+            extraB[-1].subsys = 1
         else:
             ResidueTypeB.atoms[i].copied[forcopy] = restypeAB.atoms[matchmap[i]]
 
@@ -615,8 +629,8 @@ def Merge_Force_Field(molA, molB, default_lambda, specific_lambda={}, intra_FEP=
     mass_lambda = specific_lambda.get("mass", default_lambda)
 
     for i, atom in enumerate(molR.atoms):
-        atom.charge = molR2molA[atom].charge * charge_lambda + molR2molB[atom].charge * (1 - charge_lambda)
-        atom.mass = molR2molA[atom].mass * mass_lambda + molR2molB[atom].mass * (1 - mass_lambda)
+        atom.charge = molR2molA[atom].charge * (1 - charge_lambda) + molR2molB[atom].charge * charge_lambda 
+        atom.mass = molR2molA[atom].mass * (1 - mass_lambda) + molR2molB[atom].mass * mass_lambda 
         atom.LJtypeB = molR2molB[atom].LJtype
 
     for forcename, Rforces in molR.bonded_forces.items():

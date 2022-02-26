@@ -1,19 +1,3 @@
-Metadata-Version: 2.1
-Name: Xponge
-Version: 0.0.8.9
-Summary: A package for building molecular dynamics inputs for SPONGE
-Home-page: https://gitee.com/gao_hyp_xyj_admin/xponge
-Author: Yijie Xia
-Author-email: yijiexia@pku.edu.cn
-License: UNKNOWN
-Platform: UNKNOWN
-Classifier: Programming Language :: Python :: 3 :: Only
-Classifier: Development Status :: 4 - Beta
-Classifier: Operating System :: OS Independent
-Requires-Python: >=3.6
-Description-Content-Type: text/markdown
-License-File: LICENSE
-
 # Xponge
 
 ## 简介
@@ -1268,5 +1252,3 @@ plt.show()
 
 ### C. FEP处理
 暂未整合
-
-

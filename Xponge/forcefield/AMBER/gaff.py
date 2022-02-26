@@ -861,6 +861,15 @@ def temp(i, Assign):
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "P4") or Assign.Atom_Judge(i, "P5") or Assign.Atom_Judge(i, "P6")
 
+def parmchk2_gaff(ifname, ofname):
+    import XpongeLib as xlib
+    import os
+
+    datapath = os.path.split(xlib.__file__)[0]
+    xlib._parmchk2(ifname, "mol2", ofname, datapath, 0, 1, 1)
+
+sys.modules['__main__'].__dict__["parmchk2_gaff"] = parmchk2_gaff
+
 print("""Reference for gaff:
   Wang, J., Wolf, R.M., Caldwell, J.W., Kollman, P.A. and Case, D.A.
     Development and testing of a general amber force field.

@@ -54,22 +54,31 @@ class Assign():
     XD = set("SP")
     XE = set(["N", "O", "F", "Cl", "Br", "S", "I"])
 
-    def __init__(self):
+    def __init__(self, name = "ASN"):
+        self.name = name
         self.atom_numbers = 0
         self.atoms = []
         self.names = []
+        self.element_details = []
         self.coordinate = None
         self.charge = None
         self.atom_types = {}
         self.atom_marker = {}
         self.bonds = {}
+        self.ar_bonds = {}
         self.bond_marker = {}
 
     def Atom_Judge(self, atom, string):
         element, links = [''.join(list(g)) for k, g in groupby(string, key=lambda x: x.isdigit())]
         return self.atoms[atom] == element and len(self.bonds[atom]) == int(links)
 
-    def Add_Atom(self, element, x, y, z, name=""):
+    def Add_Atom(self, element, x, y, z, name="", charge = 0.0):
+        if "." in element:
+            element, element_detail = element.split(".")
+            element_detail = "." + element_detail
+        else:
+            element_detail = ""
+        self.element_details.append(element_detail)
         self.atoms.append(element)
         self.bonds[self.atom_numbers] = {}
         self.bond_marker[self.atom_numbers] = {}
@@ -77,11 +86,15 @@ class Assign():
         self.atom_types[self.atom_numbers] = None
         self.atom_numbers += 1
         self.names.append(name)
-        if type(self.coordinate) == type(None):
+        if self.coordinate is None:
             self.coordinate = np.array([[x, y, z]])
         else:
             self.coordinate = np.vstack((self.coordinate, np.array([x, y, z])))
-
+        if self.charge is None:
+            self.charge = np.array([charge])
+        else:
+            self.charge = np.hstack((self.charge, np.array([charge])))
+ 
     def Add_Atom_Marker(self, atom, marker):
         if marker in self.atom_marker[atom].keys():
             self.atom_marker[atom][marker] += 1
@@ -157,8 +170,7 @@ class Assign():
             if len(ring.atoms) == 6:
                 ring.is_pure_aromatic_ring = True
                 for atom in ring.atoms:
-                    if not self.Atom_Judge(atom, "C3") and not self.Atom_Judge(atom, "N2") and not self.Atom_Judge(atom,
-                                                                                                                   "N3"):
+                    if not self.Atom_Judge(atom, "C3") and not self.Atom_Judge(atom, "N2") and not self.Atom_Judge(atom, "N3"):
                         ring.is_pure_aromatic_ring = False
                         break
                     if self.Atom_Judge(atom, "N3"):
@@ -335,8 +347,11 @@ class Assign():
         for i in range(self.atom_numbers):
             for j, order in self.bonds[i].items():
                 if i < j:
-                    bonds.append("%6d %6d %1d\n" % (i + 1, j + 1, order))
-        bonds.sort(key=lambda x: list(map(int, x.split())))
+                    if  i in self.ar_bonds.keys() and j in self.ar_bonds[i]:
+                        bonds.append("%6d %6d ar\n" % (i + 1, j + 1))
+                    else:
+                        bonds.append("%6d %6d %1d\n" % (i + 1, j + 1, order))
+        bonds.sort(key=lambda x: list(map(int, x.split()[:2])))
         count = {}
         for i in range(self.atom_numbers):
             if self.names[i]:
@@ -349,18 +364,18 @@ class Assign():
                 count[self.atoms[i]] = 1
                 atom_name = self.atoms[i]
                 self.names[i] = atom_name
-        towrite = "@<TRIPOS>MOLECULE\nASN\n %d %d 1 0 1\nSMALL\nUSER_CHARGES\n" % (self.atom_numbers, len(bonds))
+        towrite = "@<TRIPOS>MOLECULE\n%s\n %d %d 1 0 1\nSMALL\nUSER_CHARGES\n" % (self.name, self.atom_numbers, len(bonds))
         towrite += "@<TRIPOS>ATOM\n"
         for i, atom in enumerate(self.atoms):
-            towrite += "%6d %4s %8.3f %8.3f %8.3f %4s %5d %8s %10.6f\n" % (
+            towrite += "%6d %4s %8.4f %8.4f %8.4f   %-8s %5d %8s %10.6f\n" % (
                 i + 1, self.names[i], self.coordinate[i][0], self.coordinate[i][1], self.coordinate[i][2],
-                atom, 1, "ASN", 0.0)
+                atom+self.element_details[i], 1, self.name, self.charge[i])
 
         towrite += "@<TRIPOS>BOND\n"
         for i, bond in enumerate(bonds):
             towrite += "%6d %s" % (i + 1, bond)
         towrite += "@<TRIPOS>SUBSTRUCTURE\n"
-        towrite += "%5d %8s %6d ****               0 ****  **** \n" % (1, "ASN", 1)
+        towrite += "%5d %8s %6d ****               0 ****  **** \n" % (1, self.name, 1)
 
         f = open(filename, "w")
         f.write(towrite)
@@ -405,14 +420,18 @@ def Get_Assignment_From_PDB(filename):
 
 
 def Get_Assignment_From_Mol2(filename):
-    assign = Assign()
     with open(filename) as f:
         flag = None
+        subflag = None
         for line in f:
             if not line.strip():
                 continue
             if line.startswith("@<TRIPOS>"):
                 flag = line[9:].strip()
+            elif flag == "MOLECULE":
+                if subflag is None:
+                    assign = Assign(line.strip())
+                    subflag = "0"
             # 处理原子信息
             elif flag == "ATOM":
                 words = line.split()
@@ -421,10 +440,54 @@ def Get_Assignment_From_Mol2(filename):
                 x = float(words[2])
                 y = float(words[3])
                 z = float(words[4])
-                assign.Add_Atom(element, x, y, z, atom_name)
+                charge = float(words[8])
+                assign.Add_Atom(element, x, y, z, atom_name, charge)
             elif flag == "BOND":
                 words = line.split()
-                assign.Add_Bond(int(words[1]) - 1, int(words[2]) - 1, int(words[3]))
+                if words[3] in "1234567890":
+                    assign.Add_Bond(int(words[1]) - 1, int(words[2]) - 1, int(words[3]))
+                elif words[3] == "ar":
+                    atom1 = int(words[1]) - 1
+                    atom2 = int(words[2]) - 1
+                    assign.Add_Bond(atom1, atom2, 1)
+                    if atom1 not in assign.ar_bonds.keys():
+                        assign.ar_bonds[atom1] = [atom2]
+                    else:
+                        assign.ar_bonds[atom1].append(atom2)
+                    if atom2 not in assign.ar_bonds.keys():
+                        assign.ar_bonds[atom2] = [atom1]
+                    else:
+                        assign.ar_bonds[atom2].append(atom1)
+                else:
+                    raise NotImplementedError("No implemented method to process bond #%s type %s"%(words[0], words[3]))
+    ar_bonds_atoms = list(assign.ar_bonds.keys())
+    ar_bonds_atoms.sort(key = lambda x: (x, len(assign.ar_bonds[x])))
+    doubled = {}
+    checked = {}
+    for ar_atom in ar_bonds_atoms:
+        assign.ar_bonds[ar_atom].sort(key = lambda x: (x, len(assign.ar_bonds[x])))
+        doubled[ar_atom] = False
+        checked[ar_atom] = False
+    
+    working_space = []
+    while ar_bonds_atoms:
+         working_space.append(ar_bonds_atoms.pop())
+         while working_space:
+             work_atom = working_space.pop()
+             if checked[work_atom]:
+                 continue
+             checked[work_atom] = True
+             for neighbor in assign.ar_bonds[work_atom]:
+                 if not checked[neighbor]:
+                     working_space.append(neighbor)
+             for neighbor in assign.ar_bonds[work_atom][::-1]:
+                 if doubled[work_atom]:
+                     break
+                 if not doubled[neighbor] and not doubled[work_atom]:
+                     assign.bonds[neighbor][work_atom] = 2
+                     doubled[neighbor] = True
+                     doubled[work_atom] = True
+
     assign.Determine_Ring_And_Bond_Type()
     return assign
 

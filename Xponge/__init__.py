@@ -709,6 +709,7 @@ def write_coordinate(self):
         boxlength[0] = maxi[0] - mini[0] + 6
         boxlength[1] = maxi[1] - mini[1] + 6
         boxlength[2] = maxi[2] - mini[2] + 6
+        self.box_length = [boxlength[0], boxlength[1], boxlength[2]]
     else:
         boxlength[0] = self.box_length[0]
         boxlength[1] = self.box_length[1]

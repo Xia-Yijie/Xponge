@@ -24,6 +24,30 @@ def Assign2RDKitMol(assign):
     Chem.SanitizeMol(mol)
     return mol
 
+def Find_Equal_Atoms(assign):
+    from rdkit import Chem
+    mols = []
+    CanonSmiles = []
+    for i in range(len(assign.atoms)):
+        mols.append(Assign2RDKitMol(assign))
+        mols[-1].GetAtoms()[i].SetIsotope(1)
+        CanonSmiles.append(Chem.MolToSmiles(mols[-1]))
+    group = {i:i for i in range(len(assign.atoms))}
+    for i in range(len(assign.atoms)):
+        if group[i] == i:
+            for j in range(i+1, len(assign.atoms)):
+                if CanonSmiles[j] == CanonSmiles[i]:
+                    group[j] = i
+    ret = []
+    realmap = {}
+    for i in group:
+        if group[i] == i:
+            ret.append([i])
+            realmap[i] = len(realmap)
+        else:
+            ret[realmap[group[i]]].append(i)
+    return list(filter(lambda x:len(x) > 1, ret))
+
 def Get_Conformer_Coordinate(mol):
     import numpy as np
     crd = np.zeros((mol.GetNumAtoms(), 3))
@@ -69,4 +93,6 @@ def Get_Part_Align(molA, molB, partA, partB):
     rmsd, transformer = rdMolAlign.GetAlignmentTransform(molBn, molAn)
     crd = Apply_Transform(Get_Conformer_Coordinate(molB), transformer)
     Set_Conformer_Coordinate(molB, crd)
+
+
 
