@@ -2,3 +2,5 @@
 build/*
 dist/*
 Xponge.egg-info/*
+lib/dist/*
+lib/XpongeLib.egg-info/*
