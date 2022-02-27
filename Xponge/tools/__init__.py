@@ -310,3 +310,16 @@ def mol2opt(args):
         t.coordinate[i // 3][i % 3] = xyzi
     t.Save_As_Mol2(args.o)
 
+def trr2dat(args):
+    import numpy as np
+    from MDAnalysis.lib.formats.libmdaxdr import TRRFile
+    box = []
+    crd = []
+    with TRRFile(args.i) as f:
+        for frame in f:
+            crd.append(frame.x)
+            box.append([frame.box[0][0] * 10, frame.box[1][1] * 10, frame.box[2][2] * 10, 90, 90, 90])
+    box = np.array(box, dtype=np.float32)
+    crd = np.array(crd, dtype=np.float32) * 10
+    np.savetxt("{}.box".format(args.o), box)
+    crd.tofile("{}.dat".format(args.o))

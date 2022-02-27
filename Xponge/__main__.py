@@ -61,6 +61,12 @@ def main():
     crd2rst7.add_argument("-rst7", required = True, help = 'the output rst7 file')
     crd2rst7.set_defaults(func = tools.crd2rst7)
 
+    trr2dat = subparsers.add_parser("trr2dat", help = 'convert a trajectory file from GROMACS .trr to SPONGE .dat and .box')
+    trr2dat.add_argument("-i", required = True, help= 'the trr file name')
+    trr2dat.add_argument("-o", required = True, help ='the output file name prefix')
+    trr2dat.set_defaults(func = tools.trr2dat)
+
+
     mol2opt = subparsers.add_parser("mol2opt", help = 'optimize a mol2 file by using minimization-mode SPONGE and GAFF')
     mol2opt.add_argument("-sponge", default = "SPONGE", help = "SPONGE program command")
     mol2opt.add_argument("-i", required = True, help = "the input mol2 file")
@@ -70,6 +76,7 @@ def main():
     mol2opt.add_argument("-step1", default = 2500, type = int, help = "the number of steps for first step minimization")
     mol2opt.add_argument("-step2", default = 2500, type = int, help = "the number of steps for first step minimization")
     mol2opt.set_defaults(func = tools.mol2opt)
+
 
     args = parser.parse_args()
 
