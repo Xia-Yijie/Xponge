@@ -867,7 +867,7 @@ def parmchk2_gaff(ifname, ofname, direct_load = True, keep = True):
     datapath = os.path.split(xlib.__file__)[0]
     xlib._parmchk2(ifname, "mol2", ofname, datapath, 0, 1, 1)
     if direct_load:
-        atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod("temp.frcmod")
+        atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(ofname)
         BOND.BondType.New_From_String(bonds)
         ANGLE.AngleType.New_From_String(angles)
         DIHEDRAL.ProperType.New_From_String(propers)

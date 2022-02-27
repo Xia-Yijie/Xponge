@@ -482,17 +482,17 @@ def Save_Gro(molecule, filename):
     for i, atom in enumerate(molecule.atoms):
         residue = atom.residue
         if not GlobalSetting.nocenter:
-            x = atom.x - mini[0] + 3
-            y = atom.y - mini[1] + 3
-            z = atom.z - mini[2] + 3
+            x = atom.x - mini[0] + GlobalSetting.boxspace
+            y = atom.y - mini[1] + GlobalSetting.boxspace
+            z = atom.z - mini[2] + GlobalSetting.boxspace
         else:
             x, y, z = atom.x. atom.y, atom.z
          
         towrite += "%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n"%(molecule.residue_index[residue] + 1, residue.name, atom.name, i+1, x/10, y/10, z/10)
     if molecule.box_length is None:
-        boxlength[0] = maxi[0] - mini[0] + 6
-        boxlength[1] = maxi[1] - mini[1] + 6
-        boxlength[2] = maxi[2] - mini[2] + 6
+        boxlength[0] = maxi[0] - mini[0] + GlobalSetting.boxspace * 2
+        boxlength[1] = maxi[1] - mini[1] + GlobalSetting.boxspace * 2
+        boxlength[2] = maxi[2] - mini[2] + GlobalSetting.boxspace * 2
         molecule.box_length = [boxlength[0], boxlength[1], boxlength[2]]
     else:
         boxlength[0] = molecule.box_length[0]

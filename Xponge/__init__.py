@@ -44,7 +44,7 @@ class _GlobalSetting():
     PDBResidueNameMap = {"head": {}, "tail": {}, "save": {}}
     HISMap = {"DeltaH": "", "EpsilonH": "", "HIS": {}}
     nocenter = False
-
+    boxspace = 3 #space between the molecule and the box border
     def Add_PDB_Residue_Name_Mapping(self, place, pdb_name, real_name):
         assert place in ("head", "tail")
         self.PDBResidueNameMap[place][pdb_name] = real_name

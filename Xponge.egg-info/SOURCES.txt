@@ -10,6 +10,7 @@ Xponge/__main__.py
 Xponge.egg-info/PKG-INFO
 Xponge.egg-info/SOURCES.txt
 Xponge.egg-info/dependency_links.txt
+Xponge.egg-info/entry_points.txt
 Xponge.egg-info/requires.txt
 Xponge.egg-info/top_level.txt
 Xponge/analysis/MDAnalysis.py
