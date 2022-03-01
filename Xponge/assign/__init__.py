@@ -66,6 +66,7 @@ class Assign():
         self.atom_marker = {}
         self.bonds = {}
         self.ar_bonds = {}
+        self.am_bonds = {}
         self.bond_marker = {}
 
     def Atom_Judge(self, atom, string):
@@ -349,6 +350,8 @@ class Assign():
                 if i < j:
                     if  i in self.ar_bonds.keys() and j in self.ar_bonds[i]:
                         bonds.append("%6d %6d ar\n" % (i + 1, j + 1))
+                    elif i in self.am_bonds.keys() and j in self.am_bonds[i]:
+                        bonds.append("%6d %6d am\n" % (i + 1, j + 1))
                     else:
                         bonds.append("%6d %6d %1d\n" % (i + 1, j + 1, order))
         bonds.sort(key=lambda x: list(map(int, x.split()[:2])))
@@ -458,6 +461,18 @@ def Get_Assignment_From_Mol2(filename):
                         assign.ar_bonds[atom2] = [atom1]
                     else:
                         assign.ar_bonds[atom2].append(atom1)
+                elif words[3] == "am":
+                    atom1 = int(words[1]) - 1
+                    atom2 = int(words[2]) - 1
+                    assign.Add_Bond(atom1, atom2, 1)
+                    if atom1 not in assign.am_bonds.keys():
+                        assign.am_bonds[atom1] = [atom2]
+                    else:
+                        assign.am_bonds[atom1].append(atom2)
+                    if atom2 not in assign.am_bonds.keys():
+                        assign.am_bonds[atom2] = [atom1]
+                    else:
+                        assign.am_bonds[atom2].append(atom1)
                 else:
                     raise NotImplementedError("No implemented method to process bond #%s type %s"%(words[0], words[3]))
     ar_bonds_atoms = list(assign.ar_bonds.keys())

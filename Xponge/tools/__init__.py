@@ -300,6 +300,8 @@ def mol2opt(args):
     Xponge.forcefield.AMBER.gaff.parmchk2_gaff("%s.mol2"%args.temp, "%s.frcmod"%args.temp)
     Xponge.GlobalSetting.boxspace = 10
     Xponge.BUILD.Save_SPONGE_Input(temp)
+    if args.nomin:
+        return
     os.system("%s -mode minimization -rst %s -mdinfo %s.mdinfo -mdout %s.mdout -minimization_dynamic_dt 1 -default_in_file_prefix %s -step_limit %d -write_mdout_interval %d -write_restart_file_interval %d -write_information_interval 0 "%(args.sponge, args.temp, args.temp, args.temp, args.temp, args.step1, args.step1, args.step1))
     os.system("%s -mode minimization -dt 1e-3 -rst %s -mdinfo %s.mdinfo -mdout %s.mdout -default_in_file_prefix %s -step_limit %d -write_mdout_interval %d -write_restart_file_interval %d -write_information_interval 0 -coordinate_in_file %s_coordinate.txt"%(args.sponge, args.temp, args.temp, args.temp, args.temp, args.step2, args.step2, args.step2, args.temp))
     with open("%s_coordinate.txt"%args.temp) as f:
