@@ -2,13 +2,28 @@
 
 ## \_\_init\_\_
 
+### Xponge._GlobalSetting
+
+This **class** is used to set the global settings.
+
+#### properties
+- `farthest_bonded_force`: an **int**, the atom index distance of farthest bonded force. 4 for 'dihedral' and 5 for 'cmap'.
+- `BondedForces`: the **list** to store all of the bonded force type.
+- `BondedForcesMap`: the **dict** to store all of the name - bonded force type pairs. 
+- `VirtualAtomTypes`: the **dict** to store all of the virtual atom type - dependent atom number pairs.
+- `UnitMapping`: the **dict** to store all of the units.
+- `PDBResidueNameMap`:  the **dict** to store all of the residue name mapping when loading pdb files.
+- `HISMap`: the **dict** to store HIS residue information in different protonated state.
+- `nocenter`: a **bool**ean value to ensure whether change the coordinate to the center when building.
+- `boxspace`: a **float** to set the periodic box space between the inner molecules when building.
+
 # XpongeLib
 
 XpongeLib is the C/C++ compiled library for Xponge.
 
 ## \_\_init\_\_
 
-### \_parmchk2
+### XpongeLib.\_parmchk2
 
 ``` python
 XpongeLib._parmchk2(i, iformat, o, datapath, print_all, print_dihedral_contain_X,  gaffORgaff2)
