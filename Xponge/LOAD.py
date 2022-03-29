@@ -5,7 +5,7 @@ import sys
 ##########################################################################
 #General Format
 ##########################################################################
-def mol2(filename):
+def mol2(filename, ignore_atom_type = False):
     with open(filename) as f:
         #存储读的时候的临时信息，key是编号
         #value是list：原子名(0)、residue(1)、residue编号(2)、是否是新的residue type(3)、该原子(4)、residue type的最新原子(5)
@@ -44,10 +44,14 @@ def mol2(filename):
                     if current_residue:
                         current_molecule.Add_Residue(current_residue)
                     current_residue = Residue(ResidueType.types[words[7]])
+                if ignore_atom_type:
+                    temp_atom_type = AtomType.types["UNKNOWN"]
+                else:
+                    temp_atom_type = AtomType.types[words[5]]
                 if temp:
-                    current_residue.type.Add_Atom(words[1], AtomType.types[words[5]], *words[2:5])
+                    current_residue.type.Add_Atom(words[1], temp_atom_type, *words[2:5])
                     current_residue.type.atoms[-1].Update(**{"charge[e]": float(words[8])})
-                current_residue.Add_Atom(words[1], AtomType.types[words[5]], *words[2:5])
+                current_residue.Add_Atom(words[1], temp_atom_type, *words[2:5])
                 current_residue.atoms[-1].Update(**{"charge[e]": float(words[8])})
                 atom_residue_map[words[0]]=[words[1], current_residue, current_residue_index, temp, current_residue.atoms[-1], current_residue.type.atoms[-1]]
             elif flag == "BOND":
@@ -101,11 +105,11 @@ def pdb(filename, judge_HIS = True):
                         else:
                             residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIE"]
                         current_HIS = {"DeltaH":False, "EpsilonH":False}
+                    current_resname = resname
                     if resname in GlobalSetting.PDBResidueNameMap["head"].keys():
                         resname = GlobalSetting.PDBResidueNameMap["head"][resname]
                     residue_type_map.append(resname)
                     current_residue_index = resindex
-                    current_resname = resname
                     chain[chr(ord("A") + len(chain.keys()))] = {resindex:current_residue_count}
                 elif current_residue_index != resindex or current_resname != resname:
                     if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
@@ -229,17 +233,17 @@ def frcmod(filename, nbtype = "RE"):
             words = line.split()
             if flag != "CMAP" and len(words) == 1:
                 flag = line.strip()
-            elif flag == "MASS":
+            elif flag[:4] == "MASS":
                 atom_types[words[0]] = words[1]
-            elif flag == "BOND":
+            elif flag[:4] == "BOND":
                 atoms = [ word.strip() for word in line[:5].split("-") ]
                 words = line[5:].split()
                 bonds += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
-            elif flag == "ANGL":
+            elif flag[:4] == "ANGL":
                 atoms = [ word.strip() for word in line[:8].split("-") ]
                 words = line[8:].split()
                 angles += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
-            elif flag == "DIHE":
+            elif flag[:4] == "DIHE":
                 atoms = [ word.strip() for word in line[:11].split("-") ]
                 words = line[11:].split()
                 propers += "-".join(atoms) + "\t" + str(float(words[1]) / int(words[0])) + "\t" + words[2] + "\t" + str(abs(int(float(words[3])))) + "\t" + str(reset) + "\n"
@@ -247,14 +251,14 @@ def frcmod(filename, nbtype = "RE"):
                     reset = 0
                 else:
                     reset = 1
-            elif flag == "IMPR":
+            elif flag[:4] == "IMPR":
                 atoms = [ word.strip() for word in line[:11].split("-") ]
                 words = line[11:].split()
                 impropers += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\t" + str(int(float(words[2]))) + "\n"
-            elif flag == "NONB" or flag == "NONBON":
+            elif flag[:4] == "NONB":
                 words = line.split()
                 LJs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
-            elif flag == "CMAP":
+            elif flag[:4] == "CMAP":
                 if line.startswith("%FLAG"):
                     if "CMAP_COUNT" in line:
                         if temp_cmp:

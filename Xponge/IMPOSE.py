@@ -34,7 +34,7 @@ def _get_friends(molecule, atom1, atom2):
         atom2_friends = []
         head = 0
         tail = 0
-        
+
         restype = atom1.residue.type
         def restype_atom(atom):
             return restype._name2atom[atom.name]
@@ -48,6 +48,7 @@ def _get_friends(molecule, atom1, atom2):
         index_dict = {}.fromkeys(restype.connectivity[typeatom1], typeatom1)
         if typeatom2 in index_dict.keys():
             index_dict.pop(typeatom2)
+
         while index_dict:
             index_next = {}
             for atom0, from_atom in index_dict.items():
@@ -62,7 +63,7 @@ def _get_friends(molecule, atom1, atom2):
                     index_temp.pop(typeatom2)
                 index_next.update(index_temp)
             index_dict = index_next
-            
+
         index_dict = {}.fromkeys(restype.connectivity[typeatom2], typeatom2)
         if typeatom1 in index_dict.keys():
             index_dict.pop(typeatom1)

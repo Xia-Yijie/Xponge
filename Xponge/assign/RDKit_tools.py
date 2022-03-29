@@ -1,4 +1,4 @@
-def Assign2RDKitMol(assign):
+def Assign2RDKitMol(assign, ignore_bond_type = False):
     from rdkit import Chem
     molA = Chem.RWMol()
     for atom in assign.atoms:
@@ -7,7 +7,9 @@ def Assign2RDKitMol(assign):
         for aton, n in bonds.items():
             if aton < atom:
                 continue
-            if n == 1:
+            if  ignore_bond_type or n == -1:
+                temp_bond = Chem.BondType.UNSPECIFIED
+            elif n == 1:
                 temp_bond = Chem.BondType.SINGLE
             elif n == 2:
                 temp_bond = Chem.BondType.DOUBLE
@@ -23,6 +25,24 @@ def Assign2RDKitMol(assign):
     mol.AddConformer(conf)
     Chem.SanitizeMol(mol)
     return mol
+
+def Insert_Atom_Type_To_RDKitMol(mol, atoms, atom_type_dict = {}):
+    i = 0
+    for a in mol.GetAtoms():
+        atom_type = atoms[i].type.name
+        if atom_type not in atom_type_dict.keys():
+            atom_type_dict[atom_type] = len(atom_type_dict)
+        a.SetIsotope(atom_type_dict[atom_type])
+        i += 1
+
+def Insert_Atom_Type_To_RDKitMol(mol, atoms, atom_type_dict = {}):
+    i = 0
+    for a in mol.GetAtoms():
+        atom_type = atoms[i].type.name
+        if atom_type not in atom_type_dict.keys():
+            atom_type_dict[atom_type] = len(atom_type_dict)
+        a.SetIsotope(atom_type_dict[atom_type])
+        i += 1
 
 def Find_Equal_Atoms(assign):
     from rdkit import Chem
@@ -61,7 +81,7 @@ def Get_Conformer_Coordinate_To_Residue(mol, res, assign):
         res.atoms[j].x, res.atoms[j].y, res.atoms[j].z = mol.GetConformer(0).GetAtomPosition(i)
 
 def Set_Conformer_Coordinate_From_Residue(mol, res, assign):
-    for i in range(mol.GetNumAtoms()):
+    for i in range(mol.GetNumAtoms()):    
         j = res._name2index[assign.names[i]]
         mol.GetConformer(0).SetAtomPosition(i, [res.atoms[j].x, res.atoms[j].y, res.atoms[j].z])
 
@@ -89,7 +109,6 @@ def Get_Part_Align(molA, molB, partA, partB):
 
     molAn = RWmolA.GetMol()
     molBn = RWmolB.GetMol()
-    
     rmsd, transformer = rdMolAlign.GetAlignmentTransform(molBn, molAn)
     crd = Apply_Transform(Get_Conformer_Coordinate(molB), transformer)
     Set_Conformer_Coordinate(molB, crd)

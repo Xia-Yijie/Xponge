@@ -90,8 +90,10 @@ class Type:
     types_different_name = {}
 
     @classmethod
-    def Add_Property(cls, parm_fmt):
+    def Add_Property(cls, parm_fmt, parm_default = {}):
         cls.parameters.update(parm_fmt)
+        for _type in cls.types.values():
+            _type.contents.update({key:parm_default.get(key, None) for key in parm_fmt.keys()})
 
     @classmethod
     def Set_Property_Unit(cls, prop, unit_type, base_unit):
@@ -240,6 +242,7 @@ class AtomType(Type):
     types = {}
     types_different_name = {}
 
+AtomType.New_From_String("name\nUNKNOWN")
 
 class ResidueType(Type):
     name = "Residue"
@@ -355,7 +358,7 @@ class ResidueType(Type):
     def Add_Bonded_Force(self, bonded_force_entity, typename=None):
         if typename is None:
             typename = type(bonded_force_entity).name
-        if type(bonded_force_entity).name not in self.bonded_forces.keys():
+        if typename not in self.bonded_forces.keys():
             self.bonded_forces[typename] = []
         self.bonded_forces[typename].append(bonded_force_entity)
 

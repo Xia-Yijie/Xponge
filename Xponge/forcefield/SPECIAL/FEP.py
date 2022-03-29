@@ -36,7 +36,7 @@ FEP_Bonded_Force_Merge_Rule = {}
 
 def nb14_extra_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, molR2molA, molA2molR, molR2molB,
                           molB2molR):
-    TINY = 1e-20
+    TINY = 1e-10
     forcepair = _find_common_forces(forcetype, Rforces, Bforces, molB2molR)
     for fR, fB in forcepair:
         if fB is None:
@@ -471,27 +471,38 @@ def Get_Free_Molecule(molA, perturbing_residues, intra_FEP=False):
 
 
 def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
+    
     BUILD.Build_Bonded_Force(mol)
     BUILD.Build_Bonded_Force(ResidueB)
-
+    
     from ...assign.RDKit_tools import Assign2RDKitMol, Get_Part_Align, \
-        Set_Conformer_Coordinate_From_Residue, Get_Conformer_Coordinate_To_Residue
+        Set_Conformer_Coordinate_From_Residue, Get_Conformer_Coordinate_To_Residue, \
+        Get_Conformer_Coordinate, Insert_Atom_Type_To_RDKitMol
     from rdkit import Chem
-    from rdkit.Chem import rdFMCS
+    from rdkit.Chem import rdFMCS as MCS
 
-    RDmolA = Assign2RDKitMol(AssignA)
-    RDmolB = Assign2RDKitMol(AssignB)
+    RDmolA = Assign2RDKitMol(AssignA, True)
+    RDmolB = Assign2RDKitMol(AssignB, True)
 
-    result = rdFMCS.FindMCS([RDmolA, RDmolB], completeRingsOnly=True)
-    RDmol_mcs = Chem.MolFromSmarts(result.smartsString)
+    atom_type_dict = {}
+    Insert_Atom_Type_To_RDKitMol(RDmolA, ResidueA.atoms, atom_type_dict)
+    Insert_Atom_Type_To_RDKitMol(RDmolB, ResidueB.atoms, atom_type_dict)
+    print("FINDING MAXIMUM COMMON SUBSTRUCTURE")
+
+    result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True, matchValences = True, timeout = 10)
+    #print(result.smartsString)
+    #RDmol_mcs = Chem.MolFromSmarts(result.smarts)
+    RDmol_mcs = result.queryMol
+    #from rdkit.Chem import Draw
+    #Draw.MolToImageFile(RDmol_mcs, "test.jpg")
 
     matchA = RDmolA.GetSubstructMatch(RDmol_mcs)
     matchB = RDmolB.GetSubstructMatch(RDmol_mcs)
     matchmap = {matchB[j]: matchA[j] for j in range(len(matchA))}
-
+  
     Set_Conformer_Coordinate_From_Residue(RDmolA, ResidueA, AssignA)
     Set_Conformer_Coordinate_From_Residue(RDmolB, ResidueB, AssignB)
-
+    print("ALIGNING TOPOLOGY AND COORDINATE")
     Get_Part_Align(RDmolA, RDmolB, matchA, matchB)
 
     ResidueTypeA = ResidueA.type
@@ -504,18 +515,21 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
         raise TypeError
 
     Get_Conformer_Coordinate_To_Residue(RDmolB, ResidueTypeB, AssignB)
-
+    
     forcopy = hash(str(time.time()))
     restypeAB = ResidueTypeA.deepcopy(ResidueTypeA.name + "_" + ResidueTypeB.name, forcopy)
     extraA = []
     extraB = []
     RBmap = {value: key for key, value in matchmap.items()}
     for i in range(len(ResidueTypeA.atoms)):
+        atom = ResidueTypeA.atoms[i]
+        atom.x = ResidueA.atoms[i].x
+        atom.y = ResidueA.atoms[i].y
+        atom.z = ResidueA.atoms[i].z
         if i not in matchA:
-            atom = ResidueTypeA.atoms[i]
-            extraA.append(atom.copied[forcopy])
+            extraA.append(atom.copied[forcopy])            
             extraA[-1].subsys = 1
-
+            
     for i in range(len(ResidueTypeB.atoms)):
         if i not in matchB:
             RBmap[len(restypeAB.atoms)] = i
@@ -525,7 +539,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
             atom.copied[forcopy].contents = {key: value for key, value in atom.contents.items()}
             atom.copied[forcopy].name = atom.name + "R2"
             extraB.append(atom.copied[forcopy])
-            extraB[-1].subsys = 1
+            extraB[-1].subsys = 2
         else:
             ResidueTypeB.atoms[i].copied[forcopy] = restypeAB.atoms[matchmap[i]]
 
@@ -536,6 +550,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
     for atom, connect_set in ResidueTypeB.connectivity.items():
         for aton in connect_set:
             restypeAB.Add_Connectivity(atom.copied[forcopy], aton.copied[forcopy])
+    
 
     for bond_entities in ResidueTypeB.bonded_forces.values():
         for bond_entity in bond_entities:
@@ -546,6 +561,8 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
                     break
             if tocopy:
                 restypeAB.Add_Bonded_Force(bond_entity.deepcopy(forcopy))
+    
+                          
 
     for atom in ResidueTypeB.atoms:
         for key, linked_atoms in atom.copied[forcopy].linked_atoms.items():
@@ -553,7 +570,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
                 if not (ResidueTypeB._atom2index[aton] in matchmap.keys()
                         and ResidueTypeB._atom2index[atom] in matchmap.keys()):
                     atom.copied[forcopy].Link_Atom(key, aton.copied[forcopy])
-
+    
     for atom in ResidueTypeA.atoms:
         atom.copied.pop(forcopy)
 
@@ -564,7 +581,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
 
     BUILD.Build_Bonded_Force(restypeBA)
     BUILD.Build_Bonded_Force(restypeAB)
-
+    
     NB14_EXTRA.NB14_To_NB14EXTRA(restypeBA)
     NB14_EXTRA.NB14_To_NB14EXTRA(restypeAB)
 
@@ -574,12 +591,16 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
         else:
             restypeAB.atoms[i].LJtype = "ZERO_LJ_ATOM"
             restypeAB.atoms[i].charge = 0
+            restypeAB.atoms[i].subsys = 2
+            restypeBA.atoms[i].subsys = 2
 
         if i in RBmap:
             restypeBA.atoms[i].contents.update({key: value for key, value in ResidueTypeB.atoms[RBmap[i]].contents.items() if key != "name" })
         else:
             restypeBA.atoms[i].LJtype = "ZERO_LJ_ATOM"
             restypeBA.atoms[i].charge = 0
+            restypeAB.atoms[i].subsys = 1
+            restypeBA.atoms[i].subsys = 1
 
     molA = Molecule(mol.name + "A")
     molB = Molecule(mol.name + "B")
@@ -593,11 +614,14 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
             molB.Add_Residue(res)
 
     for reslink in mol.residue_links:
-        molA.Add_Residue_Link(reslink)
-        molB.Add_Residue_Link(reslink)
+        molA.residue_links.append(reslink)
+        molB.residue_links.append(reslink)
 
     BUILD.Build_Bonded_Force(molA)
     BUILD.Build_Bonded_Force(molB)
+ 
+
+
     return molA, molB
 
 

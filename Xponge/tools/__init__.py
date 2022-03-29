@@ -287,6 +287,61 @@ def crd2rst7(args):
     with open(args.rst7, "w") as f:
         f.write(towrite)
 
+def trr2dat(args):
+    import numpy as np
+    from MDAnalysis.lib.formats.libmdaxdr import TRRFile
+    box = []
+    crd = []
+    with TRRFile(args.i) as f:
+        for frame in f:
+            crd.append(frame.x)
+            box.append([frame.box[0][0] * 10, frame.box[1][1] * 10, frame.box[2][2] * 10, 90, 90, 90])
+    box = np.array(box, dtype=np.float32)
+    crd = np.array(crd, dtype=np.float32) * 10
+    np.savetxt("{}.box".format(args.o), box)
+    crd.tofile("{}.dat".format(args.o))
+
+def name2name(args):
+    import Xponge
+    import Xponge.assign.RDKit_tools as rdktool
+    from rdkit import Chem
+    from rdkit.Chem import rdFMCS
+
+    if args.to_format == "mol2":
+        _to = Xponge.assign.Get_Assignment_From_Mol2(args.to_file)
+    elif args.to_format == "gaff_mol2":
+        import Xponge.forcefield.AMBER.gaff
+        _to = Xponge.LOAD.mol2(args.to_file).residues[0]
+        _to = Xponge.assign.Get_Assignment_From_ResidueType(_to)
+    elif args.to_format == "pdb":
+        _to = Xponge.assign.Get_Assignment_From_PDB(args.to_file, False)
+
+    if args.from_format == "mol2":
+        _from = Xponge.assign.Get_Assignment_From_Mol2(args.from_file)
+    elif args.from_format == "gaff_mol2":
+        import Xponge.forcefield.AMBER.gaff
+        _from = Xponge.LOAD.mol2(args.from_file).residues[0]
+        _from = Xponge.assign.Get_Assignment_From_ResidueType(_from)
+    elif args.from_format == "pdb":
+        _from = Xponge.assign.Get_Assignment_From_PDB(args.from_file, False)
+  
+    RDmolA = rdktool.Assign2RDKitMol(_to, True)
+    RDmolB = rdktool.Assign2RDKitMol(_from, True)
+
+    result = rdFMCS.FindMCS([RDmolA, RDmolB], completeRingsOnly=True)
+    RDmol_mcs = Chem.MolFromSmarts(result.smartsString)
+
+    matchA = RDmolA.GetSubstructMatch(RDmol_mcs)
+    matchB = RDmolB.GetSubstructMatch(RDmol_mcs)
+    matchmap = {_from.names[matchB[j]]: _to.names[matchA[j]] for j in range(len(matchA))}
+    _from.names  = [ matchmap.get(name, name) for name in _from.names ]
+
+
+    if args.out_format == "mol2":
+        _from.Save_As_Mol2(args.out_file)
+    elif args.out_format == "pdb":
+        _from.Save_As_PDB(args.out_file)
+
 def mol2opt(args):
     import Xponge
     import Xponge.forcefield.AMBER.gaff
@@ -312,16 +367,213 @@ def mol2opt(args):
         t.coordinate[i // 3][i % 3] = xyzi
     t.Save_As_Mol2(args.o)
 
-def trr2dat(args):
+def mol2rfe(args):
+
+    import Xponge
+    import Xponge.forcefield.SPECIAL.FEP as FEP
+    import Xponge.forcefield.AMBER.gaff as gaff
+    import Xponge.forcefield.AMBER.tip3p
+    import os
     import numpy as np
-    from MDAnalysis.lib.formats.libmdaxdr import TRRFile
-    box = []
-    crd = []
-    with TRRFile(args.i) as f:
-        for frame in f:
-            crd.append(frame.x)
-            box.append([frame.box[0][0] * 10, frame.box[1][1] * 10, frame.box[2][2] * 10, 90, 90, 90])
-    box = np.array(box, dtype=np.float32)
-    crd = np.array(crd, dtype=np.float32) * 10
-    np.savetxt("{}.box".format(args.o), box)
-    crd.tofile("{}.dat".format(args.o))
+
+    if args.protein_ff == "ff14SB":
+        import Xponge.forcefield.AMBER.ff14SB
+    elif args.protein_ff == "ff19SB":
+        import Xponge.forcefield.AMBER.ff19SB
+    
+    _from_res_type = Xponge.LOAD.mol2(args.residuetype1).residues[0]
+    _from = Xponge.assign.Get_Assignment_From_ResidueType(_from_res_type)
+    gaff.parmchk2_gaff(args.residuetype1, args.temp + "_TMP1.frcmod")
+
+    if args.assignment2:
+        _to = Xponge.assign.Get_Assignment_From_Mol2(args.assignment2)
+        _to.Determine_Atom_Type("GAFF")
+        q = _to.Calculate_Charge("RESP", opt = True)
+        _to_res_type = _to.To_ResidueType("MTO", q)
+    elif args.name2:
+        _to = Xponge.assign.Get_Assignment_From_PubChem(args.name2, "name")
+        _to.Determine_Atom_Type("GAFF")
+        q = _to.Calculate_Charge("RESP", opt = True)
+        _to_res_type = _to.To_ResidueType("MTO", q)
+    elif args.smiles2:
+        _to = Xponge.assign.Get_Assignment_From_PubChem(args.smiles2, "smiles")
+        _to.Determine_Atom_Type("GAFF")
+        q = _to.Calculate_Charge("RESP", opt = True)
+        _to_res_type = _to.To_ResidueType("MTO", q)
+    elif args.residuetype2:
+        _to_res_type = Xponge.LOAD.mol2(args.residuetype2).residues[0]
+        _to = Xponge.assign.Get_Assignment_From_ResidueType(_to_res_type)
+    
+    Xponge.BUILD.Save_Mol2(_to_res_type, args.temp + "_TMP2.mol2")
+    gaff.parmchk2_gaff(args.temp + "_TMP2.mol2", args.temp + "_TMP2.frcmod")
+    for mol2file in args.residuetype0:
+        Xponge.LOAD.mol2(mol2file)
+    
+    rmol = Xponge.LOAD.pdb(args.pdb)
+
+    merged_from, merged_to = FEP.Merge_Dual_Topology(rmol, rmol.residues[args.residue], _to_res_type, _from, _to)
+
+    print("\nBUILDING TOPOLOGY\n")
+    FEP.Save_Soft_Core_LJ()
+
+    for i in range(args.lambda_numbers + 1):
+        if os.path.exists("%d"%i):
+            os.system("rm -rf %d"%i)
+        os.mkdir("%d"%i)
+        tt = FEP.Merge_Force_Field(merged_from, merged_to,  i / args.lambda_numbers)
+        Xponge.BUILD.Save_SPONGE_Input(tt, "%d/%s"%(i, args.temp))
+    for i in [0]:
+        if os.path.exists("%d/min"%i):
+            os.system("rm -rf %d/min"%i)
+        os.mkdir("%d/min"%i)
+        os.system("{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit 2000".format(args.sponge, args.temp, i, i / args.lambda_numbers))
+        os.system("{0} -mode minimization -dt 2e-7 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 2000 -coordinate_in_file 0/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers))
+        os.system("{0} -mode minimization -dt 2e-6 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 2000 -coordinate_in_file 0/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers))
+        os.system("{0} -mode minimization -dt 2e-5 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 3000 -coordinate_in_file 0/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers))
+        os.system("{0} -mode minimization -dt 2e-4 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 3000 -coordinate_in_file 0/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers))
+        os.system("{0} -mode minimization -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 5000 -coordinate_in_file 0/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers))
+
+    for i in range(1, args.lambda_numbers + 1):
+        if os.path.exists("%d/min"%i):
+            os.system("rm -rf %d/min"%i)
+        os.mkdir("%d/min"%i)
+        os.system("{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit 2000 -coordinate_in_file {4}/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers, i - 1))
+        os.system("{0} -mode minimization -dt 2e-7 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 2000 -coordinate_in_file {4}/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers, i - 1))
+        os.system("{0} -mode minimization -dt 2e-6 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 2000 -coordinate_in_file {4}/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers, i - 1))
+        os.system("{0} -mode minimization -dt 2e-5 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 3000 -coordinate_in_file {4}/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers, i - 1))
+        os.system("{0} -mode minimization -dt 2e-4 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 3000 -coordinate_in_file {4}/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers, i - 1))
+        os.system("{0} -mode minimization -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 5000 -coordinate_in_file {4}/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers, i - 1))
+
+    for i in range(args.lambda_numbers + 1):
+        if os.path.exists("%d/prebalance"%i):
+            os.system("rm -rf %d/prebalance"%i)
+        os.mkdir("%d/prebalance"%i)
+        os.system("{0} -mode NPT -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/prebalance/{1}.mdinfo -mdout {2}/prebalance/{1}.mdout -rst {2}/prebalance/{1} -crd {2}/prebalance/{1}.dat -box {2}/prebalance/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit {4} -barostat {5} -thermostat {6} -coordinate_in_file {2}/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers, args.prebalance_step, args.barostat, args.thermostat))
+
+    for i in range(args.lambda_numbers + 1):
+        if os.path.exists("%d/balance"%i):
+            os.system("rm -rf %d/balance"%i)
+        os.mkdir("%d/balance"%i)
+        os.system("{0} -mode NPT -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/balance/{1}.mdinfo -mdout {2}/balance/{1}.mdout -rst {2}/balance/{1} -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit {4} -barostat {5} -thermostat {6} -coordinate_in_file {2}/prebalance/{1}_coordinate.txt -velocity_in_file {2}/prebalance/{1}_velocity.txt -write_information_interval 100 -write_mdout_interval 5000 -write_restart_file_interval {4}".format(args.sponge, args.temp, i, i / args.lambda_numbers, args.balance_step, args.barostat, args.thermostat))
+    with open("dh_dlambda.txt", "w") as f:
+        pass
+    if args.method == "TI":
+
+        for i in range(args.lambda_numbers + 1):
+            if os.path.exists("%d/ti"%i):
+                os.system("rm -rf %d/ti"%i)
+            os.mkdir("%d/ti"%i)
+            os.system("{0} -LJ_soft_core_in_file {2}/{1}_LJ_soft_core.txt -exclude_in_file {2}/{1}_exclude.txt -charge_in_file {2}/{1}_charge.txt -chargeA_in_file 0/{1}_charge.txt -chargeB_in_file {4}/{1}_charge.txt -mdinfo {2}/ti/{1}.mdinfo -mdout {2}/ti/{1}.mdout -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -subsys_division_in_file {2}/{1}_subsys_division.txt  -charge_pertubated 1 -atom_numbers {5} -frame_numbers {6} -TI dh_dlambda.txt".format(args.sponge_ti, args.temp, i, i / args.lambda_numbers, args.lambda_numbers, len(merged_from.atoms),  args.balance_step // 100))             
+
+        dh_dlambda = np.loadtxt("dh_dlambda.txt")
+        dh = []
+        dh_int = []
+        tempall = 0
+        for i in range(args.lambda_numbers):
+            temp = dh_dlambda[i] * 0.5 / args.lambda_numbers
+            temp += dh_dlambda[i + 1] * 0.5 / args.lambda_numbers
+            dh.append(temp)
+            tempall += temp
+            dh_int.append(tempall)
+        with open("free_energy.txt", "w") as f:
+            f.write("lambda_state\tFE(i+1)-FE(i)[kcal/mol]\tFE(i+1)-FE(0)[kcal/mol]\n")
+            f.write("\n".join(["%d\t\t%.2f\t\t\t%.2f"%(i, dh[i], dh_int[i]) for i in range(args.lambda_numbers)]))
+    elif args.method == "FEP_BAR":
+        raise NotImplementedError
+        
+def mol2hfe(args):
+    import Xponge
+    import Xponge.forcefield.SPECIAL.FEP as FEP
+    import Xponge.forcefield.AMBER.gaff
+    import Xponge.forcefield.AMBER.tip3p
+    import os
+    import numpy as np
+    if args.assignment:
+        t = Xponge.assign.Get_Assignment_From_Mol2(args.assignment)
+        t.Determine_Atom_Type("GAFF")
+        q = t.Calculate_Charge("RESP", opt = True)
+        restype = t.To_ResidueType(args.temp, q)
+        Xponge.BUILD.Save_Mol2(restype)
+        Xponge.forcefield.AMBER.gaff.parmchk2_gaff("%s.mol2"%args.temp, "%s.frcmod"%args.temp)
+        rmol = Xponge.Molecule(args.temp)
+        rmol.Add_Residue(restype)
+    elif args.name:
+        t = Xponge.assign.Get_Assignment_From_PubChem(args.name, "name")
+        t.Determine_Atom_Type("GAFF")
+        q = t.Calculate_Charge("RESP", opt = True)
+        restype = t.To_ResidueType(args.temp, q)
+        Xponge.BUILD.Save_Mol2(restype)
+        Xponge.forcefield.AMBER.gaff.parmchk2_gaff("%s.mol2"%args.temp, "%s.frcmod"%args.temp)
+        rmol = Xponge.Molecule(args.temp)
+        rmol.Add_Residue(restype)
+    elif args.smiles:
+        t = Xponge.assign.Get_Assignment_From_PubChem(args.smiles, "smiles")
+        t.Determine_Atom_Type("GAFF")
+        q = t.Calculate_Charge("RESP", opt = True)
+        restype = t.To_ResidueType(args.temp, q)
+        Xponge.BUILD.Save_Mol2(restype)
+        Xponge.forcefield.AMBER.gaff.parmchk2_gaff("%s.mol2"%args.temp, "%s.frcmod"%args.temp)
+        rmol = Xponge.Molecule(args.temp)
+        rmol.Add_Residue(restype)
+    elif args.residuetype:
+        rmol = Xponge.LOAD.mol2(args.residuetype)
+        Xponge.forcefield.AMBER.gaff.parmchk2_gaff(args.residuetype, "%s.frcmod"%args.temp)
+    
+    Xponge.PROCESS.Box(rmol, Xponge.ResidueType.types["WAT"], 20)
+    free_rmol = FEP.Get_Free_Molecule(rmol, rmol.residues[0])
+    
+    Xponge.BUILD.Save_PDB(rmol)
+
+    print("\nBUILDING TOPOLOGY\n")
+    FEP.Save_Soft_Core_LJ()
+
+    for i in range(args.lambda_numbers + 1):
+        if os.path.exists("%d"%i):
+            os.system("rm -rf %d"%i)
+        os.mkdir("%d"%i)
+        tt = FEP.Merge_Force_Field(free_rmol, rmol,  i / args.lambda_numbers)
+        Xponge.BUILD.Save_SPONGE_Input(tt, "%d/%s"%(i, args.temp))
+
+    for i in range(args.lambda_numbers + 1):
+        if os.path.exists("%d/min"%i):
+            os.system("rm -rf %d/min"%i)
+        os.mkdir("%d/min"%i)
+        os.system("{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit 2000".format(args.sponge, args.temp, i, i / args.lambda_numbers))
+        os.system("{0} -mode minimization -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 2000 -coordinate_in_file {2}/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers))
+
+    for i in range(args.lambda_numbers + 1):
+        if os.path.exists("%d/prebalance"%i):
+            os.system("rm -rf %d/prebalance"%i)
+        os.mkdir("%d/prebalance"%i)
+        os.system("{0} -mode NPT -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/prebalance/{1}.mdinfo -mdout {2}/prebalance/{1}.mdout -rst {2}/prebalance/{1} -crd {2}/prebalance/{1}.dat -box {2}/prebalance/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit {4} -barostat {5} -thermostat {6} -coordinate_in_file {2}/min/{1}_coordinate.txt".format(args.sponge, args.temp, i, i / args.lambda_numbers, args.prebalance_step, args.barostat, args.thermostat))
+
+    for i in range(args.lambda_numbers + 1):
+        if os.path.exists("%d/balance"%i):
+            os.system("rm -rf %d/balance"%i)
+        os.mkdir("%d/balance"%i)
+        os.system("{0} -mode NPT -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/balance/{1}.mdinfo -mdout {2}/balance/{1}.mdout -rst {2}/balance/{1} -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit {4} -barostat {5} -thermostat {6} -coordinate_in_file {2}/prebalance/{1}_coordinate.txt -velocity_in_file {2}/prebalance/{1}_velocity.txt -write_information_interval 10 -write_mdout_interval 5000 -write_restart_file_interval {4}".format(args.sponge, args.temp, i, i / args.lambda_numbers, args.balance_step, args.barostat, args.thermostat))
+    with open("dh_dlambda.txt", "w") as f:
+        pass
+    if args.method == "TI":
+        for i in range(args.lambda_numbers + 1):
+            if os.path.exists("%d/ti"%i):
+                os.system("rm -rf %d/ti"%i)
+            os.mkdir("%d/ti"%i)
+            os.system("{0} -LJ_soft_core_in_file {2}/{1}_LJ_soft_core.txt -exclude_in_file {2}/{1}_exclude.txt -charge_in_file {2}/{1}_charge.txt -chargeA_in_file 0/{1}_charge.txt -chargeB_in_file {4}/{1}_charge.txt -mdinfo {2}/ti/{1}.mdinfo -mdout {2}/ti/{1}.mdout -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -subsys_division_in_file {2}/{1}_subsys_division.txt  -charge_pertubated 1 -atom_numbers {5} -frame_numbers {6} -TI dh_dlambda.txt".format(args.sponge_ti, args.temp, i, i / args.lambda_numbers, args.lambda_numbers, len(rmol.atoms),  args.balance_step // 10))             
+    
+        dh_dlambda = np.loadtxt("dh_dlambda.txt")
+        dh = []
+        dh_int = []
+        tempall = 0
+        for i in range(args.lambda_numbers):
+            temp = dh_dlambda[0] * 0.5 / args.lambda_numbers
+            temp += dh_dlambda[i + 1] * 0.5 / args.lambda_numbers
+            dh.append(temp)
+            tempall += temp
+            dh_int.append(tempall)
+        with open("free_energy.txt", "w") as f:
+            f.write("lambda_state\tFE(i+1)-FE(i)[kcal/mol]\tFE(i+1)-FE(0)[kcal/mol]\n")
+            f.write("\n".join(["%d\t\t%.2f\t\t\t%.2f"%(i, dh[i], dh_int[i]) for i in range(args.lambda_numbers)]))
+    elif args.method == "FEP_BAR":
+        raise NotImplementedError
+        
