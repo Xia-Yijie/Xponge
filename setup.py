@@ -7,7 +7,7 @@ f.close()
 #for formal
 setuptools.setup(
     name="Xponge",
-    version="0.0.8.9.4",
+    version="1.2.5.0",
     author="Yijie Xia",  
     author_email="yijiexia@pku.edu.cn", 
     description="A package for building molecular dynamics inputs for SPONGE",
@@ -21,7 +21,7 @@ setuptools.setup(
         "console_scripts": ["Xponge = Xponge.__main__:main"] },
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
-        "Development Status :: 4 - Beta",
+        'Development Status :: 5 - Production/Stable',
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6', 
