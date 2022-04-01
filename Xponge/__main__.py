@@ -114,7 +114,7 @@ def main():
     mol2rfe.add_argument("-ri", "-residue_index", type = int, metavar = 0, default = 0, help = "the residue index of the molecule to mutate")
     mol2rfe.add_argument("-nl", "-lambda_numbers", metavar = 20, type = int, default = 20, help = "the number of lambda groups - 1, default 20 for 0, 0.05, 0.10, 0.15..., 1.0")
 
-    mol2rfe.add_argument("-nohmr", "-no_hydrogen_mass_repartition", action = "store_true", help = "do not use the hydrogen mass repartition method")
+    mol2rfe.add_argument("-dohmr", "-do_hydrogen_mass_repartition", action = "store_true", help = "use the hydrogen mass repartition method")
     mol2rfe.add_argument("-ff", "-forcefield", help = "Use this force field file instead of the default ff14SB and gaff")
     mol2rfe.add_argument("-pi", "-prebalance_mdin", help = "Use this prebalance mdin file instead of the default one")
     mol2rfe.add_argument("-bi", "-balance_mdin", help = "Use this balance mdin file instead of the default one")
@@ -126,7 +126,13 @@ def main():
     mol2rfe.add_argument("-sponge_fep", default = "SPONGE_FEP", help = "SPONGE_FEP program command")
     mol2rfe.add_argument("-temp", default = "TMP", metavar = "TMP", help = "the temporary file name prefix")
 
-    mol2rfe.set_defaults(func = tools.mol2rfe, dt = 4e-3, prebalance_step = 25000, balance_step = 250000, barostat = "andersen_barostat", thermostat = "middle_langevin")
+    mol2rfe.add_argument("-dt", default = 2e-3, type = float, metavar = "dt", help = "the dt used for simulation when mdin is not provided")
+    mol2rfe.add_argument("-pstep", "-prebalance_step", default = 50000, type = int, metavar = "prebalance_step", help = "the prebalance step used for simulation when mdin is not provided")
+    mol2rfe.add_argument("-bstep", "-balance_step", default = 500000, type = int, metavar = "balance_step", help = "the balance step used for simulation when mdin is not provided")
+    mol2rfe.add_argument("-thermostat", default = "middle_langevin", metavar = "middle_langevin", help = "the thermostat used for simulation when mdin is not provided")
+    mol2rfe.add_argument("-barostat", default = "andersen_barostat", metavar = "andersen_barostat", help = "the barostat used for simulation when mdin is not provided")
+
+    mol2rfe.set_defaults(func = tools.mol2rfe)
 
     args = parser.parse_args()
 

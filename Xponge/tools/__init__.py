@@ -406,13 +406,9 @@ def mol2rfe(args):
 
     merged_from, merged_to = FEP.Merge_Dual_Topology(rmol, rmol.residues[args.ri], _to_res_type, _from, _to)
     
-    if not args.nohmr:
+    if args.dohmr:
         Xponge.PROCESS.HMass_Repartition(merged_from)
         Xponge.PROCESS.HMass_Repartition(merged_to)
-    else:
-        args.dt = 2e-3
-        args.prebalance_step *= 2
-        args.balance_step *= 2
 
     if "build" in args.do:
         print("\nBUILDING TOPOLOGY\n")
