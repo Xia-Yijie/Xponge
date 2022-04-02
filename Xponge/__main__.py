@@ -127,8 +127,8 @@ def main():
     mol2rfe.add_argument("-temp", default = "TMP", metavar = "TMP", help = "the temporary file name prefix")
 
     mol2rfe.add_argument("-dt", default = 2e-3, type = float, metavar = "dt", help = "the dt used for simulation when mdin is not provided")
-    mol2rfe.add_argument("-pstep", "-prebalance_step", default = 50000, type = int, metavar = "prebalance_step", help = "the prebalance step used for simulation when mdin is not provided")
-    mol2rfe.add_argument("-bstep", "-balance_step", default = 500000, type = int, metavar = "balance_step", help = "the balance step used for simulation when mdin is not provided")
+    mol2rfe.add_argument("-pstep", "-prebalance_step", dest = "prebalance_step", default = 50000, type = int, metavar = "prebalance_step", help = "the prebalance step used for simulation when mdin is not provided")
+    mol2rfe.add_argument("-bstep", "-balance_step", dest = "balance_step", default = 500000, type = int, metavar = "balance_step", help = "the balance step used for simulation when mdin is not provided")
     mol2rfe.add_argument("-thermostat", default = "middle_langevin", metavar = "middle_langevin", help = "the thermostat used for simulation when mdin is not provided")
     mol2rfe.add_argument("-barostat", default = "andersen_barostat", metavar = "andersen_barostat", help = "the barostat used for simulation when mdin is not provided")
 

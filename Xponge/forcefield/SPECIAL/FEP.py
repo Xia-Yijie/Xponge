@@ -489,13 +489,12 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
     Insert_Atom_Type_To_RDKitMol(RDmolB, ResidueB.atoms, atom_type_dict)
     print("FINDING MAXIMUM COMMON SUBSTRUCTURE")
 
-    result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True, matchValences = True, timeout = 10)
+    result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True, matchValences = True, timeout = 30)
     #print(result.smartsString)
     #RDmol_mcs = Chem.MolFromSmarts(result.smarts)
     RDmol_mcs = result.queryMol
     #from rdkit.Chem import Draw
     #Draw.MolToImageFile(RDmol_mcs, "test.jpg")
-
     matchA = RDmolA.GetSubstructMatch(RDmol_mcs)
     matchB = RDmolB.GetSubstructMatch(RDmol_mcs)
     matchmap = {matchB[j]: matchA[j] for j in range(len(matchA))}
