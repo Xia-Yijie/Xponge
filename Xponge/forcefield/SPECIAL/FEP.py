@@ -177,7 +177,7 @@ def dihedral_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, 
                         break
             if sameforce:
                 for i in range(fR.multiple_numbers):
-                    fR.ks[i] = fR.ks[i] * (1 - _lambda) + check_map[fR.periodicitys[i]] * _lambda
+                    fR.ks[i] = fR.ks[i] * (1 - _lambda) + fB.ks[i] * _lambda
             else:
                 for i in range(fR.multiple_numbers):
                     fR.ks[i] *= (1 - _lambda)
@@ -583,7 +583,6 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
     
     NB14_EXTRA.NB14_To_NB14EXTRA(restypeBA)
     NB14_EXTRA.NB14_To_NB14EXTRA(restypeAB)
-
     for i in range(len(restypeAB.atoms)):
         if i < len(ResidueTypeA.atoms):
             restypeAB.atoms[i].contents.update({key: value for key, value in ResidueTypeA.atoms[i].contents.items() if key != "name" })
