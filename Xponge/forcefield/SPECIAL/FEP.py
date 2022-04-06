@@ -36,7 +36,7 @@ FEP_Bonded_Force_Merge_Rule = {}
 
 def nb14_extra_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda, molR2molA, molA2molR, molR2molB,
                           molB2molR):
-    TINY = 1e-10
+    TINY = 1e-10 / 18.2223
     forcepair = _find_common_forces(forcetype, Rforces, Bforces, molB2molR)
     for fR, fB in forcepair:
         if fB is None:
@@ -62,7 +62,7 @@ def nb14_extra_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda
             if fB.nb14_ee_factor is not None:
                 nb14_ee_factor = fB.nb14_ee_factor
             else:
-                nb14_ee_factor = fB.kee * molR2molA[fB.atoms[0]].charge * \
+                nb14_ee_factor = fB.kee * fB.atoms[0].charge * \
                                  fB.atoms[1].charge
             fR.kee = nb14_ee_factor / temp_charge0 / temp_charge1
 
@@ -84,10 +84,10 @@ def nb14_extra_merge_rule(molR, molA, molB, forcetype, Rforces, Bforces, _lambda
             if fB.nb14_ee_factor is not None:
                 nb14_ee_factor = fB.nb14_ee_factor
             else:
-                nb14_ee_factor = fB.kee * molR2molA[fB.atoms[0]].charge * \
+                nb14_ee_factor = fB.kee * fB.atoms[0].charge * \
                                  fB.atoms[1].charge
             kee = nb14_ee_factor / temp_charge0 / temp_charge1
-
+            
             fR.kee = fR.kee * (1 - _lambda) + kee * _lambda
             fR.A = fR.A * (1 - _lambda) + fB.A * _lambda
             fR.B = fR.B * (1 - _lambda) + fB.B * _lambda
