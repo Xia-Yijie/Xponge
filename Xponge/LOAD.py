@@ -79,7 +79,7 @@ def mol2(filename, ignore_atom_type = False):
 sys.modules['__main__'].__dict__["loadmol2"] = mol2    
                 
 
-def pdb(filename, judge_HIS = True):
+def pdb(filename, judge_HIS = True, position_need = "A"):
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
     chain = {}
     SSBOND = []
@@ -169,6 +169,7 @@ def pdb(filename, judge_HIS = True):
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
+                extra = line[16]
                 resindex = int(line[22:26])
                 resname = line[17:20].strip()
                 atomname = line[12:16].strip()
@@ -185,6 +186,8 @@ def pdb(filename, judge_HIS = True):
                     current_residue = Residue(ResidueType.types[residue_type_map[current_residue_count]])
                     current_residue_index = resindex
                     current_resname = resname
+                if extra not in (" ", position_need):
+                    continue
                 current_residue.Add_Atom(atomname, x = x, y = y, z = z)
             elif line.startswith("TER"):
                 current_residue_index = None

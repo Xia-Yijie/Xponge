@@ -367,12 +367,35 @@ def mol2opt(args):
         t.coordinate[i // 3][i % 3] = xyzi
     t.Save_As_Mol2(args.o)
 
+def crd2pdb(args):
+    towrite = ""
+    with open(args.crd) as f:
+        f.readline()
+        crd = f.read().split()[:-6]
+
+    count = 0
+    with open(args.pdb) as f:
+        for line in f:
+            if line.startswith("ATOM") or line.startswith("HETATM"):
+                towrite += line[:30]
+                towrite += "%8.3f"%float(crd[count])
+                count += 1
+                towrite += "%8.3f"%float(crd[count])
+                count += 1
+                towrite += "%8.3f\n"%float(crd[count])
+                count += 1
+            else:
+                towrite += line
+    with open(args.o, "w") as f:
+        f.write(towrite)    
+
 def mol2rfe(args):
     import Xponge
     import Xponge.forcefield.SPECIAL.FEP as FEP
     import sys
     import os
     import numpy as np
+    import Xponge.forcefield.SPECIAL.MIN_BONDED as MIN
 
     if not args.ff:
         import Xponge.forcefield.AMBER.gaff as gaff
@@ -419,6 +442,10 @@ def mol2rfe(args):
                 os.system("rm -rf %d"%i)
             os.mkdir("%d"%i)
             tt = FEP.Merge_Force_Field(merged_from, merged_to,  i / args.nl)
+            if i == 0:
+                MIN.Save_Min_Bonded_Parameters()
+            elif i == 1:
+                MIN.Do_Not_Save_Min_Bonded_Parameters()
             Xponge.BUILD.Save_SPONGE_Input(tt, "%d/%s"%(i, args.temp))
 
     if "min" in args.do:
@@ -430,13 +457,19 @@ def mol2rfe(args):
                 cif = "-coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i-1)
             else:
                 cif = ""
-            os.system("{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit 2000 {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
-            cif = "-coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i)
-            os.system("{0} -mode minimization -dt 2e-7 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 2000 {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
-            os.system("{0} -mode minimization -dt 2e-6 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 2000 {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
-            os.system("{0} -mode minimization -dt 2e-5 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 3000 {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
-            os.system("{0} -mode minimization -dt 2e-4 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 3000 {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
-            os.system("{0} -mode minimization -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 5000 {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
+                os.system("{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 5000 {4} -mass_in_file {2}/{1}_fake_mass.txt -charge_in_file {2}/{1}_fake_charge.txt".format(args.sponge, args.temp, i, i / args.nl, cif))
+                cif = "-coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i)
+                os.system("{0} -mode minimization -dt 1e-7 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 5000  {4} -mass_in_file {2}/{1}_fake_mass.txt".format(args.sponge, args.temp, i, i / args.nl, cif))
+                os.system("{0} -mode minimization -dt 1e-6 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 5000  {4} -mass_in_file {2}/{1}_fake_mass.txt".format(args.sponge, args.temp, i, i / args.nl, cif))
+                os.system("{0} -mode minimization -dt 1e-5 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 5000  {4} -mass_in_file {2}/{1}_fake_mass.txt".format(args.sponge, args.temp, i, i / args.nl, cif))
+                os.system("{0} -mode minimization -dt 1e-4 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 10000  {4} -mass_in_file {2}/{1}_fake_mass.txt".format(args.sponge, args.temp, i, i / args.nl, cif))
+                os.system("{0} -mode minimization -dt 2e-6 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 5000 -constrain_mode SHAKE {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
+                os.system("{0} -mode minimization -dt 2e-5 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 5000 -constrain_mode SHAKE {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
+                os.system("{0} -mode minimization -dt 2e-4 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 10000 -constrain_mode SHAKE {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
+                os.system("{0} -mode minimization -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 5000 -constrain_mode SHAKE {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
+
+            os.system("{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 5000 {4} constrain_mode SHAKE".format(args.sponge, args.temp, i, i / args.nl, cif))
+            os.system("{0} -mode minimization -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit 5000 -constrain_mode SHAKE {4}".format(args.sponge, args.temp, i, i / args.nl, cif))
 
     if "prebalance" in args.do:
         for i in range(args.nl + 1):

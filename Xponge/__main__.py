@@ -134,6 +134,12 @@ def main():
 
     mol2rfe.set_defaults(func = tools.mol2rfe)
 
+    crd2pdb = subparsers.add_parser("crd2pdb", help = 'add the coordinary from SPONGE file to pdb')
+    crd2pdb.add_argument("-pdb", required = True, help = "the input pdb file")
+    crd2pdb.add_argument("-crd", required = True, help = "the SPONGE coordinary file")
+    crd2pdb.add_argument("-o", required = True, help = "the output pdb file")
+    crd2pdb.set_defaults(func = tools.crd2pdb)
+
     args = parser.parse_args()
 
     if hasattr(args, "func"):
