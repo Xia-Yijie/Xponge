@@ -485,11 +485,11 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
     RDmolB = Assign2RDKitMol(AssignB, True)
 
     atom_type_dict = {}
-    Insert_Atom_Type_To_RDKitMol(RDmolA, ResidueA.atoms, atom_type_dict)
-    Insert_Atom_Type_To_RDKitMol(RDmolB, ResidueB.atoms, atom_type_dict)
+    Insert_Atom_Type_To_RDKitMol(RDmolA, ResidueA, AssignA, atom_type_dict)
+    Insert_Atom_Type_To_RDKitMol(RDmolB, ResidueB, AssignB, atom_type_dict)
     print("FINDING MAXIMUM COMMON SUBSTRUCTURE")
 
-    result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True, matchValences = True, timeout = 30)
+    result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True, timeout = 60)
     #print(result.smartsString)
     #RDmol_mcs = Chem.MolFromSmarts(result.smarts)
     RDmol_mcs = result.queryMol
@@ -522,9 +522,9 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
     RBmap = {value: key for key, value in matchmap.items()}
     for i in range(len(ResidueTypeA.atoms)):
         atom = ResidueTypeA.atoms[i]
-        atom.x = ResidueA.atoms[i].x
-        atom.y = ResidueA.atoms[i].y
-        atom.z = ResidueA.atoms[i].z
+        atom.x = ResidueA._name2atom[atom.name].x
+        atom.y = ResidueA._name2atom[atom.name].y
+        atom.z = ResidueA._name2atom[atom.name].z
         if i not in matchA:
             extraA.append(atom.copied[forcopy])            
             extraA[-1].subsys = 1
