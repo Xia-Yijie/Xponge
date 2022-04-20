@@ -517,6 +517,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
     
     forcopy = hash(str(time.time()))
     restypeAB = ResidueTypeA.deepcopy(ResidueTypeA.name + "_" + ResidueTypeB.name, forcopy)
+
     extraA = []
     extraB = []
     RBmap = {value: key for key, value in matchmap.items()}

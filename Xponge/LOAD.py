@@ -79,7 +79,7 @@ def mol2(filename, ignore_atom_type = False):
 sys.modules['__main__'].__dict__["loadmol2"] = mol2    
                 
 
-def pdb(filename, judge_HIS = True, position_need = "A"):
+def pdb(filename, judge_HIS = True, position_need = "A", ignoreH = False):
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
     chain = {}
     SSBOND = []
@@ -187,6 +187,8 @@ def pdb(filename, judge_HIS = True, position_need = "A"):
                     current_residue_index = resindex
                     current_resname = resname
                 if extra not in (" ", position_need):
+                    continue
+                if ignoreH and atomname.startswith("H"):
                     continue
                 current_residue.Add_Atom(atomname, x = x, y = y, z = z)
             elif line.startswith("TER"):
@@ -393,6 +395,801 @@ def parmdat(filename):
     return atoms, bonds, angles, propers, impropers, LJs
         
 sys.modules['__main__'].__dict__["loadparmdat"] = parmdat 
+
+def parm7(filename):
+    import Xponge.forcefield.AMBER
+    bonds = {}
+    angles = {}
+    propers = {}
+    nb14s = {}
+    impropers = {}
+    with open(filename) as f:
+        for line in f:
+            if line.startswith("%FLAG TITLE"):
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                try:
+                    name = line.split()[0].strip()
+                except:
+                    from random import randint
+                    name = "Molecule%d"%randint(0, 10086)
+                mol =  Molecule(name = name)
+            elif line.startswith("%FLAG POINTERS"):
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                atom_numbers = int(line[0:8])
+                atom_type_numbers = int(line[8:16])
+                bond_numbers_H = int(line[16:24])
+                bond_numbers_N = int(line[24:32])
+                bond_numbers = bond_numbers_H + bond_numbers_N
+                angle_numbers_H = int(line[32:40])
+                angle_numbers_N = int(line[40:48])
+                angle_numbers = angle_numbers_H + angle_numbers_N
+                dihedral_numbers_H = int(line[48:56])
+                dihedral_numbers_N = int(line[56:64])            
+                dihedral_numbers = dihedral_numbers_H + dihedral_numbers_N
+                line = f.readline()
+                total_excluded_numbers = int(line[0:8])
+                residue_numbers = int(line[8:16])
+                bond_type_numbers = int(line[40:48])
+                angle_type_numbers = int(line[48:56])
+                dihedral_type_numbers = int(line[56:64])
+            elif line.startswith("%FLAG DIHEDRAL_FORCE_CONSTANT"):
+                dihedral_k = []
+                tempvar = dihedral_k
+                length = dihedral_type_numbers
+                word_process = lambda x:float(x)
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG DIHEDRAL_PERIODICITY"):
+                dihedral_n = []
+                tempvar = dihedral_n
+                length = dihedral_type_numbers
+                word_process = lambda x:float(x)
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG DIHEDRAL_PHASE"):
+                dihedral_phase = []
+                tempvar = dihedral_phase
+                length = dihedral_type_numbers
+                word_process = lambda x:float(x)
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG DIHEDRALS_INC_HYDROGEN"):
+                tempvar = []
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + 8 < len(line):
+                        word = line[i:i+8].strip()
+                        if word:
+                            tempvar.append(int(word))
+                        else:
+                            break
+                        i += 8
+                    if len(tempvar) == 5 * dihedral_numbers_H:
+                        break
+                    line = f.readline()
+                for i in range(0,len(tempvar),5):
+                    if tempvar[i+3] < 0:
+                        if tempvar[i+4] - 1 in impropers.keys():
+                            impropers[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), abs(tempvar[i+3]) // 3])
+                        else:
+                            impropers[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2]) // 3, abs(tempvar[i+3]) // 3]]
+                    else:
+                        if tempvar[i+4] - 1 in propers.keys():
+                            propers[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), tempvar[i+3] // 3])
+                        else:
+                            propers[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), tempvar[i+3] // 3]]
+                        if tempvar[i+2] > 0:
+                            if tempvar[i+4] - 1 in nb14s.keys():
+                                nb14s[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+3] // 3])
+                            else:
+                                nb14s[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+3] // 3]]
+            elif line.startswith("%FLAG DIHEDRALS_WITHOUT_HYDROGEN"):
+                tempvar = []
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + 8 < len(line):
+                        word = line[i:i+8].strip()
+                        if word:
+                            tempvar.append(int(word))
+                        else:
+                            break
+                        i += 8
+                    if len(tempvar) == 5 * dihedral_numbers_N:
+                        break
+                    line = f.readline()
+                for i in range(0,len(tempvar),5):
+                    if tempvar[i+3] < 0:
+                        if tempvar[i+4] - 1 in impropers.keys():
+                            impropers[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), abs(tempvar[i+3]) // 3])
+                        else:
+                            impropers[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2]) // 3, abs(tempvar[i+3]) // 3]]
+                    else:
+                        if tempvar[i+4] - 1 in propers.keys():
+                            propers[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), tempvar[i+3] // 3])
+                        else:
+                            propers[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), tempvar[i+3] // 3]]
+                        if tempvar[i+2] > 0:
+                            if tempvar[i+4] - 1 in nb14s.keys():
+                                nb14s[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+3] // 3])
+                            else:
+                                nb14s[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+3] // 3]]
+
+            elif line.startswith("%FLAG ANGLE_FORCE_CONSTANT"):
+                angle_k = []
+                tempvar = angle_k
+                length = angle_type_numbers
+                word_process = lambda x:float(x)
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG ANGLE_EQUIL_VALUE"):
+                angle_b = []
+                tempvar = angle_b
+                length = angle_type_numbers
+                word_process = lambda x:float(x)
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG ANGLES_INC_HYDROGEN"):
+                tempvar = []
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + 8 < len(line):
+                        word = line[i:i+8].strip()
+                        if word:
+                            tempvar.append(int(word))
+                        else:
+                            break
+                        i += 8
+                    if len(tempvar) == 4 * angle_numbers_H:
+                        break
+                    line = f.readline()
+                for i in range(0,len(tempvar),4):
+                    if tempvar[i+3] - 1 in angles.keys():
+                        angles[tempvar[i+3] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3])
+                    else:
+                        angles[tempvar[i+3] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3]]
+            elif line.startswith("%FLAG ANGLES_WITHOUT_HYDROGEN"):
+                tempvar = []
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + 8 < len(line):
+                        word = line[i:i+8].strip()
+                        if word:
+                            tempvar.append(int(word))
+                        else:
+                            break
+                        i += 8
+                    if len(tempvar) == 4 * angle_numbers_N:
+                        break
+                    line = f.readline()
+                for i in range(0,len(tempvar),4):
+                    if tempvar[i+3] - 1 in angles.keys():
+                        angles[tempvar[i+3] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3])
+                    else:
+                        angles[tempvar[i+3] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3]]
+            elif line.startswith("%FLAG BOND_FORCE_CONSTANT"):
+                bond_k = []
+                tempvar = bond_k
+                length = bond_type_numbers
+                word_process = lambda x:float(x)
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG BOND_EQUIL_VALUE"):
+                bond_b = []
+                tempvar = bond_b
+                length = bond_type_numbers
+                word_process = lambda x:float(x)
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG BONDS_INC_HYDROGEN"):
+                tempvar = []
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + 8 < len(line):
+                        word = line[i:i+8].strip()
+                        if word:
+                            tempvar.append(int(word))
+                        else:
+                            break
+                        i += 8
+                    if len(tempvar) == 3 * bond_numbers_H:
+                        break
+                    line = f.readline()
+                for i in range(0,len(tempvar),3):
+                    if tempvar[i+2] - 1 in bonds.keys():
+                        bonds[tempvar[i+2] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3])
+                    else:
+                        bonds[tempvar[i+2] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3]]
+            elif line.startswith("%FLAG BONDS_WITHOUT_HYDROGEN"):
+                tempvar = []
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + 8 < len(line):
+                        word = line[i:i+8].strip()
+                        if word:
+                            tempvar.append(int(word))
+                        else:
+                            break
+                        i += 8
+                    if len(tempvar) == 3 * bond_numbers_N:
+                        break
+                    line = f.readline()
+                for i in range(0,len(tempvar),3):
+                    if tempvar[i+2] - 1 in bonds.keys():
+                        bonds[tempvar[i+2] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3])
+                    else:
+                        bonds[tempvar[i+2] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3]]
+            elif line.startswith("%FLAG NUMBER_EXCLUDED_ATOMS"):
+                exclude_numbers = []
+                tempvar = exclude_numbers
+                length = atom_numbers
+                word_process = lambda x:int(x)
+                offset = 8
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG EXCLUDED_ATOMS_LIST"):
+                excluded_list = []
+                tempvar = excluded_list
+                length = total_excluded_numbers
+                word_process = lambda x:int(x) - 1
+                offset = 8
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG ATOM_NAME"):
+                atom_names = []
+                tempvar = atom_names
+                length = atom_numbers
+                word_process = lambda x:x
+                offset = 4
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG AMBER_ATOM_TYPE"):
+                atom_types = []
+                tempvar = atom_types
+                length = atom_numbers
+                word_process = lambda x:x
+                offset = 4
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG LENNARD_JONES_ACOEF"):
+                LJ_A = []
+                tempvar = LJ_A
+                length = atom_type_numbers * (atom_type_numbers + 1) // 2
+                word_process = lambda x:float(x) 
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG LENNARD_JONES_BCOEF"):
+                LJ_B = []
+                tempvar = LJ_B
+                length = atom_type_numbers * (atom_type_numbers + 1) // 2
+                word_process = lambda x:float(x) 
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG ATOM_TYPE_INDEX"):
+                atom_type_index = []
+                tempvar = atom_type_index
+                length = atom_numbers
+                word_process = lambda x:int(x) - 1
+                offset = 8
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG CHARGE"):
+                charges = []
+                tempvar = charges
+                length = atom_numbers
+                word_process = lambda x:float(x)/18.2223
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG MASS"):
+                masses = []
+                tempvar = masses
+                length = atom_numbers
+                word_process = lambda x:float(x)
+                offset = 16
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG RESIDUE_LABEL"):
+                residues = []
+                tempvar = residues
+                length = residue_numbers
+                word_process = lambda x:x
+                offset = 4
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+            elif line.startswith("%FLAG RESIDUE_POINTER"):
+                residue_starts = []
+                tempvar = residue_starts
+                length = residue_numbers
+                word_process = lambda x: int(x) - 1
+                offset = 8
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                while 1:
+                    i = 0
+                    while i + offset < len(line):
+                        word = line[i:i+offset].strip()
+                        if word:
+                            tempvar.append(word_process(word))
+                        else:
+                            break
+                        i += offset
+                    if len(tempvar) == length:
+                        break
+                    line = f.readline()
+                residue_starts.append(atom_numbers)
+    
+    atom_type_map = {}
+    for i, atype in enumerate(atom_types):
+        if atom_type_index[i] not in atom_type_map.keys():
+            atom_type_map[atom_type_index[i]] = atype
+        if atype not in AtomType.types.keys():
+            AtomType(name = atype, mass = masses[i], LJtype = atom_type_map[atom_type_index[i]])
+
+    for ri, residue in enumerate(residues):
+        if residue not in ResidueType.types.keys():
+            New_ResidueType = ResidueType(name = residue)
+            New_ResidueType.builded = True
+            for i in range(residue_starts[ri],residue_starts[ri+1]):
+                New_ResidueType.Add_Atom(atom_names[i], AtomType.types[atom_types[i]], x = 0, y = 0, z = 0)
+                New_ResidueType.atoms[-1].mass = masses[i]
+                New_ResidueType.atoms[-1].charge = charges[i]
+            sys.modules['__main__'].__dict__[residue] = New_ResidueType
+        New_Residue = Residue(ResidueType.types[residue])
+        for i in range(residue_starts[ri],residue_starts[ri+1]):
+            New_Residue.Add_Atom(atom_names[i], AtomType.types[atom_types[i]])
+            New_Residue.atoms[-1].mass = masses[i]
+            New_Residue.atoms[-1].charge = charges[i]
+        New_Residue.builded = True
+        mol.Add_Residue(New_Residue)
+    
+    mol.atoms = []
+    mol.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+    for res in mol.residues:
+        mol.atoms.extend(res.atoms)
+        for frc in GlobalSetting.BondedForces:
+            mol.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name, []))
+        for link in mol.residue_links:
+            for frc in GlobalSetting.BondedForces:
+                mol.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name, []))
+    mol.atom_index = {mol.atoms[i]: i for i in range(len(mol.atoms))}
+
+    for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
+        for vatom in mol.bonded_forces.get(vatom_type_name, []):
+            this_vatoms = [vatom.atoms[0]]
+            for i in range(vatom_type_atom_numbers):
+                this_vatoms.append(cls.atoms[cls.atom_index[vatom.atoms[0]] + getattr(vatom, "atom%d" % i)])
+                this_vatoms.sort(key=lambda x: cls.atom_index[x])
+                while this_vatoms:
+                    tolink = this_vatoms.pop(0)
+                    for i in this_vatoms:
+                        tolink.Link_Atom("v", i)
+    newLJs = "name A B\n"
+    for i in range(atom_type_numbers):
+        for j in range(0, i + 1):
+            atype = atom_type_map[i]
+            btype = atom_type_map[j]
+            index = i * (i + 1) // 2 + j
+            newLJs += "%s-%s %f %f\n"%(atype, btype, LJ_A[index], LJ_B[index])
+    Xponge.forcefield.BASE.LJ.LJType.New_From_String(newLJs)
+    mol.builded = True
+
+    count = -1
+    for i in range(atom_numbers):
+        atom_i = mol.atoms[i]
+        for j in range(exclude_numbers[i]):
+            count += 1
+            if excluded_list[count] == -1:
+                break
+            atom_i.Extra_Exclude_Atom(mol.atoms[excluded_list[count]])
+        atom_i.residue.type._name2atom[atom_i.name].Extra_Exclude_Atoms([ atom_i.residue.type._name2atom[aton.name] for aton in atom_i.extra_excluded_atoms])
+
+    BONDTYPE = Xponge.forcefield.BASE.BOND.BondType
+    bond_names = {}
+    newBONDs = "name k b\n"
+    for i in range(bond_type_numbers):
+        if i in bonds.keys():
+            atype, btype = bonds[i][0]
+            atype = mol.atoms[atype].type.name
+            btype = mol.atoms[btype].type.name
+            newBONDs += "%s-%s %f %f\n"%(atype, btype, bond_k[i], bond_b[i])
+            bond_names[i] = "%s-%s"%(atype, btype)
+    BONDTYPE.New_From_String(newBONDs)
+
+    for typei, bondi in bonds.items():
+        for ai, bi in bondi:
+            aAtom = mol.atoms[ai]
+            bAtom = mol.atoms[bi]
+            if aAtom.residue == bAtom.residue:
+                atoms = [aAtom, bAtom]
+                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
+                aAtom.residue.type.Add_Bonded_Force(BONDTYPE.entity(resatoms, BONDTYPE.types[bond_names[typei]]))
+                aAtom.residue.Add_Bonded_Force(BONDTYPE.entity(atoms, BONDTYPE.types[bond_names[typei]]))
+                aAtom.residue.Add_Connectivity(aAtom, bAtom)
+            else:
+                raise NotImplementedError
+
+    ANGLETYPE = Xponge.forcefield.BASE.ANGLE.AngleType
+    angle_names = {}
+    newANGLEs = "name k b\n"
+    for i in range(angle_type_numbers):
+        if i in angles.keys():
+            atype, btype, ctype = angles[i][0]
+            atype = mol.atoms[atype].type.name
+            btype = mol.atoms[btype].type.name
+            ctype = mol.atoms[ctype].type.name
+            newANGLEs += "%s-%s-%s %f %f\n"%(atype, btype, ctype, angle_k[i], angle_b[i])
+            angle_names[i] = "%s-%s-%s"%(atype, btype, ctype)
+    ANGLETYPE.New_From_String(newANGLEs)
+
+    for typei, bondi in angles.items():
+        for ai, bi, ci in bondi:
+            aAtom = mol.atoms[ai]
+            bAtom = mol.atoms[bi]
+            cAtom = mol.atoms[ci]
+            if aAtom.residue == bAtom.residue and aAtom.residue == cAtom.residue:
+                atoms = [aAtom, bAtom, cAtom]
+                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
+                aAtom.residue.type.Add_Bonded_Force(ANGLETYPE.entity(resatoms, ANGLETYPE.types[angle_names[typei]]))
+                aAtom.residue.Add_Bonded_Force(ANGLETYPE.entity(atoms, ANGLETYPE.types[angle_names[typei]]))
+            else:
+                raise NotImplementedError
+
+    PROPERTYPE = Xponge.forcefield.BASE.DIHEDRAL.ProperType
+    proper_names = {}
+    newBONDs = "name k phi0 periodicity reset\n"
+    for i in propers.keys():
+        atype, btype, ctype, dtype = propers[i][0]
+        atype = mol.atoms[atype].type.name
+        btype = mol.atoms[btype].type.name
+        ctype = mol.atoms[ctype].type.name
+        dtype = mol.atoms[dtype].type.name
+        newBONDs += "%s-%s-%s-%s %f %f %d %d\n"%(atype, btype, ctype, dtype, dihedral_k[i], dihedral_phase[i], dihedral_n[i], 0)
+        proper_names[i] = "%s-%s-%s-%s"%(atype, btype, ctype, dtype)
+    PROPERTYPE.New_From_String(newBONDs)
+
+    for typei, bondi in propers.items():
+        for ai, bi, ci, di in bondi:
+            aAtom = mol.atoms[ai]
+            bAtom = mol.atoms[bi]
+            cAtom = mol.atoms[ci]
+            dAtom = mol.atoms[di]
+            if aAtom.residue == bAtom.residue and bAtom.residue == cAtom.residue and dAtom.residue == cAtom.residue:
+                atoms = [aAtom, bAtom, cAtom, dAtom]
+                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
+                aAtom.residue.type.Add_Bonded_Force(PROPERTYPE.entity(resatoms, PROPERTYPE.types[proper_names[typei]]))
+                aAtom.residue.Add_Bonded_Force(PROPERTYPE.entity(atoms, PROPERTYPE.types[proper_names[typei]]))
+            else:
+                raise NotImplementedError    
+
+    IMPROPERTYPE = Xponge.forcefield.BASE.DIHEDRAL.ImproperType
+    improper_names = {}
+    newBONDs = "name k phi0 periodicity\n"
+
+    for i in impropers.keys():
+        atype, btype, ctype, dtype = impropers[i][0]
+        atype = mol.atoms[atype].type.name
+        btype = mol.atoms[btype].type.name
+        ctype = mol.atoms[ctype].type.name
+        dtype = mol.atoms[dtype].type.name
+        newBONDs += "%s-%s-%s-%s %f %f %d\n"%(atype, btype, ctype, dtype, dihedral_k[i], dihedral_phase[i], dihedral_n[i])
+        improper_names[i] = "%s-%s-%s-%s"%(atype, btype, ctype, dtype)
+    IMPROPERTYPE.New_From_String(newBONDs)
+
+    for typei, bondi in impropers.items():
+        for ai, bi, ci, di in bondi:
+            aAtom = mol.atoms[ai]
+            bAtom = mol.atoms[bi]
+            cAtom = mol.atoms[ci]
+            dAtom = mol.atoms[di]
+            if aAtom.residue == bAtom.residue and bAtom.residue == cAtom.residue and dAtom.residue == cAtom.residue:
+                atoms = [aAtom, bAtom, cAtom, dAtom]
+                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
+                aAtom.residue.type.Add_Bonded_Force(IMPROPERTYPE.entity(resatoms, IMPROPERTYPE.types[improper_names[typei]]))
+                aAtom.residue.Add_Bonded_Force(IMPROPERTYPE.entity(atoms, IMPROPERTYPE.types[improper_names[typei]]))
+            else:
+                raise NotImplementedError
+
+    NB14TYPE = Xponge.forcefield.BASE.NB14.NB14Type
+    for typei, bondi in nb14s.items():
+        for ai, bi in bondi:
+            aAtom = mol.atoms[ai]
+            bAtom = mol.atoms[bi]
+            if aAtom.residue == bAtom.residue:
+                atoms = [aAtom, bAtom]
+                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
+                aAtom.residue.type.Add_Bonded_Force(NB14TYPE.entity(resatoms, NB14TYPE.types["X-X"]))
+                aAtom.residue.Add_Bonded_Force(NB14TYPE.entity(atoms, NB14TYPE.types["X-X"]))
+            else:
+                raise NotImplementedError
+
+    
+    mol.atoms = []
+    mol.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+    for res in mol.residues:
+        Xponge.BUILD._analyze_connectivity(res)
+        mol.atoms.extend(res.atoms)
+        for frc in GlobalSetting.BondedForces:
+            mol.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name, []))
+        for link in mol.residue_links:
+            for frc in GlobalSetting.BondedForces:
+                mol.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name, []))
+    mol.atom_index = {mol.atoms[i]: i for i in range(len(mol.atoms))}
+
+    return mol
+
+sys.modules['__main__'].__dict__["loadparm7"] = parm7 
+
+def rst7(filename, mol = None):
+    crds = []
+    with open(filename) as f:
+        f.readline()
+        words = f.readline().split()
+        atom_numbers = int(words[0])
+        for line in f:
+            words = line.split()
+            while words and len(crds) < atom_numbers * 3:
+                crds.append(float(words.pop(0)))
+        box = [float(i) for i in line.split()]
+    crds = np.array(crds).reshape((-1,3))
+    mol.box_length = box[:3]
+    count = -1
+    for ri, residue in enumerate(mol.residues):
+       for ai, atom in enumerate(residue.atoms):
+           count += 1  
+           atom.x = crds[count][0]
+           atom.y = crds[count][1]
+           atom.z = crds[count][2]
+
+    return crds, box
+     
+sys.modules['__main__'].__dict__["loadrst7"] = rst7 
 
 ##########################################################################
 #GROMACS Format

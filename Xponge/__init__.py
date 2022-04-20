@@ -559,7 +559,6 @@ class Residue(Entity):
         for atom in self.type.atoms:
             if atom.name in t:
                 uncertified.remove(atom.name)
-
         while uncertified:
           movedlist = []
           for atom_name in uncertified:
@@ -573,6 +572,7 @@ class Residue(Entity):
                     t.add(atom_name)
                     movedlist.append(atom_name)
                     self.Add_Atom(atom_name, x = _x, y = _y, z = _z)
+                    break
           for atom_name in movedlist:
               uncertified.remove(atom_name)
         
@@ -732,7 +732,7 @@ def write_coordinate(self):
             mini[1] = atom.y
         if atom.z < mini[2]:
             mini[2] = atom.z
-    if not GlobalSetting.nocenter:
+    if not GlobalSetting.nocenter and self.box_length is None:
         towrite += "\n".join(
             ["%f %f %f" % (atom.x - mini[0] + 3, atom.y - mini[1] + 3, atom.z - mini[2] + 3) for atom in self.atoms])
     else:
