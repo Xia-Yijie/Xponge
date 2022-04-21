@@ -1049,8 +1049,8 @@ def parm7(filename):
             if aAtom.residue == bAtom.residue:
                 atoms = [aAtom, bAtom]
                 resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
-                aAtom.residue.type.Add_Bonded_Force(BONDTYPE.entity(resatoms, BONDTYPE.types[bond_names[typei]]))
-                aAtom.residue.Add_Bonded_Force(BONDTYPE.entity(atoms, BONDTYPE.types[bond_names[typei]]))
+                aAtom.residue.type.Add_Bonded_Force(BONDTYPE.entity(resatoms, BONDTYPE.types_different_name[bond_names[typei]]))
+                aAtom.residue.Add_Bonded_Force(BONDTYPE.entity(atoms, BONDTYPE.types_different_name[bond_names[typei]]))
                 aAtom.residue.Add_Connectivity(aAtom, bAtom)
             else:
                 raise NotImplementedError
@@ -1076,8 +1076,8 @@ def parm7(filename):
             if aAtom.residue == bAtom.residue and aAtom.residue == cAtom.residue:
                 atoms = [aAtom, bAtom, cAtom]
                 resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
-                aAtom.residue.type.Add_Bonded_Force(ANGLETYPE.entity(resatoms, ANGLETYPE.types[angle_names[typei]]))
-                aAtom.residue.Add_Bonded_Force(ANGLETYPE.entity(atoms, ANGLETYPE.types[angle_names[typei]]))
+                aAtom.residue.type.Add_Bonded_Force(ANGLETYPE.entity(resatoms, ANGLETYPE.types_different_name[angle_names[typei]]))
+                aAtom.residue.Add_Bonded_Force(ANGLETYPE.entity(atoms, ANGLETYPE.types_different_name[angle_names[typei]]))
             else:
                 raise NotImplementedError
 
@@ -1103,8 +1103,8 @@ def parm7(filename):
             if aAtom.residue == bAtom.residue and bAtom.residue == cAtom.residue and dAtom.residue == cAtom.residue:
                 atoms = [aAtom, bAtom, cAtom, dAtom]
                 resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
-                aAtom.residue.type.Add_Bonded_Force(PROPERTYPE.entity(resatoms, PROPERTYPE.types[proper_names[typei]]))
-                aAtom.residue.Add_Bonded_Force(PROPERTYPE.entity(atoms, PROPERTYPE.types[proper_names[typei]]))
+                aAtom.residue.type.Add_Bonded_Force(PROPERTYPE.entity(resatoms, PROPERTYPE.types_different_name[proper_names[typei]]))
+                aAtom.residue.Add_Bonded_Force(PROPERTYPE.entity(atoms, PROPERTYPE.types_different_name[proper_names[typei]]))
             else:
                 raise NotImplementedError    
 
@@ -1131,8 +1131,8 @@ def parm7(filename):
             if aAtom.residue == bAtom.residue and bAtom.residue == cAtom.residue and dAtom.residue == cAtom.residue:
                 atoms = [aAtom, bAtom, cAtom, dAtom]
                 resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
-                aAtom.residue.type.Add_Bonded_Force(IMPROPERTYPE.entity(resatoms, IMPROPERTYPE.types[improper_names[typei]]))
-                aAtom.residue.Add_Bonded_Force(IMPROPERTYPE.entity(atoms, IMPROPERTYPE.types[improper_names[typei]]))
+                aAtom.residue.type.Add_Bonded_Force(IMPROPERTYPE.entity(resatoms, IMPROPERTYPE.types_different_name[improper_names[typei]]))
+                aAtom.residue.Add_Bonded_Force(IMPROPERTYPE.entity(atoms, IMPROPERTYPE.types_different_name[improper_names[typei]]))
             else:
                 raise NotImplementedError
 
