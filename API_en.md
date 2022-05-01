@@ -299,6 +299,8 @@ This **function** is used to convert units of the parameters.
 
 #### instance methods
 
+##### \_\_init\_\_
+
 ##### Update
 
 ```python
@@ -319,6 +321,10 @@ This **function** is used to update the properties of the instance
 
 a sub**class** of Xponge.Type, for atom types
 
+#### instance methods
+
+##### \_\_init\_\_
+
  ### Xponge.ResidueType
 
 a sub**class** of Xponge.Type, for residue types
@@ -338,6 +344,8 @@ a sub**class** of Xponge.Type, for residue types
 - `link`: a **dict** to store the information needed by linking
 
 #### instance methods
+
+##### \_\_init\_\_
 
 ##### Add_Atom
 
@@ -403,7 +411,7 @@ This **function** is used to deep copy the instance
 
 ###### Input
 
-- `name`: a **str**, the name for
+- `name`: a **str**, the name for the new instance
 - `forcopy`: a **str**, the string for temporary variables.  If forcopy == `None`, a hash string of the time will be used and the temporary variables will be deleted after copy.
 
 ###### Output
@@ -414,12 +422,310 @@ This **function** is used to deep copy the instance
 
 This **class** is the abstract class of the entities (atoms, bonded forces, residues and so on).
 
-#### 
+#### class variables
 
+- `count`: an **int** to record how many entities of this class there is
+- `name`: a **str**, the name of the entity class
+
+#### instance variables
+
+- `contents`: a **dict**, which is the same as the one in Xponge.Type
+- `count`: an **int** to record the entity instance index of the class
+- `name`: a **str**, the name of the entity instance
+- `type`: an Xponge.Type or a subclass instance of Xponge.Type, the type of the entity
+
+#### instance methods
+
+##### \_\_init\_\_
+
+##### Update
+
+```python
+Update(self, **kwargs)
+```
+
+This **function** is used to update the properties of the instance
+
+###### Input
+
+- `kwargs`: the property - value pairs
+
+###### Output
+
+- `None`
+
+### Xponge.Atom
+
+a sub**class** of Xponge.Entity, for atoms
+
+#### instance variables
+
+- `residue`: an Xponge.Residue or an Xponge.ResidueType, the residue(type) which the atom belongs to
+- `extra_excluded_atoms`: a **set** to store the extra excluded atoms for the atom
+- `linked_atoms`: a **dict** to store distance - atom set pairs
+- `copied`: a **dict** to store key - copied atom pairs
+
+#### instance methods
+
+##### \_\_init\_\_
+
+##### deepcopy
+
+```python
+deepcopy(self, forcopy=None)
+```
+
+This **function** is used to deep copy the instance
+
+###### Input
+
+- `forcopy`: a **str**, the string for temporary variables.  If `forcopy` != `None`, the `forcopy` - new atom pair will be stored in the instance variable `copied`.
+
+###### Output
+
+- `Xponge.Atom`: new copied atom instance
+
+##### Link_Atom
+
+```python
+Link_Atom(self, link_type, atom)
+```
+
+This **function** is used to link atoms for building
+
+###### Input
+
+- `link_type`:  an **int**, the distance between the `atom` atom and the instance atom
+- `atom`: an Xponge.Atom, the atom to link
+
+###### Output
+
+- `None`
+
+##### Extra_Exclude_Atom
+
+```python
+Extra_Exclude_Atom(self, atom)
+```
+
+This **function** is used to extra exclude one atom
+
+###### Input
+
+- `atom`: an Xponge.Atom, the atom to extra exclude
+
+###### Output
+
+- `None`
+
+##### Extra_Exclude_Atoms
+
+```python
+Extra_Exclude_Atoms(self, lists)
+```
+
+This **function** is used to extra exclude a list of atoms
+
+###### Input
+
+- `lists`: a **list**, the atoms to extra exclude
+
+###### Output
+
+- `None`
+
+### Xponge.Residue
+
+a sub**class** of Xponge.Entity, for residues
+
+#### instance variables
+
+- `connectivity`: a **map** to store the atom - connected atom list pairs
+- `builded`: a **bool**ean value to show whether the residue type is built or not
+- `bonded_forces`: a **dict** to store the bonded force name - bonded force list pairs
+- `atoms`: a **list** to store the atoms of the residue type
+- `_name2atom`: a **dict** to store the name - Xponge.Atom pairs
+- `_atom2name`: a **dict** to store the Xponge.Atom - name  pairs
+- `_name2index`: a **dict** to store the name - index pairs
+- `_atom2index`: a **dict** to store the Xponge.Atom - index pairs
+- `connect_atoms`: a **dict** to store the distance - Xponge.Atom pairs
+
+#### instance methods
+
+##### \_\_init\_\_
+
+##### Add_Atom
+
+##### Add_Connectivity
+
+##### Add_Bonded_Force
+
+##### Add_Missing_Atoms
+
+##### deepcopy
+
+### Xponge.ResidueLink
+
+a **class** for the link between residues
+
+#### instance methods
+
+##### \_\_init\_\_
+
+##### Add_Bonded_Force
+
+##### deepcopy
+
+### Xponge.Molecule
+
+a **class** for molecules
+
+#### class methods
+
+##### Set_Save_SPONGE_Input
+
+##### Del_Save_SPONGE_Input
+
+#### instance methods
+
+##### \_\_init\_\_
+
+##### Add_Residue
+
+##### Add_Bonded_Force
+
+##### Add_Residue_Link
+
+##### Add_Missing_Atoms
+
+##### deepcopy
+
+### Xponge.Generate_New_Bonded_Force_Type
+
+a **function** to generate the subclasses of the Xponge.Type and the Xponge.Entity for the bonded force
+
+###  Xponge.Generate_New_Pairwise_Force_Type
+
+a **function** to generate the subclasses of the Xponge.Type and the Xponge.Entity for the pairwise force
+
+# Xponge.assign
+
+the **package** to assign the properties for atoms, residues and molecules.
+
+### \_\_init\_\_
+
+the basic **module** for Xponge.assign
+
+### Xponge.assign.Judge_Rule
+
+the **class** of the rules to determinate the atom type for one atom
+
+#### class variables
+
+- `all`: a **dict** to store the rule name - rule pairs
+
+####  instance methods
+
+###### \_\_init\_\_
+
+##### Add_Judge_Rule
+
+### Xponge.assign._RING
+
+the **class** of the rings
+
+#### instance variables
+
+- `atoms`
+- `tohash`
+
+#### instance methods
+
+##### \_\_init\_\_
+
+##### \_\_eq\_\_
+
+##### get_3_neigbors
+
+### Xponge.assign.Assign
+
+the class to assign
+
+#### class variables
+
+#### instance variables
+
+#### instance methods
+
+### Xponge.assign.Guess_Element_From_Mass
+
+### Xponge.assign.Get_Assignment_From_PubChem
+
+this **function** is also stored in the main dict with the key `Get_Assignment_From_PubChem`
+
+### Xponge.assign.Get_Assignment_From_PDB
+
+this **function** is also stored in the main dict with the key `Get_Assignment_From_PDB`
+
+### Xponge.assign.Get_Assignment_From_Mol2
+
+this **function** is also stored in the main dict with the key `Get_Assignment_From_Mol2`
+
+### Xponge.assign.Get_Assignment_From_ResidueType
+
+this **function** is also stored in the main dict with the key `Get_Assignment_From_ResidueType`
+
+## Xponge.assign.RESP
+
+the **module** to calculate the RESP charge
+
+## Xponge.assign.RDKit_tools
+
+the **module** to use the RDKit tools
+
+### Xponge.assign.RDKit_tools.Assign2RDKitMol
+
+### Xponge.assign.RDKit_tools.Insert_Atom_Type_To_RDKitMol
+
+### Xponge.assign.RDKit_tools.Find_Equal_Atoms
+
+### Xponge.assign.RDKit_tools.Get_Conformer_Coordinate
+
+### Xponge.assign.RDKit_tools.Get_Conformer_Coordinate_To_Residue
+
+### Xponge.assign.RDKit_tools.Set_Conformer_Coordinate_From_Residue
+
+### Xponge.assign.RDKit_tools.Set_Conformer_Coordinate
+
+### Xponge.assign.RDKit_tools.Apply_Transform
+
+### Xponge.assign.RDKit_tools.Get_Part_Align
+
+# Xponge.BUILD
+
+# Xponge.LOAD
+
+# Xponge.IMPOSE
+
+# Xponge.PROCESS
+
+# Xponge.tools
+
+# \_\_main\_\_
+
+# Xponge.forcefield.BASE
+
+# Xponge.forcefield.AMBER
+
+# Xponge.forcefield.CHARMM27
+
+# Xponge.forcefield.SPECIAL
+
+# Xponge.Analysis
 
 # XpongeLib
 
-The C/C++ compiled library for Xponge.
+a **package** containing the C/C++ compiled library for Xponge.
 
 ## \_\_init\_\_
 
