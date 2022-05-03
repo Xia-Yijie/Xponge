@@ -2,7 +2,7 @@ from . import *
 import sys
 
 
-def Box(molecule, solutions, distance):
+def Box(molecule, solvent, distance):
     try:
         distance[0]
     except:
@@ -24,14 +24,14 @@ def Box(molecule, solutions, distance):
     molcrd = IMPOSE._get_crd(molecule)
     molmin = np.min(molcrd, axis=0)
     molmax = np.max(molcrd, axis=0)
-    if type(solutions) == ResidueType:
-        new_molecule = Molecule(solutions.name)
-        resA = Residue(solutions)
-        for atom in solutions.atoms:
+    if type(solvent) == ResidueType:
+        new_molecule = Molecule(solvent.name)
+        resA = Residue(solvent)
+        for atom in solvent.atoms:
             resA.Add_Atom(atom)
         new_molecule.Add_Residue(resA)
     else:
-        new_molecule = solutions.deepcopy()
+        new_molecule = solvent.deepcopy()
     solcrd = IMPOSE._get_crd(new_molecule)
     solmin = np.min(solcrd, axis=0)
     minindex = np.argmin(solcrd, axis=0)

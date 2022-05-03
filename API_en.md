@@ -1309,43 +1309,568 @@ the **module** to use the RDKit tools
 
 ### Xponge.assign.RDKit_tools.Assign2RDKitMol
 
+```python
+Assign2RDKitMol(assign, ignore_bond_type = False)
+```
+
+This **function** is used to convert an assignment of Xponge to an RDKit molecule  object
+
+###### Input
+
+- `assign`: an Xponge.assign.Assign, the assignment
+- `ignore_bond_type`: a **bool**ean value, whether to ignore bond type
+
+###### Output
+
+- `RDkit.rdMol`: the RDKit molecule object
+
 ### Xponge.assign.RDKit_tools.Insert_Atom_Type_To_RDKitMol
 
-### Xponge.assign.RDKit_tools.Find_Equal_Atoms
+```python
+Insert_Atom_Type_To_RDKitMol(mol, res, assign, atom_type_dict = {})
+```
+
+This **function** is used to insert the atom types to an RDKit molecule object. (The atom type will be stored in isotope)
+
+###### Input
+
+- `mol`: the RDKit molecule object
+- `res`: the Xponge.ResidueType object
+- `assign`: the Xponge.assign.Assign object
+- `atom_type_dict`: a **dict**, the atom type name - isotope index pairs
 
 ### Xponge.assign.RDKit_tools.Get_Conformer_Coordinate
 
+```python
+Get_Conformer_Coordinate(mol)
+```
+
+###### Input
+
+- `mol`: the RDKit molecule object
+
+###### Output
+
+- `numpy.array`: the coordinates
+
 ### Xponge.assign.RDKit_tools.Get_Conformer_Coordinate_To_Residue
+
+```python
+Get_Conformer_Coordinate_To_Residue(mol, res, assign)
+```
+
+###### Input
+
+- `mol`: the RDKit molecule object
+- `res`: the Xponge.ResidueType object
+- `assign`: the Xponge.assign.Assign object
 
 ### Xponge.assign.RDKit_tools.Set_Conformer_Coordinate_From_Residue
 
+```python
+Set_Conformer_Coordinate_From_Residue(mol, res, assign)
+```
+
+###### Input
+
+- `mol`: the RDKit molecule object
+- `res`: the Xponge.ResidueType object
+- `assign`: the Xponge.assign.Assign object
+
 ### Xponge.assign.RDKit_tools.Set_Conformer_Coordinate
 
-### Xponge.assign.RDKit_tools.Apply_Transform
+```python
+Set_Conformer_Coordinate(mol, crd)
+```
+
+###### Input
+
+- `mol`: the RDKit molecule object
+- `crd`: a numpy.array object, the coordinates
 
 ### Xponge.assign.RDKit_tools.Get_Part_Align
 
+```python
+Get_Part_Align(molA, molB, partA, partB)
+```
+
+This **function** is used to align two parts of molecules.
+
+###### Input
+
+- `molA`: the first RDKit molecule object
+- `molB`: the second RDKit molecule object
+- `partA`: a **list** of atom index to align in the first molecule
+- `partB`: a **list** of atom index to align in the second molecule
+
 # Xponge.BUILD
+
+this **module** is used to build and save
+
+## Xponge.BUILD.Build_Bonded_Force
+
+```python
+Build_Bonded_Force(cls)
+```
+
+## Xponge.BUILD.Save_SPONGE_Input
+
+This **function** is also stored in the main dict with the key `Save_SPONGE_Input`
+
+```python
+Save_SPONGE_Input(molecule, prefix=None, dirname=".")
+```
+
+## Xponge.BUILD.Save_PDB
+
+This **function** is also stored in the main dict with the key `Save_PDB`
+
+```python
+Save_PDB(molecule, filename=None)
+```
+
+## Xponge.BUILD.Save_Mol2
+
+This **function** is also stored in the main dict with the key `Save_Mol2`
+
+```python
+Save_Mol2(molecule, filename=None)
+```
+
+## Xponge.BUILD.Save_PDB
+
+This **function** is also stored in the main dict with the key `Save_PDB`
+
+```python
+Save_PDB(molecule, filename=None)
+```
+
+## Xponge.BUILD.Save_Gro
+
+This **function** is also stored in the main dict with the key `Save_Gro`
+
+```python
+Save_Gro(molecule, filename)
+```
+
+## Xponge.BUILD.Save_NPZ
+
+This **function** is also stored in the main dict with the key `Save_NPZ`
+
+```python
+Save_NPZ(molecule, filename=None)
+```
 
 # Xponge.LOAD
 
+## Xponge.LOAD.mol2
+
+This **function** is also stored in the main dict with the key `loadmol2`
+
+```python
+mol2(filename, ignore_atom_type = False)
+```
+
+###### Input
+
+- `filename`: a **str**, the file name
+- `ignore_atom_type`: a **bool**ean value, whether to use atom type "UNKNOWN" instead
+
+###### Output
+
+- `Xponge.Molecule`, and if residues in the molecule are new types, new Xponge.ResidueType instances will be initialized and stored in `Xponge.ResidueType.types`
+
+## Xponge.LOAD.pdb
+
+This **function** is also stored in the main dict with the key `loadpdb`
+
+```python
+pdb(filename, judge_HIS = True, position_need = "A", ignoreH = False)
+```
+
+###### Input
+
+- `filename`: a **str**, the file name
+- `judge_HIS`: a **bool**ean value, if `True`, the HIS residue will be converted to HIE、HIP、HID automatically according to the residue
+- `position_need`:  a **str**, only the lines that the alternate location indicator equals to the `position_need` here or no alternate location indicator will be read.
+- `ignoreH`: do not read atoms with the name which starts with "H"
+
+###### Output
+
+`Xponge.Molecule`
+
+## Xponge.LOAD.frcmod
+
+This **function** is also stored in the main dict with the key `loadfrcmod`
+
+```python
+frcmod(filename, nbtype = "RE")
+```
+
+###### Input
+
+- `filename`: a **str**, the file name
+- `nbtype`: a **str**, the type of non bonded force parameters  
+
+###### Output
+
+- `set`: a set of strings, containing the types of atoms, bonds, angles, propers, impropers, LJs and cmaps
+
+###### Example
+
+In `Xponge.forcefield.AMBER.ff19SB`
+
+```python
+atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(os.path.join(AMBER_DATA_DIR, "ff19SB.frcmod"))
+
+AtomType.New_From_String(atoms)
+BOND.BondType.New_From_String(bonds)
+ANGLE.AngleType.New_From_String(angles)
+DIHEDRAL.ProperType.New_From_String(propers)
+DIHEDRAL.ImproperType.New_From_String(impropers)
+LJ.LJType.New_From_String(LJs)
+
+from ..BASE import RCMAP
+RCMAP.CMAP.Residue_Map.update(cmap)
+```
+
+## Xponge.LOAD.parmdat
+
+This **function** is also stored in the main dict with the key `loadparmdat`
+
+```python
+frcmod(filename)
+```
+
+###### Input
+
+- `filename`: a **str**, the file name
+
+###### Output
+
+- `set`: a set of strings, containing the types of atoms, bonds, angles, propers, impropers, and LJs
+
+###### Example
+
+In `Xponge.forcefield.AMBER.ff19SB`
+
+```python
+atoms, bonds, angles, propers, impropers, LJs = LOAD.parmdat(os.path.join(AMBER_DATA_DIR, "parm19.dat"))
+
+AtomType.New_From_String(atoms)
+BOND.BondType.New_From_String(bonds)
+ANGLE.AngleType.New_From_String(angles)
+DIHEDRAL.ProperType.New_From_String(propers)
+DIHEDRAL.ImproperType.New_From_String(impropers)
+LJ.LJType.New_From_String(LJs)
+```
+
+## Xponge.LOAD.parm7
+
+This **function** is also stored in the main dict with the key `loadparm7`
+
+```python
+parm7(filename)
+```
+
+###### Input
+
+- `filename`: a **str**, the file name
+
+###### Output
+
+- `Xponge.Molecule`
+
+## Xponge.LOAD.rst7
+
+This **function** is also stored in the main dict with the key `loadrst7`
+
+```python
+rst7(filename, mol = None)
+```
+
+###### Input
+
+- `filename`: a **str**, the file name
+- `mol`: an Xponge.Molecule
+
+###### Output
+
+- `set`: (coordinate, box)
+  - `coordinate`: numpy.array
+  - `box`: a list of 6 floats, 3 dimensional lengths and angles
+
+## Xponge.LOAD.GROMACS_TOPOLOGY_ITERATOR
+
+a **class** of the iterator to read GROMACS topology
+
+#### instance variables
+
+- `flag`: the flag of the line
+
+#### instance methods
+
+##### \_\_init\_\_
+
+```python
+__init__(self, filename = None, macros = {})
+```
+
+###### Input
+
+- `filename`: a **str**, the file name
+- `macros`: the macros to define when loading gromacs topology file
+
+###### Example
+
+In `Xponge.LOAD`
+
+```python
+iterator = GROMACS_TOPOLOGY_ITERATOR(filename, macros)
+for line in iterator:
+    if iterator.flag == "":
+        continue
+    elif iterator.flag == "defaults":
+        words = line.split()
+    #... ...
+    elif iterator.flag == "atomtypes":
+        words = line.split()
+    #... ...
+```
+
+## Xponge.LOAD.ffitp
+
+This **function** is also stored in the main dict with the key `loadffitp`
+
+```python
+ffitp(filename, macros = {})
+```
+
+Pay attention that the function is used to load force field itp files, not the common topology files
+
+###### Input
+
+- `filename`: a **str**, the file name
+- `macros`: the macros to define when loading gromacs topology file
+
+###### Output
+
+- `dict`: bonded force name - bonded force type string pairs
+
 # Xponge.IMPOSE
+
+This **module** is used to impose the bond, angle and dihedral to a value.
+
+## Xponge.IMPOSE.Impose_Bond
+
+This **function** is also stored in the main dict with the key `Impose_Bond`
+
+```python
+Impose_Bond(molecule, atom1, atom2, length)
+```
+
+This function is used to impose the bond between `atom1` and `atom2` to `length`. `Atom2` and atoms after `Atom2` will be moved.
+
+## Xponge.IMPOSE.Impose_Angle
+
+This **function** is also stored in the main dict with the key `Impose_Angle`
+
+```python
+Impose_Angle(molecule, atom1, atom2, atom3, angle)
+```
+
+This function is used to impose the angle of `atom1`, `atom2` and `angle3` to `angle`. `Atom3` and atoms after `Atom3` will be moved.
+
+## Xponge.IMPOSE.Impose_Dihedral
+
+This **function** is also stored in the main dict with the key `Impose_Dihedral`
+
+```python
+ Impose_Dihedral(molecule, atom1, atom2, atom3, atom4, dihedral)
+```
+
+This function is used to impose the dihedral of `atom1`, `atom2` and `angle3` to `dihedral`. `Atom3` and atoms after `Atom3` will be moved.
 
 # Xponge.PROCESS
 
+This **module** is used to process the molecule.
+
+## Xponge.PROCESS.Box
+
+This **function** is also stored in the main dict with the key `Process_Box`
+
+```python
+Box(molecule, solvent, distance)
+```
+
+This function is used to add solvent molecules to the `molecule`
+
+###### Input
+
+- `molecule`: an Xponge.Molecule or an Xponge.ResidueType
+- `solutions`:  an Xponge.Molecule or an Xponge.ResidueType
+- `distance`: an **int** or a **list** of three **int**s or a **list** of six **int**s
+  - an **int**: the thickness of the solvent layers
+  - a **list** of three **int**s: the three dimensional thickness of the solvent layers
+  - a **list** of six **int**s: the six dimensional thickness of the solvent layers
+
+## Xponge.PROCESS.HMass_Repartition
+
+This **function** is also stored in the main dict with the key `HMass_Repartition`
+
+```python
+HMass_Repartition(molecules, repartition_mass=1.1, repartition_rate=3, exclude_residue_name="WAT")
+```
+
+This function is used to do the hydrogen mass repartition
+
+###### Input
+
+- `molecule`: an Xponge.Molecule or an Xponge.ResidueType
+- `repartition_mass`:  a **float**, which the atoms with mass less than will be repartitioned.
+- `repartition_rate`: a **float**, which the mass  will times 
+- `exclude_residue_name`: a **str**, the residue not to do the  hydrogen mass repartition
+
+## Xponge.PROCESS.Replace
+
+This **function** is also stored in the main dict with the key `Ion_Replace`
+
+```python
+Replace(molecule, select, toreplace)
+```
+
+This function is used to replace some of the solvent molecules to the ions.
+
+###### Input
+
+- `molecule`: an Xponge.Molecule or an Xponge.ResidueType
+- `select`:  a **function**, which receives a Xponge.Residue as the input and gives a `True` or `False` as output.
+- `toreplace`: a **dict**, the Xponge.Molecule or the Xponge.ResidueType ion - ion amount pairs
+
+###### Example
+
+```python
+Replace(mol, lambda res: res.name == "WAT", {K:11, CL:10})
+```
+
+## Xponge.PROCESS.Rotate
+
+This **function** is also stored in the main dict with the key `Molecule_Rotate`
+
+```python
+Rotate(molecule, direction_long=[0, 0, 1], direction_middle=[0, 1, 0], direction_short=[1, 0, 0])
+```
+
+This function is used to rotate the molecule.
+
+###### Input
+
+- `molecule`: an Xponge.Molecule or an Xponge.ResidueType
+- `direction_long`:  a **list** of three **float**s, the long axis to rotate to 
+- `direction_middle`:  a **list** of three **float**s, the second long axis to rotate to
+- `direction_short`:  a **list** of three **float**s, the short axis to rotate to
+
 # Xponge.tools
 
-# \_\_main\_\_
+this **package** is used to contain the functions which will be executed by the terminal command `python -m Xponge`.
 
-# Xponge.forcefield.BASE
+Use `python -m Xponge -h` to see the document.
 
-# Xponge.forcefield.AMBER
+# Xponge.analysis
 
-# Xponge.forcefield.CHARMM27
+This **package** is used to help the analysis of the trajectories.
 
-# Xponge.forcefield.SPECIAL
+## Xponge.analysis.MDAnalysis
 
-# Xponge.Analysis
+This **module** is used to read SPONGE trajectories for MDAnalysis.
+
+# Xponge.forcefield
+
+This **package** is used to deal with the force fields.
+
+### Xponge.forcefield.BASE
+
+This **package** is used to deal with the basic force field format.
+
+#### Xponge.forcefield.BASE.ACMAP
+
+This **module** is used to deal with the atom based cmap.
+
+#### Xponge.forcefield.BASE.ANGLE
+
+This **module** is used to deal with the harmonic format of angle.
+
+#### Xponge.forcefield.BASE.BOND
+
+This **module** is used to deal with the harmonic format of bond.
+
+#### Xponge.forcefield.BASE.DIHEDRAL
+
+This **module** is used to deal with the periodic format of proper and improper dihedral.
+
+#### Xponge.forcefield.BASE.EXCLUDE
+
+This **module** is used to deal with the exclusion.
+
+#### Xponge.forcefield.BASE.MASS
+
+This **module** is used to deal with the property "mass" of atom type
+
+#### Xponge.forcefield.BASE.CHARGE
+
+This **module** is used to deal with the property "charge" of atom type
+
+#### Xponge.forcefield.BASE.IMPROPER
+
+This **module** is used to deal with the  harmonic format of improper dihedral.
+
+### Xponge.forcefield.BASE.LJ
+
+This **module** is used to deal with the  6-12 format of Lennard Jones potential.
+
+### Xponge.forcefield.BASE.NB14
+
+This **module** is used to deal with the  2 parameter format of non bonded 1-4 potential.
+
+### Xponge.forcefield.BASE.NB14_EXTRA
+
+This **module** is used to deal with the 3 parameter format of non bonded 1-4 potential.
+
+### Xponge.forcefield.BASE.RCMAP
+
+This **module** is used to deal with the residue based cmap.
+
+### Xponge.forcefield.BASE.SOFT_BOND
+
+This **module** is used to deal with the soft bond
+
+### Xponge.forcefield.BASE.UREY_BRADLEY
+
+This **module** is used to deal with the urey-bradley format of angle.
+
+### Xponge.forcefield.BASE.VIRTUAL_ATOM
+
+This **module** is used to deal with the virtual atoms.
+
+### Xponge.forcefield.AMBER
+
+This **package** is used to deal with the AMBER force fields.
+
+### Xponge.forcefield.CHARMM27
+
+This **package** is used to deal with the CHARMM27 force fields.
+
+### Xponge.forcefield.SPECIAL
+
+This **package** is used to deal with the special force fields.
+
+#### Xponge.forcefield.SPECIAL.FEP
+
+This **module** is used to deal with the force field of FEP.
+
+#### Xponge.forcefield.SPECIAL.MIN_BONDED
+
+This **module** is used to deal with the force field to minimize the bonded forces.
 
 # XpongeLib
 
@@ -1356,10 +1881,10 @@ a **package** containing the C/C++ compiled library for Xponge.
 ### XpongeLib.\_parmchk2
 
 ``` python
-XpongeLib._parmchk2(i, iformat, o, datapath, print_all, print_dihedral_contain_X,  gaffORgaff2)
+_parmchk2(i, iformat, o, datapath, print_all, print_dihedral_contain_X,  gaffORgaff2)
 ```
 This **function** is used to check the force field parameters for gaff and gaff2
-#### Input
+###### Input
 - `i`: input file name
 - `iformat`: input file format (prepi, prepc, ac, mol2, frcmod, leaplog)
 - `o`: output file name
@@ -1368,10 +1893,10 @@ This **function** is used to check the force field parameters for gaff and gaff2
 - `print_dihedral_contain_X`: print out parameters that matching improper dihedral parameters that contain 'X' in the force field parameter file. 0 for no and 1 for yes.
 - `gaffORgaff2`: 1 for gaff and 2 for gaff2
 
-#### Output:
+###### Output:
 - `None`
 
-#### Example:
+###### Example:
 the implement of `Xponge.forcefield.AMBER.gaff.parmchk2_gaff`
 ``` python
 def parmchk2_gaff(ifname, ofname, direct_load = True, keep = True):
