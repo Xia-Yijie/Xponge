@@ -1,17 +1,38 @@
 # Xponge
 
-## 简介
-Xponge是由Python编写的轻量化能高度自定义的分子动力学模拟的前后处理工具。Python版本需大于3.6，安装直接使用pip即可
-```bash
-pip install Xponge
-```
-安装成功以后，在Python脚本中直接`import`即可使用
-```python
-import Xponge
-```
-Xponge最基本的功能除了依赖于Python的标准库外，还依赖了numpy、pubchempy，这两个包将会在pip install Xponge时将会自动安装，而一些更复杂的功能可能包括其他模块，这些模块需要自行安装。
+## Introduction
 
-Xponge目前还处于早期开发版本，此处介绍一些基本功能，不代表最终版本效果。
+Xponge is a lightweight and easy-customizing python package to perform pre- and post-processing of molecular modelling. 
+
+Xponge is mainly designed for the molecular dynamics (MD) program SPONGE[1], but it can also output some general format files such as mol2 and pdb, so it may help the other molecular modelling programs too. 
+
+## Installation
+
+### Xponge
+
+Xponge, the python package itself is easy to install, and there are two ways to install,
+
+#### 1. pip
+
+```sh
+python -m pip install Xponge
+```
+
+#### 2. source code
+
+- 2.1 clone the source code of this repository
+
+- 2.2 open the directory where you clone the repository
+
+- 2.3 run the command
+
+  ```bash
+  python setup.py install 
+  ```
+
+### Dependent packages
+
+
 
 ## 力场生成
 ### A. 现有力场
@@ -120,7 +141,7 @@ basic test of Xponge
 ```
 > 部分内容在后续例子中相同，后续例子只在有必要的时候展示重复操作的结果部分。
  - 该部分完整Python代码
- 
+
 
 ```python
 import Xponge
