@@ -301,6 +301,14 @@ This **function** is used to convert units of the parameters.
 
 ##### \_\_init\_\_
 
+```python
+__init__(self, **kwargs)
+```
+
+###### Input
+
+- `kwargs`: the property - value pairs
+
 ##### Update
 
 ```python
@@ -325,6 +333,14 @@ a sub**class** of Xponge.Type, for atom types
 
 ##### \_\_init\_\_
 
+```python
+__init__(self, **kwargs)
+```
+
+###### Input
+
+- `kwargs`: the property - value pairs
+
  ### Xponge.ResidueType
 
 a sub**class** of Xponge.Type, for residue types
@@ -346,6 +362,14 @@ a sub**class** of Xponge.Type, for residue types
 #### instance methods
 
 ##### \_\_init\_\_
+
+```python
+__init__(self, **kwargs)
+```
+
+###### Input
+
+- `kwargs`: the property - value pairs
 
 ##### Add_Atom
 
@@ -377,8 +401,8 @@ This **function** is used to add the connectivity between two atoms to the resid
 
 ###### Input
 
-- `atom0`: the name of the atom to add
-- `atom1`: the name of the atom to add
+- `atom0`: a **str** or an Xponge.Atom instance, the name of the atom to add
+- `atom1`: a **str** or an Xponge.Atom instance, the name of the atom to add
 
 ###### Output
 
@@ -438,6 +462,15 @@ This **class** is the abstract class of the entities (atoms, bonded forces, resi
 
 ##### \_\_init\_\_
 
+```python
+__init__(self, entity_type, name=None)
+```
+
+###### Input
+
+- `entity_type`: an instance of the (sub)class Xponge.Type, as the type of the entity instance
+- `name`: a **str**, the name of the instance
+
 ##### Update
 
 ```python
@@ -468,6 +501,15 @@ a sub**class** of Xponge.Entity, for atoms
 #### instance methods
 
 ##### \_\_init\_\_
+
+```python
+__init__(self, entity_type, name=None)
+```
+
+###### Input
+
+- `entity_type`: an instance of the (sub)class Xponge.Type, as the type of the entity instance
+- `name`: a **str**, the name of the instance
 
 ##### deepcopy
 
@@ -554,15 +596,92 @@ a sub**class** of Xponge.Entity, for residues
 
 ##### \_\_init\_\_
 
+```python
+__init__(self, entity_type, name=None, directly_copy=False)
+```
+
+###### Input
+
+- `entity_type`: an instance of the (sub)class Xponge.Type, as the type of the entity instance
+- `name`: a **str**, the name of the instance
+- `directly_copy`: a **bool**ean value. If True, the instance will be initialized by directly copying from the `entity_type`
+
 ##### Add_Atom
+
+```python
+Add_Atom(self, name, atom_type=None, x=None, y=None, z=None)
+```
+
+This **function** is used to add an atom to the residue type.
+
+###### Input
+
+- `name`: a **str**, the name of the atom to add
+- `atom_type`: a **Xponge.AtomType**, the type of the atom to add
+- `x`: a **float**, the position x of the atom to add
+- `y`: a **float**, the position y of the atom to add
+- `z`: a **float**, the position z of the atom to add
+
+###### Output
+
+- `None`
 
 ##### Add_Connectivity
 
+```python
+Add_Connectivity(self, atom0, atom1)
+```
+
+This **function** is used to add the connectivity between two atoms to the residue entity.
+
+###### Input
+
+- `atom0`: a **str** or an Xponge.Atom instance, the name of the atom to add
+- `atom1`: a **str** or an Xponge.Atom instance, the name of the atom to add
+
+###### Output
+
+- `None`
+
 ##### Add_Bonded_Force
+
+```python
+Add_Bonded_Force(self, bonded_force_entity)
+```
+
+This **function** is used to add the bonded force to the residue entity.
+
+###### Input
+
+- `bonded_force_entity`: a **Xponge.BondedForceEntity**, the bonded force entity to add
+
+###### Output
+
+- `None`
 
 ##### Add_Missing_Atoms
 
+```python
+Add_Missing_Atoms(self)
+```
+
+This **function** is used to add the missing atoms from the Xponge.ResidueType to the residue entity. 
+
 ##### deepcopy
+
+```python
+deepcopy(self, forcopy=None)
+```
+
+This **function** is used to deep copy the instance
+
+###### Input
+
+- `forcopy`: a **str**, the string for temporary variables.  If forcopy != `None`, the new atoms will be stored in the old atoms' attribute `copied`.
+
+###### Output
+
+- `Xponge.Residue`: new copied residue instance
 
 ### Xponge.ResidueLink
 
@@ -572,9 +691,46 @@ a **class** for the link between residues
 
 ##### \_\_init\_\_
 
+```python
+__init__(self, atom1, atom2)
+```
+
+###### Input
+
+- `atom1`: an Xponge.Atom instance, the name of the atom to add
+- `atom2`: an Xponge.Atom instance, the name of the atom to add
+
 ##### Add_Bonded_Force
 
+```python
+Add_Bonded_Force(self, bonded_force_entity)
+```
+
+This **function** is used to add the bonded force to the residue link
+
+###### Input
+
+- `bonded_force_entity`: a **Xponge.BondedForceEntity**, the bonded force entity to add
+
+###### Output
+
+- `None`
+
 ##### deepcopy
+
+```python
+deepcopy(self, forcopy=None)
+```
+
+This **function** is used to deep copy the instance
+
+###### Input
+
+- `forcopy`: a **str**, the string for temporary variables.  If forcopy == `None`, a hash string of the time will be used.
+
+###### Output
+
+- `Xponge.ResidueLink`: new copied residue link instance
 
 ### Xponge.Molecule
 
@@ -584,100 +740,568 @@ a **class** for molecules
 
 ##### Set_Save_SPONGE_Input
 
+```python
+Set_Save_SPONGE_Input(cls, keyname)
+```
+
+This **function** is used to set the function when `Save_SPONGE_Input`. It is recommended used as a **decorator**. 
+
+###### Input
+
+- `keyname`: a **str**, which will be saved as "xxx\_`keyname`.txt" when saving SPONGE inputs.
+- `somefunction`: the **function** that receives a Xponge.Molecule as the input and gives a str as the output.
+
+###### Example
+
+In `Xponge.__init__`
+
+```python
+@Molecule.Set_Save_SPONGE_Input("residue")
+def write_residue(self):
+    towrite = "%d %d\n" % (len(self.atoms), len(self.residues))
+    towrite += "\n".join([str(len(res.atoms)) for res in self.residues])
+    return towrite
+```
+
 ##### Del_Save_SPONGE_Input
+
+```python
+Del_Save_SPONGE_Input(cls, keyname)
+```
+
+This **function** is used to delete the function when `Save_SPONGE_Input`. 
+
+###### Input
+
+- `keyname`: a **str**, which will be saved as "xxx\_`keyname`.txt" when saving SPONGE inputs.
 
 #### instance methods
 
 ##### \_\_init\_\_
 
+```python
+__init__(self, name)
+```
+
+###### Input
+
+- `name`: the name of the molecule
+
 ##### Add_Residue
+
+```python
+Add_Residue(self, residue)
+```
+
+This **function** is used to add a residue to the molecule
+
+###### Input
+
+- `residue`: a Xponge.Residue or Xponge.ResidueType instance, the residue to add
 
 ##### Add_Bonded_Force
 
+```python
+Add_Bonded_Force(self, bonded_force_entity)
+```
+
+This **function** is used to add the bonded force to the residue link
+
+###### Input
+
+- `bonded_force_entity`: a **Xponge.BondedForceEntity**, the bonded force entity to add
+
+###### Output
+
+- `None`
+
 ##### Add_Residue_Link
+
+```python
+Add_Residue_Link(self, atom1, atom2)
+```
+
+This **function** is used to add the connectivity between two atoms of two residues in the molecule.
+
+###### Input
+
+- `atom1`: a **str** or an Xponge.Atom instance, the name of the atom to add
+- `atom2`: a **str** or an Xponge.Atom instance, the name of the atom to add
+
+###### Output
+
+- `None`
 
 ##### Add_Missing_Atoms
 
+```python
+Add_Missing_Atoms(self)
+```
+
+This **function** is used to add the missing atoms from the Xponge.ResidueType instances to the residues in the molecule. 
+
 ##### deepcopy
+
+```python
+deepcopy(self)
+```
+
+This **function** is used to deep copy the instance
 
 ### Xponge.Generate_New_Bonded_Force_Type
 
+```python
+Generate_New_Bonded_Force_Type(Type_Name, atoms, properties, Compulsory, Multiple=None) 
+```
+
 a **function** to generate the subclasses of the Xponge.Type and the Xponge.Entity for the bonded force
+
+###### Input
+
+- Type_Name: a **str**, the name of the bonded force type
+- atoms: a **str**, the string to define the atom pattern of the bonded force type
+- properties: a **dict**, the property name - type pairs
+- Compulsory: a **bool**ean value to show whether every atom list which meet the atom pattern should be parametered.
+- Multiple: a **list** to show the properties that could be multiple for one type.
+
+###### Example
+
+In `Xponge.forcefield.BASE.DIHEDRAL`
+
+```python
+ProperType = Generate_New_Bonded_Force_Type("dihedral", "1-2-3-4", {"k":float, "phi0": float, "periodicity":int}, True, ["k", "phi0", "periodicity"])
+ImproperType = Generate_New_Bonded_Force_Type("improper", "1-3-2-3", {"k":float, "phi0": float, "periodicity":int}, False)
+```
 
 ###  Xponge.Generate_New_Pairwise_Force_Type
 
+```python
+Generate_New_Pairwise_Force_Type(Type_Name, properties)
+```
+
 a **function** to generate the subclasses of the Xponge.Type and the Xponge.Entity for the pairwise force
+
+###### Input
+
+- Type_Name: a **str**, the name of the bonded force type
+- properties: a **dict**, the property name - type pairs
+
+###### Example
+
+In `Xponge.forcefield.BASE.LJ`
+
+```python
+LJType = Generate_New_Pairwise_Force_Type("LJ", {"epsilon": float, "rmin": float, "sigma":float, "A":float, "B":float})
+```
 
 # Xponge.assign
 
 the **package** to assign the properties for atoms, residues and molecules.
 
-### \_\_init\_\_
+## \_\_init\_\_
 
 the basic **module** for Xponge.assign
 
 ### Xponge.assign.Judge_Rule
 
-the **class** of the rules to determinate the atom type for one atom
+the **class** of the rules to determine the atom type for one atom
 
 #### class variables
 
 - `all`: a **dict** to store the rule name - rule pairs
 
+#### instance variables
+
+- `rules`: an **OrderedDict** to store the atom type - judge function pairs 
+
 ####  instance methods
 
-###### \_\_init\_\_
+##### \_\_init\_\_
+
+```python
+__init__(self, name)
+```
+
+###### Input
+
+- `name`: the name of the instance
+
+###### Example
+
+In `Xponge.forcefield.AMBER.gaff`
+
+```python
+GAFF = assign.Judge_Rule("GAFF")
+```
+
+
 
 ##### Add_Judge_Rule
+
+```python
+Add_Judge_Rule(self, atomtype)
+```
+
+This **function** is used as an **decorator** to add the atom type - judge function
+
+###### Input
+
+- `atomtype`: a **str** or a Xponge.AtomType, the atom type to judge
+- `somefunction`: the judge function that receives an index of the atom to judge and an Xponge.assign.Assign as the input and gives a boolean value as the output
+
+###### Example
+
+In `Xponge.forcefield.AMBER.gaff`
+
+```python
+@GAFF.Add_Judge_Rule("cx")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "C4") and "RG3" in Assign.atom_marker[i].keys()
+```
 
 ### Xponge.assign._RING
 
 the **class** of the rings
 
+### Xponge.assign.Assign
+
+the class to assign properties for atoms, which is called an "assignment"
+
+#### class variables
+
+- `XX`: set("CNOPS")
+- `XA`: set("OS")
+- `XB`: set("NP")
+- `XC`: set(["F", "Cl", "Br", "I"])
+- `XD`: set("SP")
+- `XE`: set(["N", "O", "F", "Cl", "Br", "S", "I"])
+
 #### instance variables
 
-- `atoms`
-- `tohash`
+- `name`: a **str**, the name of the assignment
+- `atom_numbers`: an **int**, the number of the atoms
+- `atoms`: a **list**, the element names of the atoms
+- `element_details`: a **list**, some detailed information on element of the atoms
+- `coordinate`: a **numpy.array** with a shape of (`atom_numbers`,3), the coordinates of the atoms
+- `charge`: a **numpy.array** with a shape of (`atom_numbers`, ), the partial charges of the atoms
+- `atom_types`: a **dict**, the index of the atom - atom type pairs
+- `atom_marker`: a **dict**, the index of the atom - atom marker **dict** (marker name - amount pairs) pairs
+- `bonds`: a **dict**, the index of the first atom - **dict** (the index of the second atom - bond order pairs) pairs
+- `ar_bonds`: a **dict**, the index of the first atom - the index of the second atoms **list** pairs for the aromatic bonds
+- `am_bonds`: a **dict**, the index of the first atom - the index of the second atoms **list** pairs for the amide bonds
 
 #### instance methods
 
 ##### \_\_init\_\_
 
-##### \_\_eq\_\_
+```python
+__init__(self, name = "ASN")
+```
 
-##### get_3_neigbors
+###### Input
 
-### Xponge.assign.Assign
+- `name`: the name of the assignment
 
-the class to assign
+##### Atom_Judge
 
-#### class variables
+```python
+Atom_Judge(self, atom, string)
+```
 
-#### instance variables
+this **function** is used to judge atom whether meet the pattern
 
-#### instance methods
+###### Input
+
+- `atom`: the index of the atom
+- `string`: the string pattern
+
+###### Output
+
+- `True` or `False`
+
+###### Example
+
+In `Xponge.forcefield.AMBER.gaff`
+
+```python
+@GAFF.Add_Judge_Rule("c3")
+def temp(i, Assign):
+    return Assign.Atom_Judge(i, "C4")
+```
+
+##### Add_Atom
+
+```python
+Add_Atom(self, element, x, y, z, name="", charge = 0.0)
+```
+
+this **function** is used to add an atom to the assignment
+
+###### Input
+
+- `element`: a **str**, the element name of the atom
+- `x`: the x coordinate of the atom
+- `y`: the y coordinate of the atom
+- `z`: the z coordinate of the atom
+- `name`: the name of the atom
+- `charge`: the charge of the atom, in unit of e
+
+##### Add_Atom_Marker
+
+```python
+Add_Atom_Marker(self, atom, marker)
+```
+
+This **function** is used to add a marker to the atom
+
+###### Input
+
+- `atom`: an **int**, the index of the atom
+- `marker`: a `str`, the marker
+
+##### Add_Bond
+
+```python
+Add_Bond(self, atom1, atom2, order=-1)
+```
+
+This **function** is used to add a bond to the assignment
+
+###### Input
+
+- `atom1`: an **int**, the index of the first atom
+- `atom2`: an **int**, the index of the second atom
+- `order`: an **int**, the bond order. `-1` for the unknown bond order
+
+##### Add_Bond_Marker
+
+```python
+Add_Bond_Marker(self, atom1, atom2, marker, only1=False)
+```
+
+This **function** is used to add a marker to the bond
+
+###### Input
+
+- `atom1`: an **int**, the index of the first atom
+- `atom2`: an **int**, the index of the second atom
+- `marker`: a `str`, the marker
+- `only1`: a **bool**ean value, if `True`, only the atom1 - atom2 bond will get the marker, while the atom2 - atom1 not
+
+##### Determine_Equal_Atoms
+
+```python
+Determine_Equal_Atoms(self)
+```
+
+This **function** is used to get the equal atoms in the assignment
+
+###### Output
+
+- `list`: a list of sub lists, every sub list consist of equal atoms
+
+###### Example
+
+```python
+import Xponge
+t = Get_Assignment_From_PubChem("methane", "name")
+print(t.Determine_Equal_Atoms())
+#[[0],[1,2,3,4]]
+```
+
+##### Determine_Ring_And_Bond_Type
+
+```python
+Determine_Ring_And_Bond_Type(self)
+```
+
+This **function** is used to determine the rings, atom markers, bond types and bond markers in the assignment
+
+##### Determine_Atom_Type
+
+```python
+Determine_Atom_Type(self, rule)
+```
+
+This **function** is used to determine the atom type from the `rule`
+
+###### Input
+
+- `rule`: a **str**, the rule to judge
+
+##### To_ResidueType
+
+```python
+To_ResidueType(self, name, charge=None)
+```
+
+This **function** is used to get a Xponge.ResidueType from the assignment
+
+###### Input
+
+- `name`: a **str**, the name of the residue type
+- `charge`: a `numpy.array` or `None`, the partial charges of the atoms. If `None`, `self.charge` will be used.
+
+##### Calculate_Charge
+
+```python
+Calculate_Charge(self, method, **parameters)
+```
+
+This **function** is used to calculate the charges of the atoms
+
+###### Input
+
+- `method`: a **str**, the method to calculate the partial charges. "RESP" only now.
+- `parameters`: the parameters to calculate the partial charges. See Xponge.assign.RESP.RESP_Fit for RESP parameters
+
+##### Save_As_PDB
+
+```python
+Save_As_PDB(self, filename)
+```
+
+This **function** is used to save the assignment to a pdb file
+
+###### Input
+
+- `filename`: a **str**, the filename
+
+##### Save_As_Mol2
+
+```python
+Save_As_Mol2(self, filename)
+```
+
+This **function** is used to save the assignment to a mol2 file
+
+###### Input
+
+- `filename`: a **str**, the filename
 
 ### Xponge.assign.Guess_Element_From_Mass
 
+```python
+Guess_Element_From_Mass(mass)
+```
+
+This **function** is used to guess element from mass
+
+###### Input
+
+- `mass`: a **float**, the mass
+
+###### Output
+
+- `str`: the name of the element
+
 ### Xponge.assign.Get_Assignment_From_PubChem
 
-this **function** is also stored in the main dict with the key `Get_Assignment_From_PubChem`
+This **function** is also stored in the main dict with the key `Get_Assignment_From_PubChem`
+
+```python
+Get_Assignment_From_PubChem(parameter, keyword)
+```
+
+###### Input
+
+- `parameter`: a **str**, the parameter
+- `keyword`: a **str**, the type of the parameter
+
+###### Output
+
+- `Xponge.assign.Assign`: the assignment
+
+###### Example
+
+```python
+import Xponge
+methane = Get_Assignment_From_PubChem("methane", "name")
+ethane = Get_Assignment_From_PubChem("CC", "smiles")
+```
 
 ### Xponge.assign.Get_Assignment_From_PDB
 
 this **function** is also stored in the main dict with the key `Get_Assignment_From_PDB`
 
+```python
+Get_Assignment_From_PDB(filename, determine_bond_order = True)
+```
+
+###### Input 
+
+- `filename`: a **str**, the name of the file
+- `determine_bond_order`: a **bool**ean value, whether determine the bond order after reading the pdb file
+
+###### Output
+
+- `Xponge.assign.Assign`: the assignment
+
 ### Xponge.assign.Get_Assignment_From_Mol2
 
 this **function** is also stored in the main dict with the key `Get_Assignment_From_Mol2`
+
+```python
+Get_Assignment_From_Mol2(filename)
+```
 
 ### Xponge.assign.Get_Assignment_From_ResidueType
 
 this **function** is also stored in the main dict with the key `Get_Assignment_From_ResidueType`
 
+```python
+Get_Assignment_From_ResidueType(restype)
+```
+
 ## Xponge.assign.RESP
 
 the **module** to calculate the RESP charge
+
+### Xponge.assign.RESP.RESP_Fit
+
+```python
+RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 0, spin = 0, extra_equivalence = [], grid_density = 6, grid_cell_layer = 4, 
+    radius = None, a1 = 0.0005, a2 = 0.001, two_stage = True, only_ESP  = False)
+```
+
+this **function** is uesd to calculate the RESP charge
+
+###### Input
+
+- `Assign`: an Xponge.assign.Assign, the assignment
+
+- `basis`: a **str**, the basis for quantum quantum mechanics calculation
+
+- `opt`: a **bool**eam value, whether do optimization before the charge fitting
+
+- `charge`: an `int`, the total charge of the assignment
+
+- `spin`: an `int`, the number of unpaired electrons *2S*, i.e. the difference between the number of alpha and beta electrons.
+
+- `extra_equivalence`: a **list** of **list**s, the extra equal atoms besides the hydrogens in -CH3 and =CH2 groups, which is called the "extra" equivalence because the origin reference of the RESP charge only mentioned the equivalence of the hydrogens in -CH3 and =CH2 groups
+
+- `grid_density`: a **float**, the grid density in unit of grid/$\AA^2$
+
+- `grid_cell_layer`: an **int**, the number of grid cell layers
+
+- `radius`: a **dict**, element - vdw radius pairs. 
+
+  ```python
+  default_radius = {"H": 1.2, "C":1.5, "N":1.5, 
+                    "O": 1.4, "P":1.8, "S":1.75,
+                    "F": 1.35,"Cl":1.7,"Br":2.3}
+  ```
+  
+- `a1`: a **float**, the first stage restraint weight
+
+- `a2`: a **float**, the second stage restraint weight
+
+- `two_stage` : a **bool**ean value, whether to do the second stage of fitting 
+
+- `only_ESP`: a **bool**ean value, whether to only do the ESP fitting instead of the RESP fitting
+###### Output
+
+`numpy.array`: the partial charges of the atoms
 
 ## Xponge.assign.RDKit_tools
 

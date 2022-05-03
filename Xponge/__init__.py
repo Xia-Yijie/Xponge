@@ -14,7 +14,7 @@
 # limitations under the License.
 ##########################################################################
 
-__version__ = "beta-test"
+__version__ = "stable-1.2.5"
 __author__ = "Yijie Xia"
 
 from collections import OrderedDict, deque
