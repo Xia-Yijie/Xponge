@@ -1,40 +1,198 @@
 # Xponge
 
-## Introduction
+## 1. Introduction
 
 Xponge is a lightweight and easy-customizing python package to perform pre- and post-processing of molecular modelling. 
 
-Xponge is mainly designed for the molecular dynamics (MD) program SPONGE[1], but it can also output some general format files such as mol2 and pdb, so it may help the other molecular modelling programs too. 
+Xponge is mainly designed for the molecular dynamics (MD) program SPONGE[1], but it can also output some general format files such as mol2 and pdb, so it may help the other molecular modelling programs too.
 
-## Installation
+## 2. Installation
 
 ### Xponge
 
-Xponge, the python package itself is easy to install, and there are two ways to install,
+Xponge, the python package itself is easy to install, and there are two ways to install.
 
-#### 1. pip
+Your python version > 3.6, you can just directly `pip` install the Xponge package.
+
+#### (1) pip
 
 ```sh
-python -m pip install Xponge
+pip install Xponge
 ```
 
-#### 2. source code
+#### (2) source
 
-- 2.1 clone the source code of this repository
+- 2.1 download or clone the source of this repository
 
-- 2.2 open the directory where you clone the repository
+- 2.2 open the directory where you download or clone the repository
 
 - 2.3 run the command
 
   ```bash
-  python setup.py install 
+  python setup.py install
   ```
 
 ### Dependent packages
 
+Although the basic usage of Xponge do not depend on other packages, some complicated functions (quantum mechanics calculation for example) rely on some other packages. When an ImportError is raised, you need to install the module yourself. Most of the module can be installed via `pip`, while the `RDKit` package should be installed via `conda`.
+
+Here is the list of all packages which may be used
+
+| package name | description                       | how to install                 |
+| ------------ | --------------------------------- | ------------------------------ |
+| XpongeLib    | c/c++ compiled library for Xponge | `pip install XpongeLib`        |
+| pyscf        | quantum chemistry                 | `pip install pyscf`            |
+| geometric    | geometry optimization             | `pip install geometric`        |
+| rdkit        | cheminformatics                   | `conda install -c rdkit rdkit` |
+
+## 3. Usage
+
+Xponge has two ways to use. One way is to direct to use `Xponge` or `python -m Xponge` in the command line, the other way is to write python scripts and then use python to execute the scripts.
+
+For the first way to use, the command `Xponge` in the command line now only support a few well-wrapped subcommands. Use `Xponge -h` to see the detailed usage.
+
+Here we will give some detailed and well-classified instructions on what you can do with Xponge.
+
+### Creating Systems
+
+the existing force fields in Xponge now
+
+| Force Field Style | Molecule Type     | Force Field | Module                             |
+| ----------------- | ----------------- | ----------- | ---------------------------------- |
+| AMBER             | protein           | ff14SB      | Xponge.forcefield.AMBER.ff14SB     |
+|                   | protein           | ff19SB      | Xponge.forcefield.AMBER.ff19SB     |
+|                   | lipids            | lipid14     | Xponge.forcefield.AMBER.lipid14    |
+|                   | lipids            | lipid17     | Xponge.forcefield.AMBER.lipid17    |
+|                   | organic molecules | gaff        | Xponge.forcefield.AMBER.gaff       |
+|                   | water/ions        | tip3p       | Xponge.forcefield.AMBER.tip3p      |
+|                   | water/ions        | spce        | Xponge.forcefield.AMBER.spce       |
+|                   | water/ions        | opc         | Xponge.forcefield.AMBER.opc        |
+|                   | water/ions        | tip4pew     | Xponge.forcefield.AMBER.tip4pew    |
+| CHARMM27          | protein           | protein     | Xponge.forcefield.CHARMM27.protein |
+|                   | water/ions        | tip3p       | Xponge.forcefield.CHARMM27.tip3p   |
+|                   | water/ions        | tips3p      | Xponge.forcefield.CHARMM27.tips3p  |
+
+#### (1) Existing Force Field, Existing Residue Type, No Initial Coordinate
+
+Here, let's build an alanine tetrapeptide molecule in vacuum under the ff14SB force field.
+
+First of all, you need to import the force field module
+
+```python
+import Xponge
+import Xponge.forcefield.AMBER.ff14SB
+```
+
+You can get some information on the references.
+
+```plain
+Reference for ff14SB.py:
+  James A. Maier, Carmenza Martinez, Koushik Kasavajhala, Lauren Wickstrom, Kevin E. Hauser, and Carlos Simmerling
+    ff14SB: Improving the accuracy of protein side chain and backbone parameters from ff99SB
+    Journal of Chemical Theory and Computation 2015 11 (8), 3696-3713
+    DOI: 10.1021/acs.jctc.5b00255
+```
+
+You can print all of the residue types imported. (This is not compulsory to create the system, but helpful for you to understand Xponge)
+
+```python
+print(Xponge.ResidueType.types)
+```
+Then you can get,
+```plain
+{'ACE': Type of Residue: ACE, 'ASH': Type of Residue: ASH, 'CYM': Type of Residue: CYM, 'GLH': Type of Residue: GLH, 'LYN': Type of Residue: LYN, 'NME': Type of Residue: NME, 'NALA': Type of Residue: NALA, 'ALA': Type of Residue: ALA, 'CALA': Type of Residue: CALA, 'NARG': Type of Residue: NARG, 'ARG': Type of Residue: ARG, 'CARG': Type of Residue: CARG, 'NASN': Type of Residue: NASN, 'ASN': Type of Residue: ASN, 'CASN': Type of Residue: CASN, 'NASP': Type of Residue: NASP, 'ASP': Type of Residue: ASP, 'CASP': Type of Residue: CASP, 'NCYS': Type of Residue: NCYS, 'CYS': Type of Residue: CYS, 'CCYS': Type of Residue: CCYS, 'NCYX': Type of Residue: NCYX, 'CYX': Type of Residue: CYX, 'CCYX': Type of Residue: CCYX, 'NGLN': Type of Residue: NGLN, 'GLN': Type of Residue: GLN, 'CGLN': Type of Residue: CGLN, 'NGLU': Type of Residue: NGLU, 'GLU': Type of Residue: GLU, 'CGLU': Type of Residue: CGLU, 'NGLY': Type of Residue: NGLY, 'GLY': Type of Residue: GLY, 'CGLY': Type of Residue: CGLY, 'NHID': Type of Residue: NHID, 'HID': Type of Residue: HID, 'CHID': Type of Residue: CHID, 'NHIE': Type of Residue: NHIE, 'HIE': Type of Residue: HIE, 'CHIE': Type of Residue: CHIE, 'NHIP': Type of Residue: NHIP, 'HIP': Type of Residue: HIP, 'CHIP': Type of Residue: CHIP, 'NHE': Type of Residue: NHE, 'HYP': Type of Residue: HYP, 'CHYP': Type of Residue: CHYP, 'NILE': Type of Residue: NILE, 'ILE': Type of Residue: ILE, 'CILE': Type of Residue: CILE, 'NLEU': Type of Residue: NLEU, 'LEU': Type of Residue: LEU, 'CLEU': Type of Residue: CLEU, 'NLYS': Type of Residue: NLYS, 'LYS': Type of Residue: LYS, 'CLYS': Type of Residue: CLYS, 'NMET': Type of Residue: NMET, 'MET': Type of Residue: MET, 'CMET': Type of Residue: CMET, 'NPHE': Type of Residue: NPHE, 'PHE': Type of Residue: PHE, 'CPHE': Type of Residue: CPHE, 'NPRO': Type of Residue: NPRO, 'PRO': Type of Residue: PRO, 'CPRO': Type of Residue: CPRO, 'NSER': Type of Residue: NSER, 'SER': Type of Residue: SER, 'CSER': Type of Residue: CSER, 'NTHR': Type of Residue: NTHR, 'THR': Type of Residue: THR, 'CTHR': Type of Residue: CTHR, 'NTRP': Type of Residue: NTRP, 'TRP': Type of Residue: TRP, 'CTRP': Type of Residue: CTRP, 'NTYR': Type of Residue: NTYR, 'TYR': Type of Residue: TYR, 'CTYR': Type of Residue: CTYR, 'NVAL': Type of Residue: NVAL, 'VAL': Type of Residue: VAL, 'CVAL': Type of Residue: CVAL, 'HIS': Type of Residue: HIE, 'NHIS': Type of Residue: NHIE, 'CHIS': Type of Residue: CHIE}
+```
+
+All of the residue type will be stored in the main dict too, and the residues can be linked by adding and multiplying, so you can use the following simple command to get an alanine tetrapeptide molecule.
+
+```python
+protein = ACE + ALA * 3 + NME
+```
+
+Now what you need to do is just to save your `protein` in a format you like. The functions to save are  `Save_PDB`, `Save_SPONGE_Input`, `Save_Mol2` and `Save_NPZ` now.
+
+```python
+Save_PDB(protein, "protein.pdb")
+Save_SPONGE_Input(protein, "protein")
+```
+
+You can use VMD to visualize the molecule 
+
+```bash
+vmd protein.pdb
+```
+
+You can also use the [SPONGE VMD plugin](https://spongemm.cn/download/files/tools/sponge_vmd_v1.2.1.zip) to visualize the molecule
+
+```bash
+vmd -sponge_mass ./protein_mass.txt -sponge_crd ./protein_coordinate.txt
+```
+
+Then you can see,
+
+![输入图片说明](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/1.png)
+
+Also, you can do the molecular dynamics simulations by [SPONGE](https://spongemm.cn/download/files/packages/SPONGE_v1.2.5.zip). Here, we modify the last line of the file "protein_coordinate.txt" to "50.0 50.0 50.0 90.0 90.0 90.0" to avoid the error that the system is too small for SPONGE to do the simulation.
+
+Write a "mdin.txt" file of SPONGE, and run
+
+```plain
+basic test of Xponge
+    mode = NVT
+    thermostat = Andersen_thermostat
+    dt = 2e-3
+    constrain_mode = SHAKE
+    cutoff = 8.0
+    step_limit = 5000
+    default_in_file_prefix = protein
+```
+
+Then we can get
+
+```plain
+---------------------------------------------------------------------------------------
+        step =         1000,         time =        2.000,  temperature =       305.35,
+   potential =        47.21,           LJ =        -3.73,          PME =      -232.74,
+     nb14_LJ =        26.62,      nb14_EE =       196.30,         bond =        12.74,
+       angle =        16.63,     dihedral =        32.51,
+---------------------------------------------------------------------------------------
+        step =         2000,         time =        4.000,  temperature =       194.94,
+   potential =        51.01,           LJ =        -2.02,          PME =      -229.18,
+     nb14_LJ =        30.27,      nb14_EE =       188.48,         bond =        12.04,
+       angle =        22.31,     dihedral =        30.75,
+---------------------------------------------------------------------------------------
+        step =         3000,         time =        6.000,  temperature =       246.57,
+   potential =        49.60,           LJ =        -4.42,          PME =      -222.75,
+     nb14_LJ =        31.28,      nb14_EE =       189.09,         bond =        11.10,
+       angle =        16.47,     dihedral =        30.80,
+---------------------------------------------------------------------------------------
+        step =         4000,         time =        8.000,  temperature =       273.81,
+   potential =        55.53,           LJ =        -4.54,          PME =      -231.54,
+     nb14_LJ =        30.79,      nb14_EE =       196.70,         bond =         9.60,
+       angle =        18.88,     dihedral =        29.40,
+---------------------------------------------------------------------------------------
+        step =         5000,         time =       10.000,  temperature =       344.12,
+   potential =        48.44,           LJ =        -5.35,          PME =      -230.99,
+     nb14_LJ =        29.09,      nb14_EE =       198.53,         bond =         6.32,
+       angle =        19.48,     dihedral =        31.79,
+---------------------------------------------------------------------------------------
+```
+
+> Some contents are the same in the following examples, so the unnecessary results will not be shown in the following examples.
+
+The complete python script is
 
 
-## 力场生成
+```python
+import Xponge
+import Xponge.forcefield.AMBER.ff14SB
+protein = ACE + ALA * 3 + NME
+Save_PDB(protein, "protein.pdb")
+Save_SPONGE_Input(protein, "protein")
+```
+
+# 力场生成
+
 ### A. 现有力场
 #### A1. 现有残基，无初始坐标文件
 
