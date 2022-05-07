@@ -1,6 +1,5 @@
 name: Xponge draft
 on:
-on:
   push:
     paths:
       - 'paper.**'
