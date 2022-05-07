@@ -6,6 +6,10 @@ def main():
 
     subparsers = parser.add_subparsers(help = "subcommands", description = "Tools for SPONGE. Use Xponge XXX -h for the help of tool 'XXX'.")
 
+    mytest = subparsers.add_parser("test", help = "test the basic function of Xponge")
+    mytest.add_argument("-o", metavar = "test", default="test", help="the prefix for the output files")
+    mytest.set_defaults(func = tools.test)
+    
     dat2nc = subparsers.add_parser("dat2nc", help = "convert a traj file from .dat to .nc")
 
     dat2nc.add_argument("-n",required=True,type=int, help="the number of atoms in the traj file",metavar="atom_numbers")

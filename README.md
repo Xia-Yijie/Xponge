@@ -28,9 +28,21 @@ pip install Xponge
 
 - 2.3 run the command
 
-  ```bash
+  ```sh
   python setup.py install
   ```
+
+After the installation, you can use the following command to test whether your installation is successful.
+
+```sh
+python -m Xponge test
+```
+
+or just
+
+```sh
+Xponge test
+```
 
 ### Dependent packages
 
