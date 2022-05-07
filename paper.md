@@ -1,5 +1,5 @@
 ---
-title: 'Xponge: A Python package to perform pre- and post-processing of molecular modelling'
+title: 'Xponge: A Python package to perform pre- and post-processing of molecular simulation'
 tags:
   - Python
   - molecular modelling
@@ -8,7 +8,7 @@ tags:
   - pre-process and post-process
 authors:
   - name: Yijie Xia^[First author]
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0002-7931-4015
     affiliation: 1
   - name: Yi Qin Gao^[Corresponding author]
     affiliation: 1
@@ -21,16 +21,14 @@ bibliography: paper.bib
 
 # Summary
 
-to do
+Xponge is a lightweight and easy-customizing Python package to perform pre- and post-processing of molecular simulations. It is mainly disigned for the molecular dynamics (MD) program SPONGE`[@Huang:2022]`, but the preprocessing performance can be helpful to other molecular simulation programs.
 
 # Statement of need
 
-to do
+Molecules are the basis of the world. 
 
 # Acknowledgements
 
 to do
 
 # References
-
-to do
