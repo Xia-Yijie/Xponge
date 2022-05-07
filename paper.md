@@ -21,7 +21,7 @@ bibliography: paper.bib
 
 # Summary
 
-Xponge is a lightweight and easy-customizing Python package to perform pre- and post-processing of molecular simulations. It is mainly disigned for the molecular dynamics (MD) program SPONGE`[@Huang:2022]`, but the preprocessing performance can be helpful to other molecular simulation programs.
+Xponge is a lightweight and easy-customizing Python package to perform pre- and post-processing of molecular simulations. It is mainly disigned for the molecular dynamics (MD) program SPONGE [@Huang:2022], but the preprocessing performance can be helpful to other molecular simulation programs.
 
 # Statement of need
 
