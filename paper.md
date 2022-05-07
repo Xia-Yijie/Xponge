@@ -1,5 +1,5 @@
 ---
-title: 'Xponge: A Python package to perform pre- and post-processing of molecular simulation'
+title: 'Xponge: A Python package to perform pre- and post-processing of molecular simulations'
 tags:
   - Python
   - molecular modelling
@@ -7,7 +7,7 @@ tags:
   - molecular dynamics
   - pre-process and post-process
 authors:
-  - name: Yijie Xia^[First author]
+  - name: Yijie Xia
     orcid: 0000-0002-7931-4015
     affiliation: 1
   - name: Yi Qin Gao^[Corresponding author]
