@@ -870,8 +870,26 @@ In `Xponge.forcefield.BASE.DIHEDRAL`
 
 ```python
 ProperType = Generate_New_Bonded_Force_Type("dihedral", "1-2-3-4", {"k":float, "phi0": float, "periodicity":int}, True, ["k", "phi0", "periodicity"])
+ProperType.Set_Property_Unit("k", "energy", "kcal/mol")
+ProperType.Set_Property_Unit("phi0", "angle", "rad")
+
+
 ImproperType = Generate_New_Bonded_Force_Type("improper", "1-3-2-3", {"k":float, "phi0": float, "periodicity":int}, False)
+ImproperType.topology_matrix = [[1, 3, 2, 3],
+                                [1, 1, 2, 3],
+                                [1, 1, 1, 2],
+                                [1, 1, 1, 1]]
+ImproperType.Set_Property_Unit("k", "energy", "kcal/mol")
+ImproperType.Set_Property_Unit("phi0", "angle", "rad")
+
+@ImproperType.Set_Same_Force_Function
+def Improper_Same_Force(cls, atom_list):
+    ...
+    ...
 ```
+The generated bonded force type has a special instance variable `topology_matrix`. The value in the *i*-th row and *j*-th column means the distance between the *i*-th atom and the *j*-th atom. The improper dihedral is so complicated that it can not be described by "1-3-2-3" simply and we need to set the topology matrix here.
+
+Some different atom serials make the same force type. For example, H-C-C-O and O-C-C-H is the same proper dihedral force type. The default judgement for the same force type is whether the atom list equals to the force type atom serial list itself or its reverse list. Obviously, this is not true for improper dihedrals, so we need to set the judgement function here. 
 
 ###  Xponge.Generate_New_Pairwise_Force_Type
 
