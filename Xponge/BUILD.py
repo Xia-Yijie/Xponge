@@ -348,7 +348,7 @@ def Save_PDB(molecule, filename=None):
                 resname = GlobalSetting.PDBResidueNameMap["save"][resname]
             towrite += "ATOM  %5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%17s%2s\n" % (
                 molecule.atom_index[atom] - chain_atom0, atom.name,
-                resname, " ", molecule.residue_index[atom.residue] - chain_residue0,
+                resname, " ", (molecule.residue_index[atom.residue] - chain_residue0)%10000,
                 atom.x, atom.y, atom.z, " ", " ")
             if atom == atom.residue.atoms[-1] and molecule.link_to_next[molecule.residue_index[atom.residue]] == False:
                 towrite += "TER\n"

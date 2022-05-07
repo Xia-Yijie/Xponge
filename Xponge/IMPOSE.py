@@ -448,6 +448,7 @@ def Molecule_Or(self, other):
         resB = new_molecule2.residues[0]
         for res in new_molecule2.residues:
             new_molecule.Add_Residue(res)  
+        new_molecule.residue_links.extend(new_molecule2.residue_links)
         return new_molecule
     elif type(other) == type(None):
         return self
@@ -468,6 +469,7 @@ def iMolecule_Or(self, other):
         resB = new_molecule2.residues[0]
         for res in new_molecule2.residues:
             self.Add_Residue(res)  
+        self.residue_links.extend(new_molecule2.residue_links)
         return self
     elif type(other) == type(None):
         return self

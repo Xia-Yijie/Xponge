@@ -2,7 +2,7 @@ from . import *
 import sys
 
 
-def Box(molecule, solvent, distance):
+def Box(molecule, solvent, distance, tolerance = 3):
     try:
         distance[0]
     except:
@@ -37,7 +37,7 @@ def Box(molecule, solvent, distance):
     minindex = np.argmin(solcrd, axis=0)
     solmax = np.max(solcrd, axis=0)
     maxindex = np.argmin(solcrd, axis=0)
-    solshape = solmax - solmin + 3
+    solshape = solmax - solmin + tolerance
 
     x0 = molmin[0] - solshape[0] - distance[0]
     while x0 < molmax[0] + distance[3] + solshape[0]:
@@ -45,9 +45,9 @@ def Box(molecule, solvent, distance):
         while y0 < molmax[1] + distance[4] + solshape[1]:
             z0 = molmin[2] - solshape[2] - distance[2]
             while z0 < molmax[2] + distance[5] + solshape[2]:
-                if (x0 > molmin[0] - 3 - solshape[0] and x0 < molmax[0] + 3 + solshape[0] and
-                        y0 > molmin[1] - 3 - solshape[1] and y0 < molmax[1] + 3 + solshape[1] and
-                        z0 > molmin[2] - 3 - solshape[2] and z0 < molmax[2] + 3 + solshape[2]):
+                if (x0 > molmin[0] - tolerance - solshape[0] and x0 < molmax[0] + tolerance + solshape[0] and
+                        y0 > molmin[1] - tolerance - solshape[1] and y0 < molmax[1] + tolerance + solshape[1] and
+                        z0 > molmin[2] - tolerance - solshape[2] and z0 < molmax[2] + tolerance + solshape[2]):
                     z0 += solshape[2]
                     continue
                 for atom in new_molecule.atoms:
