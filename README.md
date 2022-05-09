@@ -44,7 +44,7 @@ or just
 Xponge test
 ```
 
-You can use any visulization tool such as VMD and pymol to see the generated PDB file and the mol2 file to check the results. You can also compare all the files you get with the files in the [gitee](https://gitee.com/gao_hyp_xyj_admin/xponge/tree/master/test_standard) or [github]() repository.
+You can use any visulization tool such as VMD and pymol to see the generated PDB file and the mol2 file to check the results. You can also compare all the files you get with the files in the [gitee](https://gitee.com/gao_hyp_xyj_admin/xponge/tree/master/test_standard) or [github](https://github.com/Xia-Yijie/Xponge/tree/master/test_standard) repository.
 
 ### Dependent packages
 
