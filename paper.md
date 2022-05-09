@@ -29,6 +29,10 @@ Since molecules are the basis of the world, molecular simulations are an importa
 
 There have been many pre-processing tools for molecular simulation, such as offline LEaP [@LEaP], pdb2gmx [@pdb2gmx] and psfgen [@psfgen], and online LigParGen [@LigParGen] and CGenFF [@CGenFF], but they are designed for a particular form of force field and are not suitable to modify. Xponge, on the other hand, is highly modular, making it well suited for development. At the same time, Xponge includes certain post-processing capabilities and combines specific complex pre-processing - simulation - post-processing into one workflow, making complex molecular simulations simple. Meanwhile, machine learning force field for molecular simulation is one of the hot research at present, and Xponge written by python can be better merged into the computational graph, which is more suitable for molecular simulation software like SPONGE [@Huang:2022] that can incorporate machine learning.
 
+# Availability
+
+Xponge is freely available and open source under the Apache License 2.0 (Apache-2.0). You can download the package and access the online documentations via https://gitee.com/gao_hyp_xyj_admin/xponge or https://github.com/Xia-Yijie/Xponge..
+
 # Acknowledgements
 
 The authors thank the National Key R&D Program of China (2017YFA0204702), the National Natural Science Foundation of China (21821004, 21927901, 92053202 and 22050003) for financial support.

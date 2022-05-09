@@ -4,7 +4,7 @@
 
 Xponge is a lightweight and easy-customizing python package to perform pre- and post-processing of molecular simulations. 
 
-Xponge is mainly designed for the molecular dynamics (MD) program [SPONGE]([SPONGE: A GPU‐Accelerated Molecular Dynamics Package with Enhanced Sampling and AI‐Driven Algorithms (wiley.com)](https://onlinelibrary.wiley.com/doi/epdf/10.1002/cjoc.202100456)), but it can also output some general format files such as mol2 and PDB, so it may help the other molecular modelling programs too.
+Xponge is mainly designed for the molecular dynamics (MD) program [SPONGE](https://onlinelibrary.wiley.com/doi/epdf/10.1002/cjoc.202100456)), but it can also output some general format files such as mol2 and PDB, so it may help the other molecular modelling programs too.
 
 ## 2. Installation
 
@@ -35,7 +35,7 @@ pip install Xponge
 After the installation, you can use the following command to test whether your installation is successful.
 
 ```sh
-python -m Xponge test
+python -m Xponge test -o test
 ```
 
 or just
@@ -43,6 +43,8 @@ or just
 ```sh
 Xponge test
 ```
+
+You can use any visulization tool such as VMD and pymol to see the generated PDB file and the mol2 file to check the results. You can also compare all the files you get with the files in the [gitee](https://gitee.com/gao_hyp_xyj_admin/xponge/tree/master/test_standard) or [github]() repository.
 
 ### Dependent packages
 
@@ -64,7 +66,7 @@ Here is the list of all packages which may be used
 
 Xponge has two ways to use. One way is to direct to use `Xponge` or `python -m Xponge` in the command line, the other way is to write python scripts and then use python to execute the scripts.
 
-For the first way to use, the command `Xponge` in the command line now only support a few well-wrapped subcommands. Use `Xponge -h` to see the detailed usage.
+For the first way to use, the command `Xponge` in the command line now only support a few well-wrapped subcommands. Use `Xponge -h` to see the detailed usage. As for the second way to use, the detailed API documents can be seen in the [gitee](https://gitee.com/gao_hyp_xyj_admin/xponge/tree/master/API.md) or [github]() repository
 
 Here we will give some detailed and well-classified instructions on what you can do with Xponge.
 
