@@ -31,7 +31,7 @@ There have been many pre-processing tools for molecular simulation, such as offl
 
 # Availability
 
-Xponge is freely available and open source under the Apache License 2.0 (Apache-2.0). You can download the package and access the online documentations via https://gitee.com/gao_hyp_xyj_admin/xponge or https://github.com/Xia-Yijie/Xponge..
+Xponge is freely available and open source under the Apache License 2.0 (Apache-2.0). You can download the package and access the online documentations on [gitee](https://gitee.com/gao_hyp_xyj_admin/xponge) or [github](https://github.com/Xia-Yijie/Xponge).
 
 # Acknowledgements
 
