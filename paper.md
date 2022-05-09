@@ -31,6 +31,6 @@ There have been many pre-processing tools for molecular simulation, such as offl
 
 # Acknowledgements
 
-The authors thank the National Key R&D Program of China (2017YFA0204702), the National Natural Science Foundation of China (21821004, 21873007 and 21927901) and CAAI-Huawei MindSpore Open Fund for financial support. This research was supported, in part, through the computational resources provided by the SZBL supercomputing center.
+The authors thank the National Key R&D Program of China (2017YFA0204702), the National Natural Science Foundation of China (21821004, 21927901, 92053202 and 22050003) for financial support.
 
 # References
