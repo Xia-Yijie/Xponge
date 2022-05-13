@@ -470,7 +470,7 @@ def Get_Free_Molecule(molA, perturbing_residues, intra_FEP=False):
     return molB
 
 
-def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
+def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
     
     BUILD.Build_Bonded_Force(mol)
     BUILD.Build_Bonded_Force(ResidueB)
@@ -489,7 +489,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB):
     Insert_Atom_Type_To_RDKitMol(RDmolB, ResidueB, AssignB, atom_type_dict)
     print("FINDING MAXIMUM COMMON SUBSTRUCTURE")
 
-    result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True, timeout = 60)
+    result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True, timeout = tmcs)
     #print(result.smartsString)
     #RDmol_mcs = Chem.MolFromSmarts(result.smarts)
     RDmol_mcs = result.queryMol
