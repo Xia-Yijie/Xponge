@@ -69,6 +69,10 @@ class Assign():
         self.am_bonds = {}
         self.bond_marker = {}
 
+    def Add_Index_To_Name(self):
+        for i in range(self.atom_numbers):
+            self.names[i] += str(i)
+
     def Atom_Judge(self, atom, string):
         element, links = [''.join(list(g)) for k, g in groupby(string, key=lambda x: x.isdigit())]
         return self.atoms[atom] == element and len(self.bonds[atom]) == int(links)

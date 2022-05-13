@@ -1047,13 +1047,28 @@ def temp(i, Assign):
     return Assign.Atom_Judge(i, "C4")
 ```
 
+##### Add_Count_To_Name
+
+```python
+Add_Index_To_Name(self)
+```
+
+This **function** is used to add the atom index to the atom name 
+
+###### Example
+
+```python
+FXR = Get_Assignment_From_Mol2("xxx.mol2")
+FXR.Add_Index_To_Name()
+```
+
 ##### Add_Atom
 
 ```python
 Add_Atom(self, element, x, y, z, name="", charge = 0.0)
 ```
 
-this **function** is used to add an atom to the assignment
+This **function** is used to add an atom to the assignment
 
 ###### Input
 
