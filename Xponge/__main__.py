@@ -133,9 +133,8 @@ def main():
     
     mol2rfe.add_argument("-tmcs", default = 10, type = int, metavar = "10", help = "the timeout parameter for max common structure in unit of second")
     mol2rfe.add_argument("-dt", default = 2e-3, type = float, metavar = "dt", help = "the dt used for simulation when mdin is not provided")
-    mol2rfe.add_argument("-m1steps", type = int, nargs = 2, help = "the first-stage minimization steps for the 0th lambda. Default 5000 for each minimization simulation. There are 2 minimization simulations.", default = [5000, 5000])
-    mol2rfe.add_argument("-m2steps", type = int, nargs = 3, help = "the second-stage minimization steps for the 0th lambda. Default 5000 for each minimization simulation. There are 3 minimization simulations.", default = [5000, 5000, 5000])
-    mol2rfe.add_argument("-m3steps", type = int, nargs = 4, help = "the third-stage minimization steps for the 0th lambda. Default 5000 for each minimization simulation. There are 2 minimization simulations.", default = [5000, 5000, 5000, 5000])
+    mol2rfe.add_argument("-m1steps", type = int, nargs = 5, help = "the first-stage minimization steps for the 0th lambda. Default 5000 for each minimization simulation. There are 5 minimization simulations.", default = [5000, 5000, 5000, 5000, 5000])
+    mol2rfe.add_argument("-m2steps", type = int, nargs = 5, help = "the second-stage minimization steps for the 0th lambda. Default 5000 for each minimization simulation. There are 5 minimization simulations.", default = [5000, 5000, 5000, 5000, 5000])
     mol2rfe.add_argument("-msteps", type = int, nargs = 2, help = "the minimization steps for all the lambda. Default 5000 for each minimization simulation. There are 2 minimization simulations.", default = [5000, 5000])
     mol2rfe.add_argument("-pstep", "-prebalance_step", dest = "prebalance_step", default = 50000, type = int, metavar = "prebalance_step", help = "the prebalance step used for simulation when mdin is not provided")
     mol2rfe.add_argument("-bstep", "-balance_step", dest = "balance_step", default = 500000, type = int, metavar = "balance_step", help = "the balance step used for simulation when mdin is not provided")
