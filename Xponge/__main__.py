@@ -70,13 +70,18 @@ def main():
     trr2dat.add_argument("-o", required = True, help ='the output file name prefix')
     trr2dat.set_defaults(func = tools.trr2dat)
 
-    name2name = subparsers.add_parser("name2name", help = "change a molecule's atom name from one file to another file")
+    name2name = subparsers.add_parser("name2name", help = "change the atom names of a residue from one file to another file")
     name2name.add_argument("-fformat", "-from_format", dest = "from_format", choices = ["mol2", "pdb", "gaff_mol2"], required = True, help = "the format of the file which is needed to change from")
     name2name.add_argument("-ffile", "-from_file", dest = "from_file", required = True, help = "the name of the file which is needed to change from")
+    name2name.add_argument("-fres", "-from_residue", dest = "from_residue", default = "", help = "the residue name in ffile if fformat == pdb")
+
     name2name.add_argument("-tformat", "-to_format", dest = "to_format", choices = ["mol2", "pdb", "gaff_mol2"], required = True, help = "the format of the file which is needed to change to")
     name2name.add_argument("-tfile", "-to_file", dest = "to_file", required = True, help = "the name of the file which is needed to change to")
-    name2name.add_argument("-oformat", "-out_format", dest = "out_format", choices = ["mol2", "pdb"], required = True, help = "the format of the output file")
+    name2name.add_argument("-tres", "-to_residue", dest = "to_residue", default = "", help = "the residue name in tfile if tformat == pdb")
+
+    name2name.add_argument("-oformat", "-out_format", dest = "out_format", choices = ["mol2", "pdb", "mcs_pdb"], required = True, help = "the format of the output file")
     name2name.add_argument("-ofile", "-out_file", dest = "out_file", required = True, help = "the name of the output file")
+    name2name.add_argument("-ores", "-out_residue", dest = "out_residue", default = "ASN", help = "the name of the output residue")
     name2name.set_defaults(func = tools.name2name)
 
     mol2opt = subparsers.add_parser("mol2opt", help = 'optimize a mol2 file by using minimization-mode SPONGE and GAFF')

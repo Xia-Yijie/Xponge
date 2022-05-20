@@ -331,9 +331,8 @@ class Assign():
                 atom_name = self.atoms[i]
                 self.names[i] = atom_name
         for i, atom in enumerate(self.atoms):
-            resname = "ASN"
             towrite += "ATOM  %5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%17s%2s\n" % (i + 1, self.names[i],
-                                                                                 resname, " ", 1, self.coordinate[i][0],
+                                                                                 self.name, " ", 1, self.coordinate[i][0],
                                                                                  self.coordinate[i][1],
                                                                                  self.coordinate[i][2], " ", atom)
 
@@ -456,12 +455,16 @@ def Get_Assignment_From_PubChem(parameter, keyword):
         raise NotImplementedError
 
 
-def Get_Assignment_From_PDB(filename, determine_bond_order = True):
+def Get_Assignment_From_PDB(filename, determine_bond_order = True, only_residue = ""):
     assign = Assign()
     index_atom_map = {}
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
+                if only_residue:
+                    resname = line[17:20].strip()
+                    if resname != only_residue:
+                        continue
                 index = int(line[6:11])
                 index_atom_map[index] = assign.atom_numbers
                 atom_name = line[12:16].strip()
@@ -472,8 +475,16 @@ def Get_Assignment_From_PDB(filename, determine_bond_order = True):
                 assign.Add_Atom(element, x, y, z, atom_name)
             if line.startswith("CONECT"):
                 atom = int(line[6:11])
-                for bonded_atom in line[11:].split():
-                    assign.Add_Bond(index_atom_map[atom], index_atom_map[int(bonded_atom)])
+                if atom not in index_atom_map.keys():
+                    continue
+                for bonded_atom_i in range(11,31,5):
+                    try:
+                        temp = line[bonded_atom_i:bonded_atom_i+5]
+                        bonded_atom = int(temp)
+                    except:
+                        break
+                    if bonded_atom in index_atom_map.keys():
+                        assign.Add_Bond(index_atom_map[atom], index_atom_map[int(bonded_atom)])
     if determine_bond_order:
         assign.Determine_Bond_Order()
         assign.Determine_Ring_And_Bond_Type()
