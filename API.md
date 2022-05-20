@@ -1258,13 +1258,14 @@ ethane = Get_Assignment_From_PubChem("CC", "smiles")
 this **function** is also stored in the main dict with the key `Get_Assignment_From_PDB`
 
 ```python
-Get_Assignment_From_PDB(filename, determine_bond_order = True)
+Get_Assignment_From_PDB(filename, determine_bond_order = True, only_residue = "")
 ```
 
 ###### Input 
 
 - `filename`: a **str**, the name of the file
 - `determine_bond_order`: a **bool**ean value, whether determine the bond order after reading the pdb file
+- `only_residue`: a **str**, the name of the residue to get.
 
 ###### Output
 
