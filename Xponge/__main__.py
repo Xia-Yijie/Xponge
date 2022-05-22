@@ -82,6 +82,7 @@ def main():
     name2name.add_argument("-oformat", "-out_format", dest = "out_format", choices = ["mol2", "pdb", "mcs_pdb"], required = True, help = "the format of the output file")
     name2name.add_argument("-ofile", "-out_file", dest = "out_file", required = True, help = "the name of the output file")
     name2name.add_argument("-ores", "-out_residue", dest = "out_residue", default = "ASN", help = "the name of the output residue")
+    name2name.add_argument("-tmcs", type = int, default = 10, help = "the time to find max common structure")
     name2name.set_defaults(func = tools.name2name)
 
     mol2opt = subparsers.add_parser("mol2opt", help = 'optimize a mol2 file by using minimization-mode SPONGE and GAFF')
