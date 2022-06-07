@@ -1902,6 +1902,64 @@ This **package** is used to deal with the special force fields.
 
 This **module** is used to deal with the force field of FEP.
 
+#### Xponge.forcefield.SPECIAL.GB
+
+This **module** is used to deal with the force field of generalized Born.
+
+#### Xponge.forcefield.SPECIAL.GB.Bondi_radii
+
+``` python
+Bondi_radii(atom)
+```
+This **function** is used to set the generalized Born radii as the Bondi radii.
+
+##### Input
+- `atom`: an Xponge.Atom instance, the atom to set the generalized Born radii
+
+##### Output
+- `None`
+
+#### Xponge.forcefield.SPECIAL.GB.modified_Bondi_radii
+
+``` python
+modified_Bondi_radii(atom)
+```
+This **function** is used to set the generalized Born radii as the modified Bondi radii (mbondi).
+
+##### Input
+- `atom`: an Xponge.Atom instance, the atom to set the generalized Born radii
+
+##### Output
+- `None`
+
+#### Xponge.forcefield.SPECIAL.GB.Set_Born_Radii
+
+``` python
+Set_Born_Radii(mol, radius_set = modified_Bondi_radii)
+```
+This **function** is used to set the generalized Born radii for a molecule.
+
+##### Input
+- `mol`: an Xponge.Molecule instance or an Xponge.Residue instance or an Xponge.ResidueType instance, the molecule to set the generalized Born radii
+- `radius_set`: a function which receives an Xponge.Atom as input and set the generalized Born radii for the atom
+
+##### Output
+- `None`
+
+##### Example
+
+``` python
+import Xponge
+import Xponge.forcefield.SPECIAL.GB as GB
+import Xponge.forcefield.AMBER.ff14SB
+
+mol = NALA + ALA * 10 + CALA
+
+GB.Set_Born_Radii(mol)
+
+Save_SPONGE_Input(mol)
+```
+
 #### Xponge.forcefield.SPECIAL.MIN_BONDED
 
 This **module** is used to deal with the force field to minimize the bonded forces.
