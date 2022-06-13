@@ -64,6 +64,7 @@ def Set_GB_Radii(mol, radius_set = modified_Bondi_radii):
     else:
         for atom in mol.atoms:
             radius_set(atom)
+    mol.box_length = [999,999,999]
     Molecule.Set_Save_SPONGE_Input("gb")(write_GB_radii_and_scaler)    
 
 
