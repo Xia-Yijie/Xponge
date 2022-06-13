@@ -1911,7 +1911,7 @@ This **module** is used to deal with the force field of generalized Born.
 ``` python
 Bondi_radii(atom)
 ```
-This **function** is used to set the generalized Born radii as the Bondi radii.
+This **function** is used to set the generalized Born radii and scaled factor as the Bondi radii.
 
 ##### Input
 - `atom`: an Xponge.Atom instance, the atom to set the generalized Born radii
@@ -1924,24 +1924,24 @@ This **function** is used to set the generalized Born radii as the Bondi radii.
 ``` python
 modified_Bondi_radii(atom)
 ```
-This **function** is used to set the generalized Born radii as the modified Bondi radii (mbondi).
+This **function** is used to set the generalized Born radii and scaled factor as the modified Bondi radii (mbondi).
 
 ##### Input
-- `atom`: an Xponge.Atom instance, the atom to set the generalized Born radii
+- `atom`: an Xponge.Atom instance, the atom to set the generalized Born radii and scaled factor
 
 ##### Output
 - `None`
 
-#### Xponge.forcefield.SPECIAL.GB.Set_Born_Radii
+#### Xponge.forcefield.SPECIAL.GB.Set_GB_Radii
 
 ``` python
-Set_Born_Radii(mol, radius_set = modified_Bondi_radii)
+Set_GB_Radii(mol, radius_set = modified_Bondi_radii)
 ```
-This **function** is used to set the generalized Born radii for a molecule.
+This **function** is used to set the generalized Born radii and scaled factor for a molecule.
 
 ##### Input
-- `mol`: an Xponge.Molecule instance or an Xponge.Residue instance or an Xponge.ResidueType instance, the molecule to set the generalized Born radii
-- `radius_set`: a function which receives an Xponge.Atom as input and set the generalized Born radii for the atom
+- `mol`: an Xponge.Molecule instance or an Xponge.Residue instance or an Xponge.ResidueType instance, the molecule to set the generalized Born radii and scaled factor
+- `radius_set`: a function which receives an Xponge.Atom as input and set the generalized Born radii and scaled factor for the atom
 
 ##### Output
 - `None`
@@ -1955,7 +1955,7 @@ import Xponge.forcefield.AMBER.ff14SB
 
 mol = NALA + ALA * 10 + CALA
 
-GB.Set_Born_Radii(mol)
+GB.Set_GB_Radii(mol)
 
 Save_SPONGE_Input(mol)
 ```
