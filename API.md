@@ -348,7 +348,7 @@ a sub**class** of Xponge.Type, for residue types
 #### instance variables
 
 - `connectivity`: a **map** to store the atom - connected atom list pairs
-- `builded`: a **bool**ean value to show whether the residue type is built or not
+- `built`: a **bool**ean value to show whether the residue type is built or not
 - `bonded_forces`: a **dict** to store the bonded force name - bonded force list pairs
 
 - `atoms`: a **list** to store the atoms of the residue type
@@ -583,7 +583,7 @@ a sub**class** of Xponge.Entity, for residues
 #### instance variables
 
 - `connectivity`: a **map** to store the atom - connected atom list pairs
-- `builded`: a **bool**ean value to show whether the residue type is built or not
+- `built`: a **bool**ean value to show whether the residue type is built or not
 - `bonded_forces`: a **dict** to store the bonded force name - bonded force list pairs
 - `atoms`: a **list** to store the atoms of the residue type
 - `_name2atom`: a **dict** to store the name - Xponge.Atom pairs
