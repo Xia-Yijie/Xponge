@@ -3,13 +3,16 @@ import sys
 
 
 def Box(molecule, solvent, distance, tolerance = 3):
-    try:
-        distance[0]
-    except:
+    if isinstance(distance, float):
         distance = [distance] * 6
+    elif not isinstance(distance, list):
+        raise Exception("parameter distance should be a list or a float")
+        
 
     if len(distance) == 3:
         distance = distance + distance
+    elif len(distance) != 6:
+        raise Exception("the length of parameter distance should be 3 or 6")
 
     if type(molecule) == ResidueType:
         new_molecule = Molecule(molecule.name)

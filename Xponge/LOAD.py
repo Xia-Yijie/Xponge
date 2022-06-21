@@ -411,7 +411,7 @@ def parm7(filename):
                     line = f.readline()
                 try:
                     name = line.split()[0].strip()
-                except:
+                except IndexError:
                     from random import randint
                     name = "Molecule%d"%randint(0, 10086)
                 mol =  Molecule(name = name)
