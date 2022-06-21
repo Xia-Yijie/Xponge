@@ -15,14 +15,11 @@ def _analyze_connectivity(cls):
 
 
 def _build_bfrc(cls):
-    # t = time()
     _analyze_connectivity(cls)
-    # print("analysis of connectivity: %f"%(time()-t))
     for frc in GlobalSetting.BondedForces:
         top = frc.topology_like
         top_matrix = frc.topology_matrix
         frc_all = []
-        # t = time()
         for atom0 in cls.atoms:
             backups = {i: [] for i in range(len(top))}
             backups[0].append([atom0])
@@ -45,8 +42,7 @@ def _build_bfrc(cls):
                         if good_backup:
                             backups[i].append([*backup, atom1])
             frc_all.extend(backups[len(top) - 1])
-        # print(frc.name, "analysis of links:%f"%(time()-t))
-        # t = time()
+
         frc_all_final = []
         frc_keys = {}
         for frc_one in frc_all:
@@ -60,8 +56,6 @@ def _build_bfrc(cls):
                     frc_one_name = "".join([str(hash(atom)) for atom in atom_permutation])
                     frc_keys[frc_one_name] = temp_list
 
-        # print(frc.name, "analysis of same force: %f"%(time()-t))
-        # t = time()
         for frc_ones in frc_all_final:
             finded = {}
             # 先直接找
@@ -91,8 +85,6 @@ def _build_bfrc(cls):
             if finded:
                 for finded_type, finded_atoms in finded.values():
                     cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
-
-        # print(frc.name, "analysis of force type: %f"%(time()-t))
 
 
 def _build_bfrc_from_type(cls):
@@ -135,7 +127,7 @@ def _build_bfrc_link(cls):
     far = GlobalSetting.farthest_bonded_force
     temp_atom1_linked = {i: set() for i in range(far, 2, -1)}
     temp_atom2_linked = {i: set() for i in range(far, 2, -1)}
-    # t = time()
+
     for i in range(far - 1, 1, -1):
         for atom in atom1.linked_atoms[i]:
             atom.Link_Atom(i + 1, atom2)
@@ -159,13 +151,13 @@ def _build_bfrc_link(cls):
                     if atom1_linked_atom not in atom2_friends and atom2_linked_atom not in atom1_friends:
                         atom1_linked_atom.Link_Atom(i + j, atom2_linked_atom)
                         atom2_linked_atom.Link_Atom(i + j, atom1_linked_atom)
-    # print("analysis of connectivity: %f"%(time()-t))
+
     atom12_friends = atom1_friends | atom2_friends
     for frc in GlobalSetting.BondedForces:
         top = frc.topology_like
         top_matrix = frc.topology_matrix
         frc_all = []
-        # t = time()
+
         for atom0 in atom12_friends:
             backups = {i: [] for i in range(len(top))}
             backups[0].append([atom0])
@@ -191,8 +183,7 @@ def _build_bfrc_link(cls):
                 backupset = set(backup)
                 if atom1_friends & backupset and backupset & atom2_friends:
                     frc_all.append(backup)
-        # print(frc.name, "analysis of links:%f"%(time()-t))
-        # t = time()
+
         frc_all_final = []
         frc_keys = {}
         for frc_one in frc_all:
@@ -206,8 +197,6 @@ def _build_bfrc_link(cls):
                     frc_one_name = "".join([str(hash(atom)) for atom in atom_permutation])
                     frc_keys[frc_one_name] = temp_list
 
-        # print(frc.name, "analysis of same force: %f"%(time()-t))
-        # t = time()
         for frc_ones in frc_all_final:
            
             finded = {}
@@ -238,7 +227,6 @@ def _build_bfrc_link(cls):
             if finded:
                 for finded_type, finded_atoms in finded.values():
                     cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
-        # print(frc.name, "analysis of force type: %f"%(time()-t))
 
 
 def Build_Bonded_Force(cls):
