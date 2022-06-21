@@ -156,42 +156,37 @@ quit
 
 def exgen(args):
 
-  partners = [set([]) for i in range(args.n)]
+    partners = [set([]) for i in range(args.n)]
 
-  def exclude_2_atoms(words):
-    i, j = int(words[0]), int(words[1])
-    partners[i].add(j)
-    partners[j].add(i)
+    def exclude_2_atoms(words):
+        i, j = int(words[0]), int(words[1])
+        partners[i].add(j)
+        partners[j].add(i)
 
-  def exclude_3_atoms(words):
-    i, j, k = int(words[0]), int(words[1]), int(words[2])
-    partners[i].add(k)
-    partners[k].add(i)
-
-
-  def exclude_4_atoms(words):
-    i, j, k, l= int(words[0]), int(words[1]), int(words[2]), int(words[3])
-    partners[i].add(l)
-    partners[l].add(i)
+    def exclude_3_atoms(words):
+        i, j, k = int(words[0]), int(words[1]), int(words[2])
+        partners[i].add(k)
+        partners[k].add(i)
 
 
-  if args.bond:
+    def exclude_4_atoms(words):
+        i, j, k, l= int(words[0]), int(words[1]), int(words[2]), int(words[3])
+        partners[i].add(l)
+        partners[l].add(i)
+
     for bond in args.bond:
         with open(bond) as f:
             f.readline()
             for line in f:
                 words = line.split()
                 exclude_2_atoms(words)
-
-  if args.angle:
+                
     for angle in args.angle:
         with open(angle) as f:
             f.readline()
             for line in f:
                 words = line.split()
                 exclude_3_atoms(words)
-
-  if args.dihedral:
     for dihedral in args.dihedral:
         with open(dihedral) as f:
             f.readline()
@@ -199,7 +194,6 @@ def exgen(args):
                 words = line.split()
                 exclude_4_atoms(words)
 
-  if args.virtual:
     for virtual in args.virtual:
         with open(virtual) as f:
             for line in f:
@@ -214,7 +208,6 @@ def exgen(args):
                 else:
                     raise Exception("virtual atom type wrong: are you sure this is a SPONGE virtual atom file?")
 
-  if args.exclude:
     for exclude in args.exclude:
         with open(exclude) as f:
             f.readline()
@@ -225,18 +218,18 @@ def exgen(args):
                 partners[count] = partners[count].union(t)
                 count += 1
 
-  total = 0
-  towrite = "{} {}\n"
-  for i, p in enumerate(partners):
-    p = list(filter(lambda x: x > i, p))
-    towrite += "%d "%len(p)
-    towrite += ("{} "*len(p)).format(*p) + "\n"
-    total += len(p)
-  towrite = towrite.format(args.n, total)
+    total = 0
+    towrite = "{} {}\n"
+    for i, p in enumerate(partners):
+        p = list(filter(lambda x: x > i, p))
+        towrite += "%d "%len(p)
+        towrite += ("{} "*len(p)).format(*p) + "\n"
+        total += len(p)
+        towrite = towrite.format(args.n, total)
 
-  f = open(args.o, "w")
-  f.write(towrite)
-  f.close()
+    f = open(args.o, "w")
+    f.write(towrite)
+    f.close()
 
 def dat1frame(args):
     f = open(args.box)

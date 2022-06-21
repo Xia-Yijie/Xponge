@@ -43,11 +43,11 @@ def _exgen(subparsers):
     exgen = subparsers.add_parser("exgen", help = 'process bond-like, angle-like, dihedral-like files to get the atoms to exclude')
     exgen.add_argument('-n', type = int, required = True, help='the atom numbers')
     exgen.add_argument('-o', required = True, help='output exclude file name')
-    exgen.add_argument('-b', '--bond', nargs='+', help='bond-like input files: skip the first line , and there are 2 atoms in the head of following lines')
-    exgen.add_argument('-a', '--angle', nargs='+', help='angle-like input files: skip the first line , and there are 3 atoms in the head of following lines')
-    exgen.add_argument('-d', '--dihedral', nargs='+', help='dihedral-like input files: skip the first line , and there are 4 atoms in the head of following lines')
-    exgen.add_argument('-v', '--virtual', nargs='+', help='virtual-atom-like input files: the first number indicates the virtual type')
-    exgen.add_argument('-e', '--exclude', nargs='+', help='exclude-like input files: add the information of another exclude file')
+    exgen.add_argument('-b', '--bond', default = [], nargs='+', help='bond-like input files: skip the first line , and there are 2 atoms in the head of following lines')
+    exgen.add_argument('-a', '--angle', default = [], nargs='+', help='angle-like input files: skip the first line , and there are 3 atoms in the head of following lines')
+    exgen.add_argument('-d', '--dihedral', default = [], nargs='+', help='dihedral-like input files: skip the first line , and there are 4 atoms in the head of following lines')
+    exgen.add_argument('-v', '--virtual', default = [], nargs='+', help='virtual-atom-like input files: the first number indicates the virtual type')
+    exgen.add_argument('-e', '--exclude', default = [], nargs='+', help='exclude-like input files: add the information of another exclude file')
     exgen.set_defaults(func = tools.exgen)
 
 def _dat1frame(subparsers):
