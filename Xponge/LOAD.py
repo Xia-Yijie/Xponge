@@ -79,6 +79,18 @@ def mol2(filename, ignore_atom_type = False):
 sys.modules['__main__'].__dict__["loadmol2"] = mol2    
                 
 
+def _pdb_SSBONDS(chain, residue_type_map):
+    SSBONDS = {}
+    for ssbond in SSBOND:
+        resA = chain[ssbond[15]][int(ssbond[17:21])]
+        residue_type_map[resA] = "CYX"
+        resB = chain[ssbond[29]][int(ssbond[31:35])]
+        residue_type_map[resB] = "CYX"
+        if resA > resB:
+            resA, resB = (resB, resA)
+        SSBONDS[resB] = resA
+    return SSBONDS
+
 def pdb(filename, judge_HIS = True, position_need = "A", ignoreH = False):
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
     chain = {}
@@ -152,15 +164,7 @@ def pdb(filename, judge_HIS = True, position_need = "A", ignoreH = False):
     if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
        residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
     
-    SSBONDS = {}
-    for ssbond in SSBOND:
-        resA = chain[ssbond[15]][int(ssbond[17:21])]
-        residue_type_map[resA] = "CYX"
-        resB = chain[ssbond[29]][int(ssbond[31:35])]
-        residue_type_map[resB] = "CYX"
-        if resA > resB:
-            resA, resB = (resB, resA)
-        SSBONDS[resB] = resA
+    SSBONDS = _pdb_SSBONDS(chain, residue_type_map)
 
     current_residue_count = -1
     current_residue = None
