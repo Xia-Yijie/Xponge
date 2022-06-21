@@ -7661,7 +7661,7 @@ Opt_method=GA: genetic algorithm
 Version gaff2.1
 van der Waals:  redeveloped to reproduce both high-level ab initio interaction
                 energies and experimental pure liquid properties.
-Reference bond lengthes and angles:  updated based on the statistics of more
+Reference bond lengths and angles:  updated based on the statistics of more
                 than 30,000 geometries optimized at at least B3LYP/6-31G* level.
 Bond length and bond angle force constants: redeveloped to reproduce vibrational
                 frequencies of more than 600 molecules. The AUE and RMSE of more

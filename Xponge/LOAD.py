@@ -975,7 +975,7 @@ def parm7(filename):
     for ri, residue in enumerate(residues):
         if residue not in ResidueType.types.keys():
             New_ResidueType = ResidueType(name = residue)
-            New_ResidueType.builded = True
+            New_ResidueType.built = True
             for i in range(residue_starts[ri],residue_starts[ri+1]):
                 New_ResidueType.Add_Atom(atom_names[i], AtomType.types[atom_types[i]], x = 0, y = 0, z = 0)
                 New_ResidueType.atoms[-1].mass = masses[i]
@@ -986,7 +986,7 @@ def parm7(filename):
             New_Residue.Add_Atom(atom_names[i], AtomType.types[atom_types[i]])
             New_Residue.atoms[-1].mass = masses[i]
             New_Residue.atoms[-1].charge = charges[i]
-        New_Residue.builded = True
+        New_Residue.built = True
         mol.Add_Residue(New_Residue)
     
     mol.atoms = []
@@ -1018,7 +1018,7 @@ def parm7(filename):
             index = i * (i + 1) // 2 + j
             newLJs += "%s-%s %f %f\n"%(atype, btype, LJ_A[index], LJ_B[index])
     Xponge.forcefield.BASE.LJ.LJType.New_From_String(newLJs)
-    mol.builded = True
+    mol.built = True
 
     count = -1
     for i in range(atom_numbers):

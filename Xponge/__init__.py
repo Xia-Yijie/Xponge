@@ -318,7 +318,7 @@ class ResidueType(Type):
         # 力场构建相关
         self.contents = {}
         self.connectivity = {}
-        self.builded = False
+        self.built = False
         self.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
 
         # 索引相关
@@ -381,11 +381,11 @@ class ResidueType(Type):
         for atom in self.atoms:
             atom.copied[forcopy].Extra_Exclude_Atoms(map(lambda aton: aton.copied[forcopy], atom.extra_excluded_atoms))
 
-        if self.builded:
+        if self.built:
             for bond_entities in self.bonded_forces.values():
                 for bond_entity in bond_entities:
                     new_restype.Add_Bonded_Force(bond_entity.deepcopy(forcopy))
-            new_restype.builded = True
+            new_restype.built = True
             for atom in self.atoms:
                 atom.copied[forcopy].linked_atoms = {key: set(map(lambda _atom: _atom.copied[forcopy], value)) for
                                                      key, value in atom.linked_atoms.items()}
@@ -498,7 +498,7 @@ class Residue(Entity):
         self._name2index = {}
         self.connectivity = {}
         self.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
-        self.builded = False
+        self.built = False
         if directly_copy:
             forcopy = hash(int(time.time()))
             for atom in self.type.atoms:
@@ -598,7 +598,7 @@ class ResidueLink:
     def __init__(self, atom1, atom2):
         self.atom1 = atom1
         self.atom2 = atom2
-        self.builded = False
+        self.built = False
         self.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
 
     def Add_Bonded_Force(self, bonded_force_entity):
@@ -639,7 +639,7 @@ class Molecule:
         self.atoms = []
         self.residue_links = []
         self.bonded_forces = {}
-        self.builded = False
+        self.built = False
         self.box_length = None
         self.box_angle = [90.0, 90.0, 90.0]
         if type(name) == ResidueType:
@@ -656,10 +656,10 @@ class Molecule:
 
     def Add_Residue(self, residue):
         if type(residue) == Residue:
-            self.builded = False
+            self.built = False
             self.residues.append(residue)
         elif type(residue) == ResidueType:
-            self.builded = False
+            self.built = False
             self.residues.append(Residue(residue, directly_copy=True))
 
     def Add_Bonded_Force(self, bonded_force_entity):
@@ -668,7 +668,7 @@ class Molecule:
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
 
     def Add_Residue_Link(self, atom1, atom2):
-        self.builded = False
+        self.built = False
         self.residue_links.append(ResidueLink(atom1, atom2))
     
     def Add_Missing_Atoms(self):
@@ -689,11 +689,11 @@ class Molecule:
                 atom.copied[forcopy].Extra_Exclude_Atoms(
                     map(lambda aton: aton.copied[forcopy], atom.extra_excluded_atoms))
 
-        if self.builded:
+        if self.built:
             for bond_entities in self.bonded_forces.values():
                 for bond_entity in bond_entities:
                     new_molecule.Add_Bonded_Force(bond_entity.deepcopy(forcopy))
-            new_molecule.builded = True
+            new_molecule.built = True
             new_molecule.atoms = [atom for residue in new_molecule.residues for atom in residue.atoms]
             new_molecule.atom_index = {new_molecule.atoms[i]: i for i in range(len(new_molecule.atoms))}
             for atom in self.atoms:

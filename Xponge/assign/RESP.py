@@ -145,7 +145,7 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 
         return force_equivalence_q(q, extra_equivalence)
     
     #step2
-    #fit the sp3 C and the hydrogen connected to it (pay attension to the symmetry!)
+    #fit the sp3 C and the hydrogen connected to it (pay attention to the symmetry!)
     tofit_second = []
     fit_group = {i : -1 for i in range(mol.natm)}
     sublength = 0

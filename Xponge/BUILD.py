@@ -96,7 +96,7 @@ def _build_bfrc(cls):
 
 
 def _build_bfrc_from_type(cls):
-    if not cls.type.builded:
+    if not cls.type.built:
         _build_bfrc(cls.type)
 
     res_type_atom_map = {}
@@ -242,24 +242,24 @@ def _build_bfrc_link(cls):
 
 
 def Build_Bonded_Force(cls):
-        if cls.builded:
+        if cls.built:
             return
 
         if type(cls) == ResidueType:
             _build_bfrc(cls)
-            cls.builded = True
+            cls.built = True
 
         elif type(cls) == Residue:
             _build_bfrc_from_type(cls)
-            cls.builded = True
+            cls.built = True
 
         elif type(cls) == ResidueLink:
             _build_bfrc_link(cls)
-            cls.builded = True
+            cls.built = True
 
         elif type(cls) == Molecule:
             for res in cls.residues:
-                if not res.type.builded:
+                if not res.type.built:
                     Build_Bonded_Force(res.type)
                 Build_Bonded_Force(res)
             for link in cls.residue_links:
@@ -287,7 +287,7 @@ def Build_Bonded_Force(cls):
                         for i in this_vatoms:
                             tolink.Link_Atom("v", i)
 
-            cls.builded = True
+            cls.built = True
         else:
             raise NotImplementedError
 
