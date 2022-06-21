@@ -330,7 +330,7 @@ def Molecule_Add(self, other):
             new_molecule.Add_Residue_Link(atom1, atom2)
             _link_residue_process_coordinate(new_molecule, atom1, atom2)   
         return new_molecule
-    elif other is None::
+    elif other is None:
         return self
     else:
         raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
