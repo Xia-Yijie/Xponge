@@ -10,7 +10,7 @@ import numpy as np
 class SPONGE_Trajectory_Reader(base.ReaderBase):
     def __init__(self, dat_file_name, box, n_atoms, **kwargs):
         super().__init__(dat_file_name, **kwargs)
-        if type(box) == type(""):
+        if isinstance(box,str):
             self.boxname = box
             self.box = None
             self._get_box_offset()

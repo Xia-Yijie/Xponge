@@ -260,7 +260,7 @@ class Assign():
         # print(self.atom_marker, "\n\n", self.atom_marker, "\n\n", self.bond_marker)
 
     def Determine_Atom_Type(self, rule):
-        if type(rule) == type(""):
+        if isinstance(rule, str):
             rule = Judge_Rule.all[rule]
         # print(self.atoms)
         for i in range(len(self.atoms)):
