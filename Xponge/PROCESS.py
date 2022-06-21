@@ -3,10 +3,10 @@ import sys
 
 
 def Box(molecule, solvent, distance, tolerance = 3):
-    if isinstance(distance, float):
+    if isinstance(distance, float) or isinstance(distance, int):
         distance = [distance] * 6
     elif not isinstance(distance, list):
-        raise Exception("parameter distance should be a list or a float")
+        raise Exception("parameter distance should be a list, an int or a float")
         
 
     if len(distance) == 3:

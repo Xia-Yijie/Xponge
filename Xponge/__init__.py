@@ -91,8 +91,9 @@ class Type:
 
     @classmethod
     def Add_Property(cls, parm_fmt, parm_default = None):
-        if parm_default is not None:
-            cls.parameters.update(parm_fmt)
+        cls.parameters.update(parm_fmt)
+        if parm_default is None:
+            parm_default = {}
         for _type in cls.types.values():
             _type.contents.update({key:parm_default.get(key, None) for key in parm_fmt.keys()})
 
