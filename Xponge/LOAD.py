@@ -1196,10 +1196,13 @@ sys.modules['__main__'].__dict__["loadrst7"] = rst7
 ##########################################################################
 
 class GROMACS_TOPOLOGY_ITERATOR():
-    def __init__(self, filename = None, macros = {}):
+    def __init__(self, filename = None, macros = None):
         self.files = []
         self.filenames = []
-        self.defined_macros = macros
+        if macros:
+            self.defined_macros = macros 
+        else:
+            self.defined_macros = {}
         if filename:
             self.Add_Iterator_File(filename)
     def Add_Iterator_File(self, filename):
@@ -1273,7 +1276,7 @@ class GROMACS_TOPOLOGY_ITERATOR():
                 continue
         raise StopIteration
             
-def ffitp(filename, macros = {}):
+def ffitp(filename, macros = None):
     iterator = GROMACS_TOPOLOGY_ITERATOR(filename, macros)
     output = {}
     output["nb14"] = "name  kLJ  kee\n"

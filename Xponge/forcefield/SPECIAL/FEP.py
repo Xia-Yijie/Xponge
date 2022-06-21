@@ -624,7 +624,9 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
     return molA, molB
 
 
-def Merge_Force_Field(molA, molB, default_lambda, specific_lambda={}, intra_FEP=False):
+def Merge_Force_Field(molA, molB, default_lambda, specific_lambda=None, intra_FEP=False):
+    if specific_lambda is None:
+        specific_lambda = {}
     BUILD.Build_Bonded_Force(molA)
     BUILD.Build_Bonded_Force(molB)
 

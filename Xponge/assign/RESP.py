@@ -53,8 +53,10 @@ def force_equivalence_q(q, extra_equivalence):
     return q
 
 #Pay Attention To !!!UNIT!!!
-def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 0, spin = 0, extra_equivalence = [], grid_density = 6, grid_cell_layer = 4, 
+def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 0, spin = 0, extra_equivalence = None, grid_density = 6, grid_cell_layer = 4, 
     radius = None, a1 = 0.0005, a2 = 0.001, two_stage = True, only_ESP  = False):
+    if extra_equivalence is None:
+        extra_equivalence = []
     from pyscf import gto, scf
     mols = ""
     for i, atom in enumerate(Assign.atoms):

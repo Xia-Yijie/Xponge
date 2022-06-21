@@ -26,8 +26,10 @@ def Assign2RDKitMol(assign, ignore_bond_type = False):
     Chem.SanitizeMol(mol)
     return mol
 
-def Insert_Atom_Type_To_RDKitMol(mol, res, assign, atom_type_dict = {}):
+def Insert_Atom_Type_To_RDKitMol(mol, res, assign, atom_type_dict = None):
     i = 0
+    if atom_type_dict is None:
+        atom_type_dict = {}
     for a in mol.GetAtoms():
         atom_type = res._name2atom[assign.names[i]].type.name
         if atom_type not in atom_type_dict.keys():

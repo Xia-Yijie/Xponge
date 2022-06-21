@@ -110,7 +110,13 @@ def Replace(molecule, select, toreplace):
 sys.modules['__main__'].__dict__["Ion_Replace"] = Replace
 
 
-def Rotate(molecule, direction_long=[0, 0, 1], direction_middle=[0, 1, 0], direction_short=[1, 0, 0]):
+def Rotate(molecule, direction_long = None, direction_middle  = None, direction_short = None):
+    if direction_long is None:
+        direction_long = [0,0,1]
+    if direction_middle is None:
+        direction_middle = [0, 1, 0]     
+    if direction_short is None:
+        direction_short = [1, 0, 0]
     molcrd = IMPOSE._get_crd(molecule)
     I = np.zeros((3, 3))
     mass_of_center = np.zeros(3)
