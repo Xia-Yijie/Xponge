@@ -79,7 +79,7 @@ def mol2(filename, ignore_atom_type = False):
 sys.modules['__main__'].__dict__["loadmol2"] = mol2    
                 
 
-def _pdb_SSBONDS(chain, residue_type_map):
+def _pdb_SSBONDS(chain, residue_type_map, SSBOND):
     SSBONDS = {}
     for ssbond in SSBOND:
         resA = chain[ssbond[15]][int(ssbond[17:21])]
@@ -164,7 +164,7 @@ def pdb(filename, judge_HIS = True, position_need = "A", ignoreH = False):
     if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
        residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
     
-    SSBONDS = _pdb_SSBONDS(chain, residue_type_map)
+    SSBONDS = _pdb_SSBONDS(chain, residue_type_map, SSBOND)
 
     current_residue_count = -1
     current_residue = None
