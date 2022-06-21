@@ -23,7 +23,7 @@ OW-HW-HW  0   0
 
 LJ.LJType.New_From_String(r"""
 name    sigma[nm]   epsilon[kJ/mol]
-OW-OW   0.315057422683	0.6363864
+OW-OW   0.315057422683    0.6363864
 HW-HW   0.0400013524445 0.192464
 """)
 
