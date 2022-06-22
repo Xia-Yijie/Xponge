@@ -261,7 +261,7 @@ def Save_Soft_Core_LJ():
         real_LJtypes = LJ.get_real_LJ(LJtypes, same_type)
         real_As, real_Bs = LJ.find_AB_LJ(real_LJtypes)
 
-        checks = LJ.get_checks(LJtypes, AsA, BsB)
+        checks = LJ.get_checks(LJtypesB, AsA, BsB)
         same_typeB = LJ.judge_same_type(LJtypesB, checks)
         real_LJtypesB = LJ.get_real_LJ(LJtypesB, same_typeB)
         real_AsB, real_BsB = LJ.find_AB_LJ(real_LJtypesB)
