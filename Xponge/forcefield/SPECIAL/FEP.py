@@ -410,6 +410,7 @@ def _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matc
 
     for atom in ResidueTypeB.atoms:
         atom.copied.pop(forcopy)
+    return restypeAB
 
 def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
     
