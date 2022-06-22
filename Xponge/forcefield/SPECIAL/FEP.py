@@ -410,7 +410,7 @@ def _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matc
 
     for atom in ResidueTypeB.atoms:
         atom.copied.pop(forcopy)
-    return restypeAB
+    return restypeAB, RBmap
 
 def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
     
@@ -455,7 +455,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
     Get_Conformer_Coordinate_To_Residue(RDmolB, ResidueTypeB, AssignB)
     
     forcopy = hash(str(time.time()))
-    restypeAB = _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB)
+    restypeAB, RBmap = _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB)
 
     restypeBA = restypeAB.deepcopy(ResidueTypeB.name + "_" + ResidueTypeA.name)
 
