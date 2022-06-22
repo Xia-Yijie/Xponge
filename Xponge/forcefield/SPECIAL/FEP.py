@@ -349,53 +349,7 @@ def Get_Free_Molecule(molA, perturbing_residues, intra_FEP=False):
 
     return molB
 
-
-def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
-    
-    BUILD.Build_Bonded_Force(mol)
-    BUILD.Build_Bonded_Force(ResidueB)
-    
-    from ...assign.RDKit_tools import Assign2RDKitMol, Get_Part_Align, \
-        Set_Conformer_Coordinate_From_Residue, Get_Conformer_Coordinate_To_Residue, \
-        Get_Conformer_Coordinate, Insert_Atom_Type_To_RDKitMol
-    from rdkit import Chem
-    from rdkit.Chem import rdFMCS as MCS
-
-    RDmolA = Assign2RDKitMol(AssignA, True)
-    RDmolB = Assign2RDKitMol(AssignB, True)
-
-    atom_type_dict = {}
-    Insert_Atom_Type_To_RDKitMol(RDmolA, ResidueA, AssignA, atom_type_dict)
-    Insert_Atom_Type_To_RDKitMol(RDmolB, ResidueB, AssignB, atom_type_dict)
-    print("FINDING MAXIMUM COMMON SUBSTRUCTURE")
-
-    result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True, timeout = tmcs)
-    #print(result.smartsString)
-    #RDmol_mcs = Chem.MolFromSmarts(result.smarts)
-    RDmol_mcs = result.queryMol
-    #from rdkit.Chem import Draw
-    #Draw.MolToImageFile(RDmol_mcs, "test.jpg")
-    matchA = RDmolA.GetSubstructMatch(RDmol_mcs)
-    matchB = RDmolB.GetSubstructMatch(RDmol_mcs)
-    matchmap = {matchB[j]: matchA[j] for j in range(len(matchA))}
-  
-    Set_Conformer_Coordinate_From_Residue(RDmolA, ResidueA, AssignA)
-    Set_Conformer_Coordinate_From_Residue(RDmolB, ResidueB, AssignB)
-    print("ALIGNING TOPOLOGY AND COORDINATE")
-    Get_Part_Align(RDmolA, RDmolB, matchA, matchB)
-
-    ResidueTypeA = ResidueA.type
-
-    if isinstance(ResidueB, Residue):
-        ResidueTypeB = ResidueB.type
-    elif isinstance(ResidueB, ResidueType):
-        ResidueTypeB = ResidueB
-    else:
-        raise TypeError
-
-    Get_Conformer_Coordinate_To_Residue(RDmolB, ResidueTypeB, AssignB)
-    
-    forcopy = hash(str(time.time()))
+def _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB):
     restypeAB = ResidueTypeA.deepcopy(ResidueTypeA.name + "_" + ResidueTypeB.name, forcopy)
 
     extraA = []
@@ -456,6 +410,52 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
 
     for atom in ResidueTypeB.atoms:
         atom.copied.pop(forcopy)
+    return restypeAB, RBmap
+
+def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
+    
+    BUILD.Build_Bonded_Force(mol)
+    BUILD.Build_Bonded_Force(ResidueB)
+    
+    from ...assign.RDKit_tools import Assign2RDKitMol, Get_Part_Align, \
+        Set_Conformer_Coordinate_From_Residue, Get_Conformer_Coordinate_To_Residue, \
+        Get_Conformer_Coordinate, Insert_Atom_Type_To_RDKitMol
+    from rdkit import Chem
+    from rdkit.Chem import rdFMCS as MCS
+
+    RDmolA = Assign2RDKitMol(AssignA, True)
+    RDmolB = Assign2RDKitMol(AssignB, True)
+
+    atom_type_dict = {}
+    Insert_Atom_Type_To_RDKitMol(RDmolA, ResidueA, AssignA, atom_type_dict)
+    Insert_Atom_Type_To_RDKitMol(RDmolB, ResidueB, AssignB, atom_type_dict)
+    print("FINDING MAXIMUM COMMON SUBSTRUCTURE")
+
+    result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True, timeout = tmcs)
+    RDmol_mcs = result.queryMol
+
+    matchA = RDmolA.GetSubstructMatch(RDmol_mcs)
+    matchB = RDmolB.GetSubstructMatch(RDmol_mcs)
+    matchmap = {matchB[j]: matchA[j] for j in range(len(matchA))}
+  
+    Set_Conformer_Coordinate_From_Residue(RDmolA, ResidueA, AssignA)
+    Set_Conformer_Coordinate_From_Residue(RDmolB, ResidueB, AssignB)
+    print("ALIGNING TOPOLOGY AND COORDINATE")
+    Get_Part_Align(RDmolA, RDmolB, matchA, matchB)
+
+    ResidueTypeA = ResidueA.type
+
+    if isinstance(ResidueB, Residue):
+        ResidueTypeB = ResidueB.type
+    elif isinstance(ResidueB, ResidueType):
+        ResidueTypeB = ResidueB
+    else:
+        raise TypeError
+
+    Get_Conformer_Coordinate_To_Residue(RDmolB, ResidueTypeB, AssignB)
+    
+    forcopy = hash(str(time.time()))
+    restypeAB, RBmap = _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB)
 
     restypeBA = restypeAB.deepcopy(ResidueTypeB.name + "_" + ResidueTypeA.name)
 
