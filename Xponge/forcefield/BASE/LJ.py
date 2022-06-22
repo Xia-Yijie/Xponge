@@ -31,15 +31,8 @@ def Lorentz_Berthelot_For_A(epsilon1, rmin1, epsilon2, rmin2):
 
 def Lorents_Berthelot_For_B(epsilon1, rmin1, epsilon2, rmin2):
     return np.sqrt(epsilon1 * epsilon2) * 2 * ((rmin1 + rmin2) ** 6)
-    
-def write_LJ(self):
-    LJtypes = []
-    LJtypemap = {}
-    for atom in self.atoms:
-        if atom.LJtype not in LJtypemap.keys():
-            LJtypemap[atom.LJtype] = len(LJtypes)
-            LJtypes.append(atom.LJtype)
-             
+
+def find_AB_LJ(LJtypes):
     As = []
     Bs = []
     for i in range(len(LJtypes)):
@@ -58,7 +51,9 @@ def write_LJ(self):
             if not finded:
                     As.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
                     Bs.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-    
+    return As, Bs
+
+def get_checks(LJtypes, As, Bs):
     checks = {}
     count = 0
     for i in range(len(LJtypes)):
@@ -70,44 +65,45 @@ def write_LJ(self):
             count += 1
             
         checks[i] = check_string_A+check_string_B
-    
+    return checks
+
+def judge_same_type(LJtypes, checks):
     same_type = { i: i for i in range(len(LJtypes))}
     for i in range(len(LJtypes)-1, -1, -1):
         for j in range(i+1, len(LJtypes)):
             if checks[i] == checks[j]:
                 same_type[j] = i
+    return same_type
 
+def get_real_LJ(LJtypes, same_type):
     real_LJtypes = []
-    real_As = []
-    real_Bs = []
     tosub = 0
     for i in range(len(LJtypes)):
-        
         if same_type[i] == i:
             real_LJtypes.append(LJtypes[i])
             same_type[i] -= tosub
         else:
             same_type[i] = same_type[same_type[i]]
             tosub += 1
+    return real_LJtypes
 
-    for i in range(len(real_LJtypes)):
-        LJ_i = LJType.types[real_LJtypes[i] + "-" + real_LJtypes[i]]
-        for j in range(i+1):
-            LJ_j = LJType.types[real_LJtypes[j] + "-" + real_LJtypes[j]]
-            finded = False
-            findnames = [real_LJtypes[i] + "-" + real_LJtypes[j], real_LJtypes[j] + "-" + real_LJtypes[i]]
-            for findname in findnames:
-                if findname in LJType.types.keys():
-                    finded = True
-                    LJ_ij = LJType.types[findname]
-                    real_As.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                    real_Bs.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                    break
-            if not finded:
-                    real_As.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-                    real_Bs.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+def write_LJ(self):
+    LJtypes = []
+    LJtypemap = {}
+    for atom in self.atoms:
+        if atom.LJtype not in LJtypemap.keys():
+            LJtypemap[atom.LJtype] = len(LJtypes)
+            LJtypes.append(atom.LJtype)
+             
+    As, Bs = find_AB_LJ(LJtypes)
     
-                
+    checks = get_checks(LJtypes, As, Bs)
+    
+    same_type = judge_same_type(LJtypes, checks)
+    
+    real_LJtypes = get_real_LJ(LJtypes, same_type)
+
+    real_As, real_Bs = find_AB_LJ(real_LJtypes)
     
     towrite = "%d %d\n\n"%(len(self.atoms), len(real_LJtypes))
     count = 0
