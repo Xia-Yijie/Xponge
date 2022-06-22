@@ -254,17 +254,17 @@ def Save_Soft_Core_LJ():
                 LJtypesB.append(atom.LJtypeB)
         
         As, Bs = LJ.find_AB_LJ(LJtypes)
-        AsA, BsB = LJ.find_AB_LJ(LJtypesB)
+        AsB, BsB = LJ.find_AB_LJ(LJtypesB)
 
         checks = LJ.get_checks(LJtypes, As, Bs)
         same_type = LJ.judge_same_type(LJtypes, checks)
         real_LJtypes = LJ.get_real_LJ(LJtypes, same_type)
-        real_As, real_Bs = LJ.find_AB_LJ(real_LJtypes)
+        real_As, real_Bs = LJ.find_AB_LJ(real_LJtypes, False)
 
-        checks = LJ.get_checks(LJtypesB, AsA, BsB)
+        checks = LJ.get_checks(LJtypesB, AsB, BsB)
         same_typeB = LJ.judge_same_type(LJtypesB, checks)
         real_LJtypesB = LJ.get_real_LJ(LJtypesB, same_typeB)
-        real_AsB, real_BsB = LJ.find_AB_LJ(real_LJtypesB)
+        real_AsB, real_BsB = LJ.find_AB_LJ(real_LJtypesB, False)
         
         towrite = "%d %d %d\n\n" % (len(self.atoms), len(real_LJtypes), len(real_LJtypesB))
         count = 0

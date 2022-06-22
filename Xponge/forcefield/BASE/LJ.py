@@ -32,12 +32,17 @@ def Lorentz_Berthelot_For_A(epsilon1, rmin1, epsilon2, rmin2):
 def Lorents_Berthelot_For_B(epsilon1, rmin1, epsilon2, rmin2):
     return np.sqrt(epsilon1 * epsilon2) * 2 * ((rmin1 + rmin2) ** 6)
 
-def find_AB_LJ(LJtypes):
+def find_AB_LJ(LJtypes, stat = True):
     As = []
     Bs = []
+    
     for i in range(len(LJtypes)):
         LJ_i = LJType.types[LJtypes[i] + "-" + LJtypes[i]]
-        for j in range(len(LJtypes)):
+        if stat:
+            j_max = len(LJtypes)
+        else:
+            j_max = i + 1
+        for j in range(j_max):
             LJ_j = LJType.types[LJtypes[j] + "-" + LJtypes[j]]
             finded = False
             findnames = [LJtypes[i] + "-" + LJtypes[j], LJtypes[j] + "-" + LJtypes[i]]
@@ -103,7 +108,7 @@ def write_LJ(self):
     
     real_LJtypes = get_real_LJ(LJtypes, same_type)
 
-    real_As, real_Bs = find_AB_LJ(real_LJtypes)
+    real_As, real_Bs = find_AB_LJ(real_LJtypes, False)
     
     towrite = "%d %d\n\n"%(len(self.atoms), len(real_LJtypes))
     count = 0
