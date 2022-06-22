@@ -349,9 +349,7 @@ def Get_Free_Molecule(molA, perturbing_residues, intra_FEP=False):
 
     return molB
 
-def _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB):
-    restypeAB = ResidueTypeA.deepcopy(ResidueTypeA.name + "_" + ResidueTypeB.name, forcopy)
-
+def _get_extra_atoms_and_RBmap(restypeAB, ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB):
     extraA = []
     extraB = []
     RBmap = {value: key for key, value in matchmap.items()}
@@ -376,6 +374,12 @@ def _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matc
             extraB[-1].subsys = 2
         else:
             ResidueTypeB.atoms[i].copied[forcopy] = restypeAB.atoms[matchmap[i]]
+    return extraA, extraB, RBmap
+    
+def _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB):
+    restypeAB = ResidueTypeA.deepcopy(ResidueTypeA.name + "_" + ResidueTypeB.name, forcopy)
+
+    extraA, extraB, RBmap = _get_extra_atoms_and_RBmap(restypeAB, ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB)
 
     for atomi in extraA:
         for atomj in extraB:
