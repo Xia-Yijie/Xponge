@@ -252,140 +252,20 @@ def Save_Soft_Core_LJ():
             if atom.LJtypeB not in LJtypemapB.keys():
                 LJtypemapB[atom.LJtypeB] = len(LJtypesB)
                 LJtypesB.append(atom.LJtypeB)
+        
+        As, Bs = LJ.find_AB_LJ(LJtypes)
+        AsA, BsB = LJ.find_AB_LJ(LJtypesB)
 
-        As = []
-        Bs = []
-        for i in range(len(LJtypes)):
-            LJ_i = LJType.types[LJtypes[i] + "-" + LJtypes[i]]
-            for j in range(len(LJtypes)):
-                LJ_j = LJType.types[LJtypes[j] + "-" + LJtypes[j]]
-                finded = False
-                findnames = [LJtypes[i] + "-" + LJtypes[j], LJtypes[j] + "-" + LJtypes[i]]
-                for findname in findnames:
-                    if findname in LJType.types.keys():
-                        finded = True
-                        LJ_ij = LJType.types[findname]
-                        As.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                        Bs.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                        break
-                if not finded:
-                    As.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-                    Bs.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
+        checks = LJ.get_checks(LJtypes, As, Bs)
+        same_type = LJ.judge_same_type(LJtypes, checks)
+        real_LJtypes = LJ.get_real_LJ(LJtypes, same_type)
+        real_As, real_Bs = LJ.find_AB_LJ(real_LJtypes)
 
-        AsB = []
-        BsB = []
-        for i in range(len(LJtypesB)):
-            LJ_i = LJType.types[LJtypesB[i] + "-" + LJtypesB[i]]
-            for j in range(len(LJtypesB)):
-                LJ_j = LJType.types[LJtypesB[j] + "-" + LJtypesB[j]]
-                finded = False
-                findnames = [LJtypesB[i] + "-" + LJtypesB[j], LJtypesB[j] + "-" + LJtypesB[i]]
-                for findname in findnames:
-                    if findname in LJType.types.keys():
-                        finded = True
-                        LJ_ij = LJType.types[findname]
-                        AsB.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                        BsB.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                        break
-                if not finded:
-                    AsB.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-                    BsB.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-
-        checks = {}
-        count = 0
-        for i in range(len(LJtypes)):
-            check_string_A = ""
-            check_string_B = ""
-            for j in range(len(LJtypes)):
-                check_string_A += "%16.7e" % As[count] + " "
-                check_string_B += "%16.7e" % Bs[count] + " "
-                count += 1
-
-            checks[i] = check_string_A + check_string_B
-
-        same_type = {i: i for i in range(len(LJtypes))}
-        for i in range(len(LJtypes) - 1, -1, -1):
-            for j in range(i + 1, len(LJtypes)):
-                if checks[i] == checks[j]:
-                    same_type[j] = i
-
-        real_LJtypes = []
-        real_As = []
-        real_Bs = []
-        tosub = 0
-        for i in range(len(LJtypes)):
-
-            if same_type[i] == i:
-                real_LJtypes.append(LJtypes[i])
-                same_type[i] -= tosub
-            else:
-                same_type[i] = same_type[same_type[i]]
-                tosub += 1
-
-        for i in range(len(real_LJtypes)):
-            LJ_i = LJType.types[real_LJtypes[i] + "-" + real_LJtypes[i]]
-            for j in range(i + 1):
-                LJ_j = LJType.types[real_LJtypes[j] + "-" + real_LJtypes[j]]
-                finded = False
-                findnames = [real_LJtypes[i] + "-" + real_LJtypes[j], real_LJtypes[j] + "-" + real_LJtypes[i]]
-                for findname in findnames:
-                    if findname in LJType.types.keys():
-                        finded = True
-                        LJ_ij = LJType.types[findname]
-                        real_As.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                        real_Bs.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                        break
-                if not finded:
-                    real_As.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-                    real_Bs.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-
-        checks = {}
-        count = 0
-        for i in range(len(LJtypesB)):
-            check_string_A = ""
-            check_string_B = ""
-            for j in range(len(LJtypesB)):
-                check_string_A += "%16.7e" % AsB[count] + " "
-                check_string_B += "%16.7e" % BsB[count] + " "
-                count += 1
-
-            checks[i] = check_string_A + check_string_B
-
-        same_typeB = {i: i for i in range(len(LJtypesB))}
-        for i in range(len(LJtypesB) - 1, -1, -1):
-            for j in range(i + 1, len(LJtypesB)):
-                if checks[i] == checks[j]:
-                    same_typeB[j] = i
-
-        real_LJtypesB = []
-        real_AsB = []
-        real_BsB = []
-        tosub = 0
-        for i in range(len(LJtypesB)):
-            if same_typeB[i] == i:
-                real_LJtypesB.append(LJtypesB[i])
-                same_typeB[i] -= tosub
-            else:
-                same_typeB[i] = same_typeB[same_typeB[i]]
-                tosub += 1
-
-        for i in range(len(real_LJtypesB)):
-            LJ_i = LJType.types[real_LJtypesB[i] + "-" + real_LJtypesB[i]]
-            for j in range(i + 1):
-                LJ_j = LJType.types[real_LJtypesB[j] + "-" + real_LJtypesB[j]]
-                finded = False
-                findnames = [real_LJtypesB[i] + "-" + real_LJtypesB[j], real_LJtypesB[j] + "-" + real_LJtypesB[i]]
-                for findname in findnames:
-                    if findname in LJType.types.keys():
-                        finded = True
-                        LJ_ij = LJType.types[findname]
-                        real_AsB.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                        real_BsB.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                        break
-                if not finded:
-                    real_AsB.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-                    real_BsB.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-
+        checks = LJ.get_checks(LJtypes, AsA, BsB)
+        same_typeB = LJ.judge_same_type(LJtypesB, checks)
+        real_LJtypesB = LJ.get_real_LJ(LJtypesB, same_typeB)
+        real_AsB, real_BsB = LJ.find_AB_LJ(real_LJtypesB)
+        
         towrite = "%d %d %d\n\n" % (len(self.atoms), len(real_LJtypes), len(real_LJtypesB))
         count = 0
         for i in range(len(real_LJtypes)):
