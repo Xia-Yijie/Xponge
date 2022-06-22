@@ -1,47 +1,7 @@
 from . import *
 import sys
 
-
-def Box(molecule, solvent, distance, tolerance = 3):
-    if isinstance(distance, float) or isinstance(distance, int):
-        distance = [distance] * 6
-    elif not isinstance(distance, list):
-        raise Exception("parameter distance should be a list, an int or a float")
-        
-
-    if len(distance) == 3:
-        distance = distance + distance
-    elif len(distance) != 6:
-        raise Exception("the length of parameter distance should be 3 or 6")
-
-    if type(molecule) == ResidueType:
-        new_molecule = Molecule(molecule.name)
-        resA = Residue(molecule)
-        for atom in molecule.atoms:
-            resA.Add_Atom(atom)
-        new_molecule.Add_Residue(resA)
-        for key, value in sys.modules['__main__'].__dict__.items():
-            if value == molecule:
-                sys.modules['__main__'].__dict__[key] = new_molecule
-        molecule = new_molecule
-    molcrd = IMPOSE._get_crd(molecule)
-    molmin = np.min(molcrd, axis=0)
-    molmax = np.max(molcrd, axis=0)
-    if type(solvent) == ResidueType:
-        new_molecule = Molecule(solvent.name)
-        resA = Residue(solvent)
-        for atom in solvent.atoms:
-            resA.Add_Atom(atom)
-        new_molecule.Add_Residue(resA)
-    else:
-        new_molecule = solvent.deepcopy()
-    solcrd = IMPOSE._get_crd(new_molecule)
-    solmin = np.min(solcrd, axis=0)
-    minindex = np.argmin(solcrd, axis=0)
-    solmax = np.max(solcrd, axis=0)
-    maxindex = np.argmin(solcrd, axis=0)
-    solshape = solmax - solmin + tolerance
-
+def _Box(molecule, new_molecule, molmin, solshape, distance):
     x0 = molmin[0] - solshape[0] - distance[0]
     while x0 < molmax[0] + distance[3] + solshape[0]:
         y0 = molmin[1] - solshape[1] - distance[1]
@@ -62,6 +22,49 @@ def Box(molecule, solvent, distance, tolerance = 3):
                 z0 += solshape[2]
             y0 += solshape[1]
         x0 += solshape[0]
+
+def Box(molecule, solvent, distance, tolerance = 3):
+    if isinstance(distance, float) or isinstance(distance, int):
+        distance = [distance] * 6
+    elif not isinstance(distance, list):
+        raise Exception("parameter distance should be a list, an int or a float")
+        
+    if len(distance) == 3:
+        distance = distance + distance
+    elif len(distance) != 6:
+        raise Exception("the length of parameter distance should be 3 or 6")
+
+    if type(molecule) == ResidueType:
+        new_molecule = Molecule(molecule.name)
+        resA = Residue(molecule)
+        for atom in molecule.atoms:
+            resA.Add_Atom(atom)
+        new_molecule.Add_Residue(resA)
+        for key, value in sys.modules['__main__'].__dict__.items():
+            if value == molecule:
+                sys.modules['__main__'].__dict__[key] = new_molecule
+        molecule = new_molecule
+        
+    molcrd = IMPOSE._get_crd(molecule)
+    molmin = np.min(molcrd, axis=0)
+    molmax = np.max(molcrd, axis=0)
+    if type(solvent) == ResidueType:
+        new_molecule = Molecule(solvent.name)
+        resA = Residue(solvent)
+        for atom in solvent.atoms:
+            resA.Add_Atom(atom)
+        new_molecule.Add_Residue(resA)
+    else:
+        new_molecule = solvent.deepcopy()
+    solcrd = IMPOSE._get_crd(new_molecule)
+    solmin = np.min(solcrd, axis=0)
+    minindex = np.argmin(solcrd, axis=0)
+    solmax = np.max(solcrd, axis=0)
+    maxindex = np.argmin(solcrd, axis=0)
+    solshape = solmax - solmin + tolerance
+
+    _Box(molecule, new_molecule, molmin, solshape, distance)
+
 
 
 sys.modules['__main__'].__dict__["Process_Box"] = Box
