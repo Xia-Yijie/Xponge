@@ -400,7 +400,7 @@ def parmdat(filename):
         
 sys.modules['__main__'].__dict__["loadparmdat"] = parmdat 
 
-def _read_parm7_someflag(length, word_process, offset, ):
+def _read_parm7_someflag(length, word_process, offset, f):
     tempvar = []
     line = f.readline()
     while line.startswith("%"):
@@ -417,9 +417,35 @@ def _read_parm7_someflag(length, word_process, offset, ):
         if len(tempvar) == length:
             break
         line = f.readline()
+    return tempvar
 
-def parm7(filename):
-    import Xponge.forcefield.AMBER
+def _read_parm7_build(mol, BONDTYPE, bonds, parameter_head, parameter_lists, add_connectivity = False):
+    bond_names = {}
+    newBONDs = ""
+    newBONDs += parameter_head
+    for i in bonds.keys():
+        bond_names[i] = "-".join([mol.atoms[atype].type.name for atype in bonds[i][0]])
+        newBONDs += bond_names[i]
+        for fmt, parm_list in parameter_lists:
+            newBONDs += " " + fmt%parm_list[i]
+        newBONDs += "\n"
+    BONDTYPE.New_From_String(newBONDs)
+    
+    for typei, bondi in bonds.items():
+        for atom_indexes in bondi:
+            atoms = [mol.atoms[i] for i in atom_indexes ]
+            residues = set([atom.residue for atom in atoms])
+            if len(residues) == 1:
+                residue = atoms[0].residue
+                resatoms = [residue.type._name2atom[atom.name] for atom in atoms]
+                residue.type.Add_Bonded_Force(BONDTYPE.entity(resatoms, BONDTYPE.types_different_name[bond_names[typei]]))
+                residue.Add_Bonded_Force(BONDTYPE.entity(atoms, BONDTYPE.types_different_name[bond_names[typei]]))
+                if add_connectivity:
+                    residue.Add_Connectivity(atoms[0], atoms[-1])
+            else:
+                raise NotImplementedError
+                
+def _read_parm7_read(filename):   
     bonds = {}
     angles = {}
     propers = {}
@@ -465,21 +491,7 @@ def parm7(filename):
             elif line.startswith("%FLAG DIHEDRAL_PHASE"):
                 dihedral_phase = _read_parm7_someflag(dihedral_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG DIHEDRALS_INC_HYDROGEN"):
-                tempvar = []
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + 8 < len(line):
-                        word = line[i:i+8].strip()
-                        if word:
-                            tempvar.append(int(word))
-                        else:
-                            break
-                        i += 8
-                    if len(tempvar) == 5 * dihedral_numbers_H:
-                        break
-                    line = f.readline()
+                tempvar = _read_parm7_someflag(5 * dihedral_numbers_H, lambda x:int(x), 8, f)
                 for i in range(0,len(tempvar),5):
                     if tempvar[i+3] < 0:
                         if tempvar[i+4] - 1 in impropers.keys():
@@ -497,21 +509,7 @@ def parm7(filename):
                             else:
                                 nb14s[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+3] // 3]]
             elif line.startswith("%FLAG DIHEDRALS_WITHOUT_HYDROGEN"):
-                tempvar = []
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + 8 < len(line):
-                        word = line[i:i+8].strip()
-                        if word:
-                            tempvar.append(int(word))
-                        else:
-                            break
-                        i += 8
-                    if len(tempvar) == 5 * dihedral_numbers_N:
-                        break
-                    line = f.readline()
+                tempvar = _read_parm7_someflag(5 * dihedral_numbers_N, lambda x:int(x), 8, f)
                 for i in range(0,len(tempvar),5):
                     if tempvar[i+3] < 0:
                         if tempvar[i+4] - 1 in impropers.keys():
@@ -534,42 +532,14 @@ def parm7(filename):
             elif line.startswith("%FLAG ANGLE_EQUIL_VALUE"):
                 angle_b = _read_parm7_someflag(angle_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG ANGLES_INC_HYDROGEN"):
-                tempvar = []
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + 8 < len(line):
-                        word = line[i:i+8].strip()
-                        if word:
-                            tempvar.append(int(word))
-                        else:
-                            break
-                        i += 8
-                    if len(tempvar) == 4 * angle_numbers_H:
-                        break
-                    line = f.readline()
+                tempvar = _read_parm7_someflag(4 * angle_numbers_H, lambda x:int(x), 8, f)
                 for i in range(0,len(tempvar),4):
                     if tempvar[i+3] - 1 in angles.keys():
                         angles[tempvar[i+3] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3])
                     else:
                         angles[tempvar[i+3] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3]]
             elif line.startswith("%FLAG ANGLES_WITHOUT_HYDROGEN"):
-                tempvar = []
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + 8 < len(line):
-                        word = line[i:i+8].strip()
-                        if word:
-                            tempvar.append(int(word))
-                        else:
-                            break
-                        i += 8
-                    if len(tempvar) == 4 * angle_numbers_N:
-                        break
-                    line = f.readline()
+                tempvar = _read_parm7_someflag(4 * angle_numbers_N, lambda x:int(x), 8, f)
                 for i in range(0,len(tempvar),4):
                     if tempvar[i+3] - 1 in angles.keys():
                         angles[tempvar[i+3] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3])
@@ -580,42 +550,14 @@ def parm7(filename):
             elif line.startswith("%FLAG BOND_EQUIL_VALUE"):
                 bond_b = _read_parm7_someflag(bond_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG BONDS_INC_HYDROGEN"):
-                tempvar = []
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + 8 < len(line):
-                        word = line[i:i+8].strip()
-                        if word:
-                            tempvar.append(int(word))
-                        else:
-                            break
-                        i += 8
-                    if len(tempvar) == 3 * bond_numbers_H:
-                        break
-                    line = f.readline()
+                tempvar = _read_parm7_someflag(3 * bond_numbers_H, lambda x:int(x), 8, f)
                 for i in range(0,len(tempvar),3):
                     if tempvar[i+2] - 1 in bonds.keys():
                         bonds[tempvar[i+2] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3])
                     else:
                         bonds[tempvar[i+2] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3]]
             elif line.startswith("%FLAG BONDS_WITHOUT_HYDROGEN"):
-                tempvar = []
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + 8 < len(line):
-                        word = line[i:i+8].strip()
-                        if word:
-                            tempvar.append(int(word))
-                        else:
-                            break
-                        i += 8
-                    if len(tempvar) == 3 * bond_numbers_N:
-                        break
-                    line = f.readline()
+                tempvar = _read_parm7_someflag(3 * bond_numbers_N, lambda x:int(x), 8, f)
                 for i in range(0,len(tempvar),3):
                     if tempvar[i+2] - 1 in bonds.keys():
                         bonds[tempvar[i+2] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3])
@@ -644,6 +586,51 @@ def parm7(filename):
             elif line.startswith("%FLAG RESIDUE_POINTER"):
                 residue_starts = _read_parm7_someflag(residue_numbers, lambda x: int(x) - 1, 8, f)
                 residue_starts.append(atom_numbers)
+    return locals()
+
+def _read_parm7_construct(mol):
+    mol.atoms = []
+    mol.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+    for res in mol.residues:
+        mol.atoms.extend(res.atoms)
+        for frc in GlobalSetting.BondedForces:
+            mol.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name, []))
+        for link in mol.residue_links:
+            for frc in GlobalSetting.BondedForces:
+                mol.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name, []))
+    mol.atom_index = {mol.atoms[i]: i for i in range(len(mol.atoms))}
+
+
+def parm7(filename):
+    import Xponge.forcefield.AMBER
+    local = _read_parm7_read(filename)
+    
+    atom_types = local["atom_types"]
+    atom_type_index = local["atom_type_index"]
+    masses = local["masses"]
+    residues = local["residues"]
+    residue_starts = local["residue_starts"]
+    atom_names = local["atom_names"]
+    charges = local["charges"]
+    mol = local["mol"]
+    atom_type_numbers = local["atom_type_numbers"]
+    LJ_A = local["LJ_A"]
+    LJ_B = local["LJ_B"]
+    atom_numbers = local["atom_numbers"]
+    exclude_numbers = local["exclude_numbers"]
+    excluded_list = local["excluded_list"]
+    bonds = local["bonds"]
+    angles = local["angles"]
+    bond_k = local["bond_k"]
+    bond_b = local["bond_b"]
+    angle_k = local["angle_k"]
+    angle_b = local["angle_b"]
+    propers = local["propers"]
+    dihedral_k = local["dihedral_k"]
+    dihedral_phase = local["dihedral_phase"]
+    dihedral_n = local["dihedral_n"]
+    impropers = local["impropers"]
+    nb14s = local["nb14s"]
     
     atom_type_map = {}
     for i, atype in enumerate(atom_types):
@@ -651,7 +638,7 @@ def parm7(filename):
             atom_type_map[atom_type_index[i]] = atype
         if atype not in AtomType.types.keys():
             AtomType(name = atype, mass = masses[i], LJtype = atom_type_map[atom_type_index[i]])
-
+    
     for ri, residue in enumerate(residues):
         if residue not in ResidueType.types.keys():
             New_ResidueType = ResidueType(name = residue)
@@ -669,16 +656,7 @@ def parm7(filename):
         New_Residue.built = True
         mol.Add_Residue(New_Residue)
     
-    mol.atoms = []
-    mol.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
-    for res in mol.residues:
-        mol.atoms.extend(res.atoms)
-        for frc in GlobalSetting.BondedForces:
-            mol.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name, []))
-        for link in mol.residue_links:
-            for frc in GlobalSetting.BondedForces:
-                mol.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name, []))
-    mol.atom_index = {mol.atoms[i]: i for i in range(len(mol.atoms))}
+    _read_parm7_construct(mol)
 
     for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
         for vatom in mol.bonded_forces.get(vatom_type_name, []):
@@ -710,112 +688,11 @@ def parm7(filename):
             atom_i.Extra_Exclude_Atom(mol.atoms[excluded_list[count]])
         atom_i.residue.type._name2atom[atom_i.name].Extra_Exclude_Atoms([ atom_i.residue.type._name2atom[aton.name] for aton in atom_i.extra_excluded_atoms])
 
-    BONDTYPE = Xponge.forcefield.BASE.BOND.BondType
-    bond_names = {}
-    newBONDs = "name k b\n"
-    for i in range(bond_type_numbers):
-        if i in bonds.keys():
-            atype, btype = bonds[i][0]
-            atype = mol.atoms[atype].type.name
-            btype = mol.atoms[btype].type.name
-            newBONDs += "%s-%s %f %f\n"%(atype, btype, bond_k[i], bond_b[i])
-            bond_names[i] = "%s-%s"%(atype, btype)
-    BONDTYPE.New_From_String(newBONDs)
-
-    for typei, bondi in bonds.items():
-        for ai, bi in bondi:
-            aAtom = mol.atoms[ai]
-            bAtom = mol.atoms[bi]
-            if aAtom.residue == bAtom.residue:
-                atoms = [aAtom, bAtom]
-                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
-                aAtom.residue.type.Add_Bonded_Force(BONDTYPE.entity(resatoms, BONDTYPE.types_different_name[bond_names[typei]]))
-                aAtom.residue.Add_Bonded_Force(BONDTYPE.entity(atoms, BONDTYPE.types_different_name[bond_names[typei]]))
-                aAtom.residue.Add_Connectivity(aAtom, bAtom)
-            else:
-                raise NotImplementedError
-
-    ANGLETYPE = Xponge.forcefield.BASE.ANGLE.AngleType
-    angle_names = {}
-    newANGLEs = "name k b\n"
-    for i in range(angle_type_numbers):
-        if i in angles.keys():
-            atype, btype, ctype = angles[i][0]
-            atype = mol.atoms[atype].type.name
-            btype = mol.atoms[btype].type.name
-            ctype = mol.atoms[ctype].type.name
-            newANGLEs += "%s-%s-%s %f %f\n"%(atype, btype, ctype, angle_k[i], angle_b[i])
-            angle_names[i] = "%s-%s-%s"%(atype, btype, ctype)
-    ANGLETYPE.New_From_String(newANGLEs)
-
-    for typei, bondi in angles.items():
-        for ai, bi, ci in bondi:
-            aAtom = mol.atoms[ai]
-            bAtom = mol.atoms[bi]
-            cAtom = mol.atoms[ci]
-            if aAtom.residue == bAtom.residue and aAtom.residue == cAtom.residue:
-                atoms = [aAtom, bAtom, cAtom]
-                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
-                aAtom.residue.type.Add_Bonded_Force(ANGLETYPE.entity(resatoms, ANGLETYPE.types_different_name[angle_names[typei]]))
-                aAtom.residue.Add_Bonded_Force(ANGLETYPE.entity(atoms, ANGLETYPE.types_different_name[angle_names[typei]]))
-            else:
-                raise NotImplementedError
-
-    PROPERTYPE = Xponge.forcefield.BASE.DIHEDRAL.ProperType
-    proper_names = {}
-    newBONDs = "name k phi0 periodicity reset\n"
-    for i in propers.keys():
-        atype, btype, ctype, dtype = propers[i][0]
-        atype = mol.atoms[atype].type.name
-        btype = mol.atoms[btype].type.name
-        ctype = mol.atoms[ctype].type.name
-        dtype = mol.atoms[dtype].type.name
-        newBONDs += "%s-%s-%s-%s %f %f %d %d\n"%(atype, btype, ctype, dtype, dihedral_k[i], dihedral_phase[i], dihedral_n[i], 0)
-        proper_names[i] = "%s-%s-%s-%s"%(atype, btype, ctype, dtype)
-    PROPERTYPE.New_From_String(newBONDs)
-
-    for typei, bondi in propers.items():
-        for ai, bi, ci, di in bondi:
-            aAtom = mol.atoms[ai]
-            bAtom = mol.atoms[bi]
-            cAtom = mol.atoms[ci]
-            dAtom = mol.atoms[di]
-            if aAtom.residue == bAtom.residue and bAtom.residue == cAtom.residue and dAtom.residue == cAtom.residue:
-                atoms = [aAtom, bAtom, cAtom, dAtom]
-                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
-                aAtom.residue.type.Add_Bonded_Force(PROPERTYPE.entity(resatoms, PROPERTYPE.types_different_name[proper_names[typei]]))
-                aAtom.residue.Add_Bonded_Force(PROPERTYPE.entity(atoms, PROPERTYPE.types_different_name[proper_names[typei]]))
-            else:
-                raise NotImplementedError    
-
-    IMPROPERTYPE = Xponge.forcefield.BASE.DIHEDRAL.ImproperType
-    improper_names = {}
-    newBONDs = "name k phi0 periodicity\n"
-
-    for i in impropers.keys():
-        atype, btype, ctype, dtype = impropers[i][0]
-        atype = mol.atoms[atype].type.name
-        btype = mol.atoms[btype].type.name
-        ctype = mol.atoms[ctype].type.name
-        dtype = mol.atoms[dtype].type.name
-        newBONDs += "%s-%s-%s-%s %f %f %d\n"%(atype, btype, ctype, dtype, dihedral_k[i], dihedral_phase[i], dihedral_n[i])
-        improper_names[i] = "%s-%s-%s-%s"%(atype, btype, ctype, dtype)
-    IMPROPERTYPE.New_From_String(newBONDs)
-
-    for typei, bondi in impropers.items():
-        for ai, bi, ci, di in bondi:
-            aAtom = mol.atoms[ai]
-            bAtom = mol.atoms[bi]
-            cAtom = mol.atoms[ci]
-            dAtom = mol.atoms[di]
-            if aAtom.residue == bAtom.residue and bAtom.residue == cAtom.residue and dAtom.residue == cAtom.residue:
-                atoms = [aAtom, bAtom, cAtom, dAtom]
-                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
-                aAtom.residue.type.Add_Bonded_Force(IMPROPERTYPE.entity(resatoms, IMPROPERTYPE.types_different_name[improper_names[typei]]))
-                aAtom.residue.Add_Bonded_Force(IMPROPERTYPE.entity(atoms, IMPROPERTYPE.types_different_name[improper_names[typei]]))
-            else:
-                raise NotImplementedError
-
+    _read_parm7_build(mol, Xponge.forcefield.BASE.BOND.BondType, bonds, "name k b\n", [["%f", bond_k], ["%f", bond_b]], True)           
+    _read_parm7_build(mol, Xponge.forcefield.BASE.ANGLE.AngleType, angles, "name k b\n", [["%f", angle_k], ["%f", angle_b]])
+    _read_parm7_build(mol, Xponge.forcefield.BASE.DIHEDRAL.ProperType, propers, "name k phi0 periodicity reset\n", [["%f", dihedral_k], ["%f", dihedral_phase], ["%d", dihedral_n], ["%d", [0 for i in dihedral_n]]]) 
+    _read_parm7_build(mol, Xponge.forcefield.BASE.DIHEDRAL.ImproperType, impropers, "name k phi0 periodicity\n", [["%f", dihedral_k], ["%f", dihedral_phase], ["%d", dihedral_n]]) 
+    
     NB14TYPE = Xponge.forcefield.BASE.NB14.NB14Type
     for typei, bondi in nb14s.items():
         for ai, bi in bondi:
@@ -829,18 +706,7 @@ def parm7(filename):
             else:
                 raise NotImplementedError
 
-    
-    mol.atoms = []
-    mol.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
-    for res in mol.residues:
-        Xponge.BUILD._analyze_connectivity(res)
-        mol.atoms.extend(res.atoms)
-        for frc in GlobalSetting.BondedForces:
-            mol.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name, []))
-        for link in mol.residue_links:
-            for frc in GlobalSetting.BondedForces:
-                mol.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name, []))
-    mol.atom_index = {mol.atoms[i]: i for i in range(len(mol.atoms))}
+    _read_parm7_construct(mol)
 
     return mol
 
