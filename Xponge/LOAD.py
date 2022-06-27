@@ -400,6 +400,24 @@ def parmdat(filename):
         
 sys.modules['__main__'].__dict__["loadparmdat"] = parmdat 
 
+def _read_parm7_someflag(length, word_process, offset, ):
+    tempvar = []
+    line = f.readline()
+    while line.startswith("%"):
+        line = f.readline()
+    while 1:
+        i = 0
+        while i + offset < len(line):
+            word = line[i:i+offset].strip()
+            if word:
+                tempvar.append(word_process(word))
+            else:
+                break
+            i += offset
+        if len(tempvar) == length:
+            break
+        line = f.readline()
+
 def parm7(filename):
     import Xponge.forcefield.AMBER
     bonds = {}
@@ -441,68 +459,11 @@ def parm7(filename):
                 angle_type_numbers = int(line[48:56])
                 dihedral_type_numbers = int(line[56:64])
             elif line.startswith("%FLAG DIHEDRAL_FORCE_CONSTANT"):
-                dihedral_k = []
-                tempvar = dihedral_k
-                length = dihedral_type_numbers
-                word_process = lambda x:float(x)
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                dihedral_k = _read_parm7_someflag(dihedral_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG DIHEDRAL_PERIODICITY"):
-                dihedral_n = []
-                tempvar = dihedral_n
-                length = dihedral_type_numbers
-                word_process = lambda x:float(x)
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                dihedral_n = _read_parm7_someflag(dihedral_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG DIHEDRAL_PHASE"):
-                dihedral_phase = []
-                tempvar = dihedral_phase
-                length = dihedral_type_numbers
-                word_process = lambda x:float(x)
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                dihedral_phase = _read_parm7_someflag(dihedral_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG DIHEDRALS_INC_HYDROGEN"):
                 tempvar = []
                 while line.startswith("%"):
@@ -569,47 +530,9 @@ def parm7(filename):
                                 nb14s[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+3] // 3]]
 
             elif line.startswith("%FLAG ANGLE_FORCE_CONSTANT"):
-                angle_k = []
-                tempvar = angle_k
-                length = angle_type_numbers
-                word_process = lambda x:float(x)
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                angle_k = _read_parm7_someflag(angle_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG ANGLE_EQUIL_VALUE"):
-                angle_b = []
-                tempvar = angle_b
-                length = angle_type_numbers
-                word_process = lambda x:float(x)
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                angle_b = _read_parm7_someflag(angle_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG ANGLES_INC_HYDROGEN"):
                 tempvar = []
                 while line.startswith("%"):
@@ -653,47 +576,9 @@ def parm7(filename):
                     else:
                         angles[tempvar[i+3] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3]]
             elif line.startswith("%FLAG BOND_FORCE_CONSTANT"):
-                bond_k = []
-                tempvar = bond_k
-                length = bond_type_numbers
-                word_process = lambda x:float(x)
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                bond_k = _read_parm7_someflag(bond_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG BOND_EQUIL_VALUE"):
-                bond_b = []
-                tempvar = bond_b
-                length = bond_type_numbers
-                word_process = lambda x:float(x)
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                bond_b = _read_parm7_someflag(bond_type_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG BONDS_INC_HYDROGEN"):
                 tempvar = []
                 while line.startswith("%"):
@@ -737,236 +622,27 @@ def parm7(filename):
                     else:
                         bonds[tempvar[i+2] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3]]
             elif line.startswith("%FLAG NUMBER_EXCLUDED_ATOMS"):
-                exclude_numbers = []
-                tempvar = exclude_numbers
-                length = atom_numbers
-                word_process = lambda x:int(x)
-                offset = 8
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                exclude_numbers = _read_parm7_someflag(atom_numbers, lambda x:int(x), 8, f)
             elif line.startswith("%FLAG EXCLUDED_ATOMS_LIST"):
-                excluded_list = []
-                tempvar = excluded_list
-                length = total_excluded_numbers
-                word_process = lambda x:int(x) - 1
-                offset = 8
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                excluded_list = _read_parm7_someflag(total_excluded_numbers, lambda x:int(x) - 1, 8, f)
             elif line.startswith("%FLAG ATOM_NAME"):
-                atom_names = []
-                tempvar = atom_names
-                length = atom_numbers
-                word_process = lambda x:x
-                offset = 4
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                atom_names = _read_parm7_someflag(atom_numbers, lambda x:x, 4, f)
             elif line.startswith("%FLAG AMBER_ATOM_TYPE"):
-                atom_types = []
-                tempvar = atom_types
-                length = atom_numbers
-                word_process = lambda x:x
-                offset = 4
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                atom_types = _read_parm7_someflag(atom_numbers, lambda x:x, 4, f)
             elif line.startswith("%FLAG LENNARD_JONES_ACOEF"):
-                LJ_A = []
-                tempvar = LJ_A
-                length = atom_type_numbers * (atom_type_numbers + 1) // 2
-                word_process = lambda x:float(x) 
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                LJ_A = _read_parm7_someflag(atom_type_numbers * (atom_type_numbers + 1) // 2, lambda x:float(x) , 16, f)
             elif line.startswith("%FLAG LENNARD_JONES_BCOEF"):
-                LJ_B = []
-                tempvar = LJ_B
-                length = atom_type_numbers * (atom_type_numbers + 1) // 2
-                word_process = lambda x:float(x) 
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                LJ_B = _read_parm7_someflag(atom_type_numbers * (atom_type_numbers + 1) // 2, lambda x:float(x) , 16, f)
             elif line.startswith("%FLAG ATOM_TYPE_INDEX"):
-                atom_type_index = []
-                tempvar = atom_type_index
-                length = atom_numbers
-                word_process = lambda x:int(x) - 1
-                offset = 8
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                atom_type_index = _read_parm7_someflag(atom_numbers, lambda x:int(x) - 1 , 8, f)
             elif line.startswith("%FLAG CHARGE"):
-                charges = []
-                tempvar = charges
-                length = atom_numbers
-                word_process = lambda x:float(x)/18.2223
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                charges = _read_parm7_someflag(atom_numbers, lambda x:float(x)/18.2223, 16, f)
             elif line.startswith("%FLAG MASS"):
-                masses = []
-                tempvar = masses
-                length = atom_numbers
-                word_process = lambda x:float(x)
-                offset = 16
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                masses = _read_parm7_someflag(atom_numbers, lambda x:float(x), 16, f)
             elif line.startswith("%FLAG RESIDUE_LABEL"):
-                residues = []
-                tempvar = residues
-                length = residue_numbers
-                word_process = lambda x:x
-                offset = 4
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                residues = _read_parm7_someflag(residue_numbers, lambda x:x, 4, f)
             elif line.startswith("%FLAG RESIDUE_POINTER"):
-                residue_starts = []
-                tempvar = residue_starts
-                length = residue_numbers
-                word_process = lambda x: int(x) - 1
-                offset = 8
-                line = f.readline()
-                while line.startswith("%"):
-                    line = f.readline()
-                while 1:
-                    i = 0
-                    while i + offset < len(line):
-                        word = line[i:i+offset].strip()
-                        if word:
-                            tempvar.append(word_process(word))
-                        else:
-                            break
-                        i += offset
-                    if len(tempvar) == length:
-                        break
-                    line = f.readline()
+                residue_starts = _read_parm7_someflag(residue_numbers, lambda x: int(x) - 1, 8, f)
                 residue_starts.append(atom_numbers)
     
     atom_type_map = {}
