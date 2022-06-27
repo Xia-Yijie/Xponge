@@ -330,7 +330,7 @@ assign.Determine_Atom_Type("GAFF")
 Save_Mol2(assign, "EDF_ASN.mol2")
 
 # Get the chemical equivalent atoms and calculate the RESP charge
-equivalence = Determine_Equal_Atoms(assign)
+equivalence = assign.Determine_Equal_Atoms()
 # Here in fact, "q" is None, the real charges are stored in assign.charge.
 q = assign.Calculate_Charge("RESP", basis = "6-311g*", grid_density = 1, 
     extra_equivalence = equivalence, opt = True)
