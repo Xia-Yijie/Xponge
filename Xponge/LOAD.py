@@ -5,7 +5,7 @@ import sys
 ##########################################################################
 #General Format
 ##########################################################################
-def mol2(filename):
+def mol2(filename, ignore_atom_type = False):
     with open(filename) as f:
         #存储读的时候的临时信息，key是编号
         #value是list：原子名(0)、residue(1)、residue编号(2)、是否是新的residue type(3)、该原子(4)、residue type的最新原子(5)
@@ -44,10 +44,14 @@ def mol2(filename):
                     if current_residue:
                         current_molecule.Add_Residue(current_residue)
                     current_residue = Residue(ResidueType.types[words[7]])
+                if ignore_atom_type:
+                    temp_atom_type = AtomType.types["UNKNOWN"]
+                else:
+                    temp_atom_type = AtomType.types[words[5]]
                 if temp:
-                    current_residue.type.Add_Atom(words[1], AtomType.types[words[5]], *words[2:5])
+                    current_residue.type.Add_Atom(words[1], temp_atom_type, *words[2:5])
                     current_residue.type.atoms[-1].Update(**{"charge[e]": float(words[8])})
-                current_residue.Add_Atom(words[1], AtomType.types[words[5]], *words[2:5])
+                current_residue.Add_Atom(words[1], temp_atom_type, *words[2:5])
                 current_residue.atoms[-1].Update(**{"charge[e]": float(words[8])})
                 atom_residue_map[words[0]]=[words[1], current_residue, current_residue_index, temp, current_residue.atoms[-1], current_residue.type.atoms[-1]]
             elif flag == "BOND":
@@ -75,19 +79,32 @@ def mol2(filename):
 sys.modules['__main__'].__dict__["loadmol2"] = mol2    
                 
 
-def pdb(filename, judge_HIS = True):
+def _pdb_SSBONDS(chain, residue_type_map, SSBOND):
+    SSBONDS = {}
+    for ssbond in SSBOND:
+        resA = chain[ssbond[15]][int(ssbond[17:21])]
+        residue_type_map[resA] = "CYX"
+        resB = chain[ssbond[29]][int(ssbond[31:35])]
+        residue_type_map[resB] = "CYX"
+        if resA > resB:
+            resA, resB = (resB, resA)
+        SSBONDS[resB] = resA
+    return SSBONDS
+
+def pdb(filename, judge_HIS = True, position_need = "A", ignoreH = False):
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
     chain = {}
     SSBOND = []
     residue_type_map = []
     current_residue_count = -1
     current_residue_index = None
+    current_resname = None
     current_HIS = {"DeltaH":False, "EpsilonH":False}
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
                 resindex = int(line[22:26])
-                resname = line[17:20]
+                resname = line[17:20].strip()
                 atomname = line[12:16].strip()
                 if current_residue_index == None:
                     current_residue_count += 1
@@ -100,12 +117,13 @@ def pdb(filename, judge_HIS = True):
                         else:
                             residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIE"]
                         current_HIS = {"DeltaH":False, "EpsilonH":False}
+                    current_resname = resname
                     if resname in GlobalSetting.PDBResidueNameMap["head"].keys():
                         resname = GlobalSetting.PDBResidueNameMap["head"][resname]
                     residue_type_map.append(resname)
                     current_residue_index = resindex
                     chain[chr(ord("A") + len(chain.keys()))] = {resindex:current_residue_count}
-                elif current_residue_index != resindex:
+                elif current_residue_index != resindex or current_resname != resname:
                     if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
                         if current_HIS["DeltaH"]: 
                             if current_HIS["EpsilonH"]:
@@ -118,6 +136,7 @@ def pdb(filename, judge_HIS = True):
                     current_residue_count += 1
                     residue_type_map.append(resname)
                     current_residue_index = resindex
+                    current_resname = resname
                     chain[chr(ord("A") + len(chain.keys()) - 1)][resindex] = current_residue_count
                 if judge_HIS and resname in GlobalSetting.HISMap["HIS"].keys():
                     if atomname == GlobalSetting.HISMap["DeltaH"]:
@@ -126,6 +145,7 @@ def pdb(filename, judge_HIS = True):
                         current_HIS["EpsilonH"] = True
             elif line.startswith("TER"):
                 current_residue_index = None
+                current_resname = None
                 if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
                    residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
                 if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
@@ -144,38 +164,40 @@ def pdb(filename, judge_HIS = True):
     if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
        residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
     
-    SSBONDS = {}
-    for ssbond in SSBOND:
-        resA = chain[ssbond[15]][int(ssbond[17:21])]
-        residue_type_map[resA] = "CYX"
-        resB = chain[ssbond[29]][int(ssbond[31:35])]
-        residue_type_map[resB] = "CYX"
-        if resA > resB:
-            resA, resB = (resB, resA)
-        SSBONDS[resB] = resA
+    SSBONDS = _pdb_SSBONDS(chain, residue_type_map, SSBOND)
 
     current_residue_count = -1
     current_residue = None
+    current_resname = None
     links = []
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
+                extra = line[16]
                 resindex = int(line[22:26])
+                resname = line[17:20].strip()
                 atomname = line[12:16].strip()
                 x = float(line[30:38])
                 y = float(line[38:46])
                 z = float(line[46:54])
-                if not current_residue_index or current_residue_index != resindex:
+                if current_residue_index is None or current_residue_index != resindex or \
+                   current_resname != resname:
                     current_residue_count += 1
                     if current_residue:
                         molecule.Add_Residue(current_residue)
-                        if current_residue.type.tail and ResidueType.types[residue_type_map[current_residue_count]].head:
-                            links.append(current_residue_count)
+                        if current_residue_index is not None and current_residue.type.tail and ResidueType.types[residue_type_map[current_residue_count]].head:
+                            links.append(len(molecule.residues))
                     current_residue = Residue(ResidueType.types[residue_type_map[current_residue_count]])
                     current_residue_index = resindex
+                    current_resname = resname
+                if extra not in (" ", position_need):
+                    continue
+                if ignoreH and atomname.startswith("H"):
+                    continue
                 current_residue.Add_Atom(atomname, x = x, y = y, z = z)
             elif line.startswith("TER"):
                 current_residue_index = None
+                current_resname = None
                 
     if current_residue:
         molecule.Add_Residue(current_residue)
@@ -220,17 +242,17 @@ def frcmod(filename, nbtype = "RE"):
             words = line.split()
             if flag != "CMAP" and len(words) == 1:
                 flag = line.strip()
-            elif flag == "MASS":
+            elif flag[:4] == "MASS":
                 atom_types[words[0]] = words[1]
-            elif flag == "BOND":
+            elif flag[:4] == "BOND":
                 atoms = [ word.strip() for word in line[:5].split("-") ]
                 words = line[5:].split()
                 bonds += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
-            elif flag == "ANGL":
+            elif flag[:4] == "ANGL":
                 atoms = [ word.strip() for word in line[:8].split("-") ]
                 words = line[8:].split()
                 angles += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
-            elif flag == "DIHE":
+            elif flag[:4] == "DIHE":
                 atoms = [ word.strip() for word in line[:11].split("-") ]
                 words = line[11:].split()
                 propers += "-".join(atoms) + "\t" + str(float(words[1]) / int(words[0])) + "\t" + words[2] + "\t" + str(abs(int(float(words[3])))) + "\t" + str(reset) + "\n"
@@ -238,14 +260,14 @@ def frcmod(filename, nbtype = "RE"):
                     reset = 0
                 else:
                     reset = 1
-            elif flag == "IMPR":
+            elif flag[:4] == "IMPR":
                 atoms = [ word.strip() for word in line[:11].split("-") ]
                 words = line[11:].split()
                 impropers += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\t" + str(int(float(words[2]))) + "\n"
-            elif flag == "NONB" or flag == "NONBON":
+            elif flag[:4] == "NONB":
                 words = line.split()
                 LJs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
-            elif flag == "CMAP":
+            elif flag[:4] == "CMAP":
                 if line.startswith("%FLAG"):
                     if "CMAP_COUNT" in line:
                         if temp_cmp:
@@ -378,15 +400,355 @@ def parmdat(filename):
         
 sys.modules['__main__'].__dict__["loadparmdat"] = parmdat 
 
+def _read_parm7_someflag(length, word_process, offset, f):
+    tempvar = []
+    line = f.readline()
+    while line.startswith("%"):
+        line = f.readline()
+    while 1:
+        i = 0
+        while i + offset < len(line):
+            word = line[i:i+offset].strip()
+            if word:
+                tempvar.append(word_process(word))
+            else:
+                break
+            i += offset
+        if len(tempvar) == length:
+            break
+        line = f.readline()
+    return tempvar
+
+def _read_parm7_build(mol, BONDTYPE, bonds, parameter_head, parameter_lists, add_connectivity = False):
+    bond_names = {}
+    newBONDs = ""
+    newBONDs += parameter_head
+    for i in bonds.keys():
+        bond_names[i] = "-".join([mol.atoms[atype].type.name for atype in bonds[i][0]])
+        newBONDs += bond_names[i]
+        for fmt, parm_list in parameter_lists:
+            newBONDs += " " + fmt%parm_list[i]
+        newBONDs += "\n"
+    BONDTYPE.New_From_String(newBONDs)
+    
+    for typei, bondi in bonds.items():
+        for atom_indexes in bondi:
+            atoms = [mol.atoms[i] for i in atom_indexes ]
+            residues = set([atom.residue for atom in atoms])
+            if len(residues) == 1:
+                residue = atoms[0].residue
+                resatoms = [residue.type._name2atom[atom.name] for atom in atoms]
+                residue.type.Add_Bonded_Force(BONDTYPE.entity(resatoms, BONDTYPE.types_different_name[bond_names[typei]]))
+                residue.Add_Bonded_Force(BONDTYPE.entity(atoms, BONDTYPE.types_different_name[bond_names[typei]]))
+                if add_connectivity:
+                    residue.Add_Connectivity(atoms[0], atoms[-1])
+            else:
+                raise NotImplementedError
+                
+def _read_parm7_read(filename):   
+    bonds = {}
+    angles = {}
+    propers = {}
+    nb14s = {}
+    impropers = {}
+    with open(filename) as f:
+        for line in f:
+            if line.startswith("%FLAG TITLE"):
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                try:
+                    name = line.split()[0].strip()
+                except IndexError:
+                    from random import randint
+                    name = "Molecule%d"%randint(0, 10086)
+                mol =  Molecule(name = name)
+            elif line.startswith("%FLAG POINTERS"):
+                line = f.readline()
+                while line.startswith("%"):
+                    line = f.readline()
+                atom_numbers = int(line[0:8])
+                atom_type_numbers = int(line[8:16])
+                bond_numbers_H = int(line[16:24])
+                bond_numbers_N = int(line[24:32])
+                bond_numbers = bond_numbers_H + bond_numbers_N
+                angle_numbers_H = int(line[32:40])
+                angle_numbers_N = int(line[40:48])
+                angle_numbers = angle_numbers_H + angle_numbers_N
+                dihedral_numbers_H = int(line[48:56])
+                dihedral_numbers_N = int(line[56:64])            
+                dihedral_numbers = dihedral_numbers_H + dihedral_numbers_N
+                line = f.readline()
+                total_excluded_numbers = int(line[0:8])
+                residue_numbers = int(line[8:16])
+                bond_type_numbers = int(line[40:48])
+                angle_type_numbers = int(line[48:56])
+                dihedral_type_numbers = int(line[56:64])
+            elif line.startswith("%FLAG DIHEDRAL_FORCE_CONSTANT"):
+                dihedral_k = _read_parm7_someflag(dihedral_type_numbers, lambda x:float(x), 16, f)
+            elif line.startswith("%FLAG DIHEDRAL_PERIODICITY"):
+                dihedral_n = _read_parm7_someflag(dihedral_type_numbers, lambda x:float(x), 16, f)
+            elif line.startswith("%FLAG DIHEDRAL_PHASE"):
+                dihedral_phase = _read_parm7_someflag(dihedral_type_numbers, lambda x:float(x), 16, f)
+            elif line.startswith("%FLAG DIHEDRALS_INC_HYDROGEN"):
+                tempvar = _read_parm7_someflag(5 * dihedral_numbers_H, lambda x:int(x), 8, f)
+                for i in range(0,len(tempvar),5):
+                    if tempvar[i+3] < 0:
+                        if tempvar[i+4] - 1 in impropers.keys():
+                            impropers[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), abs(tempvar[i+3]) // 3])
+                        else:
+                            impropers[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2]) // 3, abs(tempvar[i+3]) // 3]]
+                    else:
+                        if tempvar[i+4] - 1 in propers.keys():
+                            propers[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), tempvar[i+3] // 3])
+                        else:
+                            propers[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), tempvar[i+3] // 3]]
+                        if tempvar[i+2] > 0:
+                            if tempvar[i+4] - 1 in nb14s.keys():
+                                nb14s[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+3] // 3])
+                            else:
+                                nb14s[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+3] // 3]]
+            elif line.startswith("%FLAG DIHEDRALS_WITHOUT_HYDROGEN"):
+                tempvar = _read_parm7_someflag(5 * dihedral_numbers_N, lambda x:int(x), 8, f)
+                for i in range(0,len(tempvar),5):
+                    if tempvar[i+3] < 0:
+                        if tempvar[i+4] - 1 in impropers.keys():
+                            impropers[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), abs(tempvar[i+3]) // 3])
+                        else:
+                            impropers[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2]) // 3, abs(tempvar[i+3]) // 3]]
+                    else:
+                        if tempvar[i+4] - 1 in propers.keys():
+                            propers[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), tempvar[i+3] // 3])
+                        else:
+                            propers[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, abs(tempvar[i+2] // 3), tempvar[i+3] // 3]]
+                        if tempvar[i+2] > 0:
+                            if tempvar[i+4] - 1 in nb14s.keys():
+                                nb14s[tempvar[i+4] - 1].append([tempvar[i] // 3, tempvar[i+3] // 3])
+                            else:
+                                nb14s[tempvar[i+4] - 1] = [[tempvar[i] // 3, tempvar[i+3] // 3]]
+
+            elif line.startswith("%FLAG ANGLE_FORCE_CONSTANT"):
+                angle_k = _read_parm7_someflag(angle_type_numbers, lambda x:float(x), 16, f)
+            elif line.startswith("%FLAG ANGLE_EQUIL_VALUE"):
+                angle_b = _read_parm7_someflag(angle_type_numbers, lambda x:float(x), 16, f)
+            elif line.startswith("%FLAG ANGLES_INC_HYDROGEN"):
+                tempvar = _read_parm7_someflag(4 * angle_numbers_H, lambda x:int(x), 8, f)
+                for i in range(0,len(tempvar),4):
+                    if tempvar[i+3] - 1 in angles.keys():
+                        angles[tempvar[i+3] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3])
+                    else:
+                        angles[tempvar[i+3] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3]]
+            elif line.startswith("%FLAG ANGLES_WITHOUT_HYDROGEN"):
+                tempvar = _read_parm7_someflag(4 * angle_numbers_N, lambda x:int(x), 8, f)
+                for i in range(0,len(tempvar),4):
+                    if tempvar[i+3] - 1 in angles.keys():
+                        angles[tempvar[i+3] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3])
+                    else:
+                        angles[tempvar[i+3] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3, tempvar[i+2] // 3]]
+            elif line.startswith("%FLAG BOND_FORCE_CONSTANT"):
+                bond_k = _read_parm7_someflag(bond_type_numbers, lambda x:float(x), 16, f)
+            elif line.startswith("%FLAG BOND_EQUIL_VALUE"):
+                bond_b = _read_parm7_someflag(bond_type_numbers, lambda x:float(x), 16, f)
+            elif line.startswith("%FLAG BONDS_INC_HYDROGEN"):
+                tempvar = _read_parm7_someflag(3 * bond_numbers_H, lambda x:int(x), 8, f)
+                for i in range(0,len(tempvar),3):
+                    if tempvar[i+2] - 1 in bonds.keys():
+                        bonds[tempvar[i+2] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3])
+                    else:
+                        bonds[tempvar[i+2] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3]]
+            elif line.startswith("%FLAG BONDS_WITHOUT_HYDROGEN"):
+                tempvar = _read_parm7_someflag(3 * bond_numbers_N, lambda x:int(x), 8, f)
+                for i in range(0,len(tempvar),3):
+                    if tempvar[i+2] - 1 in bonds.keys():
+                        bonds[tempvar[i+2] - 1].append([tempvar[i] // 3, tempvar[i+1] // 3])
+                    else:
+                        bonds[tempvar[i+2] - 1] = [[tempvar[i] // 3, tempvar[i+1] // 3]]
+            elif line.startswith("%FLAG NUMBER_EXCLUDED_ATOMS"):
+                exclude_numbers = _read_parm7_someflag(atom_numbers, lambda x:int(x), 8, f)
+            elif line.startswith("%FLAG EXCLUDED_ATOMS_LIST"):
+                excluded_list = _read_parm7_someflag(total_excluded_numbers, lambda x:int(x) - 1, 8, f)
+            elif line.startswith("%FLAG ATOM_NAME"):
+                atom_names = _read_parm7_someflag(atom_numbers, lambda x:x, 4, f)
+            elif line.startswith("%FLAG AMBER_ATOM_TYPE"):
+                atom_types = _read_parm7_someflag(atom_numbers, lambda x:x, 4, f)
+            elif line.startswith("%FLAG LENNARD_JONES_ACOEF"):
+                LJ_A = _read_parm7_someflag(atom_type_numbers * (atom_type_numbers + 1) // 2, lambda x:float(x) , 16, f)
+            elif line.startswith("%FLAG LENNARD_JONES_BCOEF"):
+                LJ_B = _read_parm7_someflag(atom_type_numbers * (atom_type_numbers + 1) // 2, lambda x:float(x) , 16, f)
+            elif line.startswith("%FLAG ATOM_TYPE_INDEX"):
+                atom_type_index = _read_parm7_someflag(atom_numbers, lambda x:int(x) - 1 , 8, f)
+            elif line.startswith("%FLAG CHARGE"):
+                charges = _read_parm7_someflag(atom_numbers, lambda x:float(x)/18.2223, 16, f)
+            elif line.startswith("%FLAG MASS"):
+                masses = _read_parm7_someflag(atom_numbers, lambda x:float(x), 16, f)
+            elif line.startswith("%FLAG RESIDUE_LABEL"):
+                residues = _read_parm7_someflag(residue_numbers, lambda x:x, 4, f)
+            elif line.startswith("%FLAG RESIDUE_POINTER"):
+                residue_starts = _read_parm7_someflag(residue_numbers, lambda x: int(x) - 1, 8, f)
+                residue_starts.append(atom_numbers)
+    return locals()
+
+def _read_parm7_construct(mol):
+    mol.atoms = []
+    mol.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+    for res in mol.residues:
+        mol.atoms.extend(res.atoms)
+        for frc in GlobalSetting.BondedForces:
+            mol.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name, []))
+        for link in mol.residue_links:
+            for frc in GlobalSetting.BondedForces:
+                mol.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name, []))
+    mol.atom_index = {mol.atoms[i]: i for i in range(len(mol.atoms))}
+
+
+def parm7(filename):
+    import Xponge.forcefield.AMBER
+    local = _read_parm7_read(filename)
+    
+    atom_types = local["atom_types"]
+    atom_type_index = local["atom_type_index"]
+    masses = local["masses"]
+    residues = local["residues"]
+    residue_starts = local["residue_starts"]
+    atom_names = local["atom_names"]
+    charges = local["charges"]
+    mol = local["mol"]
+    atom_type_numbers = local["atom_type_numbers"]
+    LJ_A = local["LJ_A"]
+    LJ_B = local["LJ_B"]
+    atom_numbers = local["atom_numbers"]
+    exclude_numbers = local["exclude_numbers"]
+    excluded_list = local["excluded_list"]
+    bonds = local["bonds"]
+    angles = local["angles"]
+    bond_k = local["bond_k"]
+    bond_b = local["bond_b"]
+    angle_k = local["angle_k"]
+    angle_b = local["angle_b"]
+    propers = local["propers"]
+    dihedral_k = local["dihedral_k"]
+    dihedral_phase = local["dihedral_phase"]
+    dihedral_n = local["dihedral_n"]
+    impropers = local["impropers"]
+    nb14s = local["nb14s"]
+    
+    atom_type_map = {}
+    for i, atype in enumerate(atom_types):
+        if atom_type_index[i] not in atom_type_map.keys():
+            atom_type_map[atom_type_index[i]] = atype
+        if atype not in AtomType.types.keys():
+            AtomType(name = atype, mass = masses[i], LJtype = atom_type_map[atom_type_index[i]])
+    
+    for ri, residue in enumerate(residues):
+        if residue not in ResidueType.types.keys():
+            New_ResidueType = ResidueType(name = residue)
+            New_ResidueType.built = True
+            for i in range(residue_starts[ri],residue_starts[ri+1]):
+                New_ResidueType.Add_Atom(atom_names[i], AtomType.types[atom_types[i]], x = 0, y = 0, z = 0)
+                New_ResidueType.atoms[-1].mass = masses[i]
+                New_ResidueType.atoms[-1].charge = charges[i]
+            sys.modules['__main__'].__dict__[residue] = New_ResidueType
+        New_Residue = Residue(ResidueType.types[residue])
+        for i in range(residue_starts[ri],residue_starts[ri+1]):
+            New_Residue.Add_Atom(atom_names[i], AtomType.types[atom_types[i]])
+            New_Residue.atoms[-1].mass = masses[i]
+            New_Residue.atoms[-1].charge = charges[i]
+        New_Residue.built = True
+        mol.Add_Residue(New_Residue)
+    
+    _read_parm7_construct(mol)
+
+    for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
+        for vatom in mol.bonded_forces.get(vatom_type_name, []):
+            this_vatoms = [vatom.atoms[0]]
+            for i in range(vatom_type_atom_numbers):
+                this_vatoms.append(cls.atoms[cls.atom_index[vatom.atoms[0]] + getattr(vatom, "atom%d" % i)])
+                this_vatoms.sort(key=lambda x: cls.atom_index[x])
+                while this_vatoms:
+                    tolink = this_vatoms.pop(0)
+                    for i in this_vatoms:
+                        tolink.Link_Atom("v", i)
+    newLJs = "name A B\n"
+    for i in range(atom_type_numbers):
+        for j in range(0, i + 1):
+            atype = atom_type_map[i]
+            btype = atom_type_map[j]
+            index = i * (i + 1) // 2 + j
+            newLJs += "%s-%s %f %f\n"%(atype, btype, LJ_A[index], LJ_B[index])
+    Xponge.forcefield.BASE.LJ.LJType.New_From_String(newLJs)
+    mol.built = True
+
+    count = -1
+    for i in range(atom_numbers):
+        atom_i = mol.atoms[i]
+        for j in range(exclude_numbers[i]):
+            count += 1
+            if excluded_list[count] == -1:
+                break
+            atom_i.Extra_Exclude_Atom(mol.atoms[excluded_list[count]])
+        atom_i.residue.type._name2atom[atom_i.name].Extra_Exclude_Atoms([ atom_i.residue.type._name2atom[aton.name] for aton in atom_i.extra_excluded_atoms])
+
+    _read_parm7_build(mol, Xponge.forcefield.BASE.BOND.BondType, bonds, "name k b\n", [["%f", bond_k], ["%f", bond_b]], True)           
+    _read_parm7_build(mol, Xponge.forcefield.BASE.ANGLE.AngleType, angles, "name k b\n", [["%f", angle_k], ["%f", angle_b]])
+    _read_parm7_build(mol, Xponge.forcefield.BASE.DIHEDRAL.ProperType, propers, "name k phi0 periodicity reset\n", [["%f", dihedral_k], ["%f", dihedral_phase], ["%d", dihedral_n], ["%d", [0 for i in dihedral_n]]]) 
+    _read_parm7_build(mol, Xponge.forcefield.BASE.DIHEDRAL.ImproperType, impropers, "name k phi0 periodicity\n", [["%f", dihedral_k], ["%f", dihedral_phase], ["%d", dihedral_n]]) 
+    
+    NB14TYPE = Xponge.forcefield.BASE.NB14.NB14Type
+    for typei, bondi in nb14s.items():
+        for ai, bi in bondi:
+            aAtom = mol.atoms[ai]
+            bAtom = mol.atoms[bi]
+            if aAtom.residue == bAtom.residue:
+                atoms = [aAtom, bAtom]
+                resatoms = [aAtom.residue.type._name2atom[atom.name] for atom in atoms]
+                aAtom.residue.type.Add_Bonded_Force(NB14TYPE.entity(resatoms, NB14TYPE.types["X-X"]))
+                aAtom.residue.Add_Bonded_Force(NB14TYPE.entity(atoms, NB14TYPE.types["X-X"]))
+            else:
+                raise NotImplementedError
+
+    _read_parm7_construct(mol)
+
+    return mol
+
+sys.modules['__main__'].__dict__["loadparm7"] = parm7 
+
+def rst7(filename, mol = None):
+    crds = []
+    with open(filename) as f:
+        f.readline()
+        words = f.readline().split()
+        atom_numbers = int(words[0])
+        for line in f:
+            words = line.split()
+            while words and len(crds) < atom_numbers * 3:
+                crds.append(float(words.pop(0)))
+        box = [float(i) for i in line.split()]
+    crds = np.array(crds).reshape((-1,3))
+    mol.box_length = box[:3]
+    count = -1
+    for ri, residue in enumerate(mol.residues):
+       for ai, atom in enumerate(residue.atoms):
+           count += 1  
+           atom.x = crds[count][0]
+           atom.y = crds[count][1]
+           atom.z = crds[count][2]
+
+    return crds, box
+     
+sys.modules['__main__'].__dict__["loadrst7"] = rst7 
+
 ##########################################################################
 #GROMACS Format
 ##########################################################################
 
 class GROMACS_TOPOLOGY_ITERATOR():
-    def __init__(self, filename = None, macros = {}):
+    def __init__(self, filename = None, macros = None):
         self.files = []
         self.filenames = []
-        self.defined_macros = macros
+        if macros:
+            self.defined_macros = macros 
+        else:
+            self.defined_macros = {}
         if filename:
             self.Add_Iterator_File(filename)
     def Add_Iterator_File(self, filename):
@@ -460,7 +822,7 @@ class GROMACS_TOPOLOGY_ITERATOR():
                 continue
         raise StopIteration
             
-def ffitp(filename, macros = {}):
+def ffitp(filename, macros = None):
     iterator = GROMACS_TOPOLOGY_ITERATOR(filename, macros)
     output = {}
     output["nb14"] = "name  kLJ  kee\n"

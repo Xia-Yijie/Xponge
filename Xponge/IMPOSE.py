@@ -1,4 +1,5 @@
 from . import *
+import sys
 
 def _get_rotate_matrix(r0, angle):
     cost = np.cos(angle)
@@ -33,7 +34,7 @@ def _get_friends(molecule, atom1, atom2):
         atom2_friends = []
         head = 0
         tail = 0
-        
+
         restype = atom1.residue.type
         def restype_atom(atom):
             return restype._name2atom[atom.name]
@@ -47,6 +48,7 @@ def _get_friends(molecule, atom1, atom2):
         index_dict = {}.fromkeys(restype.connectivity[typeatom1], typeatom1)
         if typeatom2 in index_dict.keys():
             index_dict.pop(typeatom2)
+
         while index_dict:
             index_next = {}
             for atom0, from_atom in index_dict.items():
@@ -61,7 +63,7 @@ def _get_friends(molecule, atom1, atom2):
                     index_temp.pop(typeatom2)
                 index_next.update(index_temp)
             index_dict = index_next
-            
+
         index_dict = {}.fromkeys(restype.connectivity[typeatom2], typeatom2)
         if typeatom1 in index_dict.keys():
             index_dict.pop(typeatom1)
@@ -265,7 +267,7 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
         atom.z = crd[i][2]
         
 def ResidueType_Add(self, other):
-    if type(other) == ResidueType:
+    if isinstance(other, ResidueType):
         new_molecule = Molecule(self.name)
         resA = Residue(self)
         resB = Residue(other)
@@ -281,7 +283,7 @@ def ResidueType_Add(self, other):
             new_molecule.Add_Residue_Link(atom1, atom2)
             _link_residue_process_coordinate(new_molecule, atom1, atom2)            
         return new_molecule
-    elif type(other) == Molecule:
+    elif isinstance(other, Molecule):
         new_molecule = other.deepcopy()
         resA = Residue(self)
         resB = new_molecule.residues[0]
@@ -294,13 +296,13 @@ def ResidueType_Add(self, other):
             new_molecule.Add_Residue_Link(atom1, atom2)
             _link_residue_process_coordinate(new_molecule, atom1, atom2)   
         return new_molecule
-    elif type(other) == type(None):
+    elif other is None:
         return self
     else:
         raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
 
 def Molecule_Add(self, other):
-    if type(other) == ResidueType:
+    if isinstance(other, ResidueType):
         new_molecule = self.deepcopy()
         resA = new_molecule.residues[-1]
         resB = Residue(other)
@@ -313,26 +315,28 @@ def Molecule_Add(self, other):
             new_molecule.Add_Residue_Link(atom1, atom2)
             _link_residue_process_coordinate(new_molecule, atom1, atom2)     
         return new_molecule
-    elif type(other) == Molecule:
+    elif isinstance(other, Molecule):
         new_molecule = self.deepcopy()
         new_molecule2 = other.deepcopy()
         resA = new_molecule.residues[-1]
         resB = new_molecule2.residues[0]
         for res in new_molecule2.residues:
             new_molecule.Add_Residue(res)
+        for reslink in new_molecule2.residue_links:
+            new_molecule.Add_Residue_Link(reslink.atom1, reslink.atom2)
         if resA.type.tail and resB.type.head:
             atom1 = resA._name2atom[resA.type.tail]
             atom2 = resB._name2atom[resB.type.head]
             new_molecule.Add_Residue_Link(atom1, atom2)
             _link_residue_process_coordinate(new_molecule, atom1, atom2)   
         return new_molecule
-    elif type(other) == type(None):
+    elif other is None:
         return self
     else:
         raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
 
 def iMolecule_Add(self, other):
-    if type(other) == ResidueType:
+    if isinstance(other, ResidueType):
         resA = self.residues[-1]
         resB = Residue(other)
         for atom in other.atoms:
@@ -344,19 +348,21 @@ def iMolecule_Add(self, other):
             self.Add_Residue_Link(atom1, atom2)
             _link_residue_process_coordinate(self, atom1, atom2)  
         return self
-    elif type(other) == Molecule:
+    elif isinstance(other, Molecule):
         new_molecule2 = other.deepcopy()
         resA = self.residues[-1]
         resB = new_molecule2.residues[0]
         for res in new_molecule2.residues:
             self.Add_Residue(res)
+        for reslink in new_molecule2.residue_links:
+            self.Add_Residue_Link(reslink.atom1, reslink.atom2)
         if resA.type.tail and resB.type.head:
             atom1 = resA._name2atom[resA.type.tail]
             atom2 = resB._name2atom[resB.type.head]
             self.Add_Residue_Link(atom1, atom2)
             _link_residue_process_coordinate(self, atom1, atom2)   
         return self
-    elif type(other) == type(None):
+    elif other is None:
         return self
     else:
         raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
@@ -372,16 +378,16 @@ def Muls(self, other):
             t += self
         return t
     else:
-        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
+        raise TypeError("unsupported operand type(s) for *: '%s' and '%s'"%(type(self), type(other)))
 
 def iMuls(self, other):
-    if type(other) == int:
+    if isinstance(other,int):
         assert other >= 1
         for i in range(other - 1):
             self += self
         return self
     else:
-        raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
+        raise TypeError("unsupported operand type(s) for *: '%s' and '%s'"%(type(self), type(other)))
 
 ResidueType.__add__ = ResidueType_Add
 ResidueType.__radd__ = ResidueType_Add
@@ -402,7 +408,7 @@ del iMolecule_Add
 
 
 def ResidueType_Or(self, other):
-    if type(other) == ResidueType:
+    if isinstance(other, ResidueType):
         new_molecule = Molecule(self.name)
         resA = Residue(self)
         resB = Residue(other)
@@ -413,7 +419,7 @@ def ResidueType_Or(self, other):
         new_molecule.Add_Residue(resA)
         new_molecule.Add_Residue(resB)          
         return new_molecule
-    elif type(other) == Molecule:
+    elif isinstance(other, Molecule):
         new_molecule = other.deepcopy()
         resA = Residue(self)
         resB = new_molecule.residues[0]
@@ -421,13 +427,13 @@ def ResidueType_Or(self, other):
             resA.Add_Atom(atom)
         new_molecule.residues.insert(0, resA)   
         return new_molecule
-    elif type(other) == type(None):
+    elif other is None:
         return self
     else:
         raise TypeError("unsupported operand type(s) for |: '%s' and '%s'"%(type(self), type(other)))
 
 def Molecule_Or(self, other):
-    if type(other) == ResidueType:
+    if isinstance(other, ResidueType):
         new_molecule = self.deepcopy()
         resA = new_molecule.residues[-1]
         resB = Residue(other)
@@ -435,35 +441,37 @@ def Molecule_Or(self, other):
             resB.Add_Atom(atom)
         new_molecule.Add_Residue(resB)     
         return new_molecule
-    elif type(other) == Molecule:
+    elif isinstance(other, Molecule):
         new_molecule = self.deepcopy()
         new_molecule2 = other.deepcopy()
         resA = new_molecule.residues[-1]
         resB = new_molecule2.residues[0]
         for res in new_molecule2.residues:
             new_molecule.Add_Residue(res)  
+        new_molecule.residue_links.extend(new_molecule2.residue_links)
         return new_molecule
-    elif type(other) == type(None):
+    elif other is None:
         return self
     else:
         raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))
 
 def iMolecule_Or(self, other):
-    if type(other) == ResidueType:
+    if isinstance(other, ResidueType):
         resA = self.residues[-1]
         resB = Residue(other)
         for atom in other.atoms:
             resB.Add_Atom(atom)
         self.Add_Residue(resB) 
         return self
-    elif type(other) == Molecule:
+    elif isinstance(other, Molecule):
         new_molecule2 = other.deepcopy()
         resA = self.residues[-1]
         resB = new_molecule2.residues[0]
         for res in new_molecule2.residues:
             self.Add_Residue(res)  
+        self.residue_links.extend(new_molecule2.residue_links)
         return self
-    elif type(other) == type(None):
+    elif other is None:
         return self
     else:
         raise TypeError("unsupported operand type(s) for +: '%s' and '%s'"%(type(self), type(other)))

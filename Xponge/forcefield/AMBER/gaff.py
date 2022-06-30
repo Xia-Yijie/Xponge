@@ -861,6 +861,22 @@ def temp(i, Assign):
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "P4") or Assign.Atom_Judge(i, "P5") or Assign.Atom_Judge(i, "P6")
 
+def parmchk2_gaff(ifname, ofname, direct_load = True, keep = True):
+    import XpongeLib as xlib
+    import os
+    datapath = os.path.split(xlib.__file__)[0]
+    xlib._parmchk2(ifname, "mol2", ofname, datapath, 0, 1, 1)
+    if direct_load:
+        atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(ofname)
+        BOND.BondType.New_From_String(bonds)
+        ANGLE.AngleType.New_From_String(angles)
+        DIHEDRAL.ProperType.New_From_String(propers)
+        DIHEDRAL.ImproperType.New_From_String(impropers)
+    if not keep:
+        os.remove(ofname)
+
+sys.modules['__main__'].__dict__["parmchk2_gaff"] = parmchk2_gaff
+
 print("""Reference for gaff:
   Wang, J., Wolf, R.M., Caldwell, J.W., Kollman, P.A. and Case, D.A.
     Development and testing of a general amber force field.

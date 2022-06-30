@@ -7,10 +7,10 @@ UreyBradleyType.Set_Property_Unit("b", "angle", "rad")
 UreyBradleyType.Set_Property_Unit("kUB", "energy·distance^-2", "kcal/mol·A^-2")
 UreyBradleyType.Set_Property_Unit("r13", "distance", "A")
 
-@Molecule.Set_Save_SPONGE_Input
-def write_angle(self, prefix, dirname):
+@Molecule.Set_Save_SPONGE_Input("urey_bradley")
+def write_angle(self):
     angles = []
-    for angle in self.bonded_forces["Urey_Bradley"]:
+    for angle in self.bonded_forces.get("Urey_Bradley",[]):
         order = list(range(3))
         if angle.k != 0 or angle.kUB != 0:
             if self.atom_index[angle.atoms[order[0]]] >  self.atom_index[angle.atoms[order[-1]]]:
@@ -24,6 +24,4 @@ def write_angle(self, prefix, dirname):
         towrite = "%d\n"%len(angles)
         angles.sort(key = lambda x: list(map(int, x.split()[:3])))
         towrite += "\n".join(angles)        
-        f = open(os.path.join(dirname, prefix + "_urey_bradley.txt"),"w")
-        f.write(towrite)
-        f.close()
+        return towrite

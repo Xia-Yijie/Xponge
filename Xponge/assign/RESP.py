@@ -53,13 +53,15 @@ def force_equivalence_q(q, extra_equivalence):
     return q
 
 #Pay Attention To !!!UNIT!!!
-def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 0, spin = 0, extra_equivalence = [], grid_density = 6, grid_cell_layer = 4, 
+def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 0, spin = 0, extra_equivalence = None, grid_density = 6, grid_cell_layer = 4, 
     radius = None, a1 = 0.0005, a2 = 0.001, two_stage = True, only_ESP  = False):
+    if extra_equivalence is None:
+        extra_equivalence = []
     from pyscf import gto, scf
     mols = ""
     for i, atom in enumerate(Assign.atoms):
         mols += "%s %f %f %f\n"%(atom, Assign.coordinate[i][0], Assign.coordinate[i][1], Assign.coordinate[i][2])
-    mol = gto.M(atom = mols, verbose = 0, basis = basis, charge = charge, spin = spin, symmetry = True)
+    mol = gto.M(atom = mols, verbose = 0, basis = basis, charge = charge, spin = spin)
 
     if spin == 0:
         fun = scf.RHF(mol)
@@ -145,7 +147,7 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 
         return force_equivalence_q(q, extra_equivalence)
     
     #step2
-    #fit the sp3 C and the hydrogen connected to it (pay attension to the symmetry!)
+    #fit the sp3 C and the hydrogen connected to it (pay attention to the symmetry!)
     tofit_second = []
     fit_group = {i : -1 for i in range(mol.natm)}
     sublength = 0

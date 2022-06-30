@@ -2,12 +2,12 @@ from ... import *
 
 CMAP = Generate_New_Bonded_Force_Type("atom_specific_cmap", "1-2-3-4-5", {"resolution":int, "parameters":list}, False)
 
-@Molecule.Set_Save_SPONGE_Input
-def write_cmap(self, prefix, dirname):
+@Molecule.Set_Save_SPONGE_Input("cmap")
+def write_cmap(self):
     bonds = []
     haved_cmaps = []
     haved_cmap_index = {}
-    for bond in self.bonded_forces["atom_specific_cmap"]:
+    for bond in self.bonded_forces.get("atom_specific_cmap",[]):
         order = list(range(5))
         if self.atom_index[bond.atoms[order[0]]] > self.atom_index[bond.atoms[order[-1]]]:
             temp_order = order[::-1]
@@ -34,6 +34,4 @@ def write_cmap(self, prefix, dirname):
         bonds.sort(key = lambda x: list(map(int, x.split()[:5])))
         towrite += "\n".join(bonds)
         
-        f = open(os.path.join(dirname, prefix + "_cmap.txt"),"w")
-        f.write(towrite)
-        f.close()
+        return towrite

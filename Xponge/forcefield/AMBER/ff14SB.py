@@ -2,7 +2,6 @@ from . import *
 import sys
 
 atoms, bonds, angles, propers, impropers, LJs = LOAD.parmdat(os.path.join(AMBER_DATA_DIR, "parm10.dat"))
-
 AtomType.New_From_String(atoms)
 BOND.BondType.New_From_String(bonds)
 ANGLE.AngleType.New_From_String(angles)
