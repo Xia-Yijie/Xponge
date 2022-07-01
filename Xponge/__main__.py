@@ -178,6 +178,7 @@ def main():
     dat1frame = _dat1frame(subparsers)
     crd2rst7 = _crd2rst7(subparsers)
     trr2dat = _trr2dat(subparsers)
+    name2name = _name2name(subparsers)
     mol2opt = _mol2opt(subparsers)
     mol2hfe = _mol2hfe(subparsers)
     mol2rfe = _mol2rfe(subparsers)
