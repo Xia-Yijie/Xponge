@@ -23,6 +23,73 @@ class Judge_Rule:
 
 
 class _RING():
+    @staticmethod
+    def Add_Rings_Basic_Marker(assign, rings):
+        for ring in rings:
+            for atom in ring.atoms:
+                assign.Add_Atom_Marker(atom, "RG")
+                assign.Add_Atom_Marker(atom, "RG%d" % len(ring.atoms))
+        
+    @staticmethod
+    def Check_Rings_Type(assign, rings):
+        for ring in rings:
+            ring.check_pure_aromatic(assign)
+            ring.check_pure_aliphatic_and_planar(assign)
+            ring.check_out_plane_double_bond(assign)
+
+            if not ring.is_pure_aromatic_ring:
+                for atom in ring.atoms:
+                    if ring.is_pure_aliphatic_ring:
+                        assign.Add_Atom_Marker(atom, "AR5")
+                    elif ring.is_planar_ring:
+                        if ring.out_plane_double_bond:
+                            assign.Add_Atom_Marker(atom, "AR3")
+                        else:
+                            assign.Add_Atom_Marker(atom, "AR2")
+                    else:
+                        assign.Add_Atom_Marker(atom, "AR4")
+        
+    @staticmethod
+    def Get_Rings(assign):
+        current_path = []
+        current_path_sons = {}
+        current_work = []
+        current_path_father = {}
+        have_found_rings = set([])
+        for atom0 in range(len(assign.atoms)):
+            current_path.append(atom0)
+            current_work.extend([[atom, atom0] for atom in assign.bonds[atom0].keys()])
+            current_path_sons[atom0] = len(assign.bonds[atom0])
+            current_path_father = []
+            while current_path:
+                work_atom, from_atom = current_work.pop()
+                current_path.append(work_atom)
+                current_path_father.append(from_atom)
+                bond_atom = []
+                for atom in assign.bonds[work_atom].keys():
+                    if atom != from_atom:
+                        try:
+                            index = current_path.index(atom)
+                            have_found_rings.add(_RING(current_path[index:]))
+                        except ValueError:
+                            bond_atom.append([atom, work_atom])
+
+                if len(current_path) < 9:
+                    current_path_sons[work_atom] = len(bond_atom)
+                    current_work.extend(bond_atom)
+
+                else:
+                    current_path_sons[work_atom] = 0
+
+                for atom in current_path[::-1]:
+                    if current_path_sons[atom] == 0:
+                        pop_atom = current_path.pop()
+                        current_path_sons.pop(pop_atom)
+                        if current_path_father:
+                            father_atom = current_path_father.pop()
+                            current_path_sons[father_atom] -= 1
+        return have_found_rings
+        
     def __repr__(self):
         return self.tohash
 
@@ -44,6 +111,51 @@ class _RING():
     def get_3_neighbors(self):
         for i in range(len(self.atoms)):
             yield self.atoms[i - 2], self.atoms[i - 1], self.atoms[i]
+    
+    def check_pure_aromatic(self, assign):
+        if len(self.atoms) == 6:
+            self.is_pure_aromatic_ring = True
+            for atom in self.atoms:
+                if not assign.Atom_Judge(atom, "C3") and not assign.Atom_Judge(atom, "N2") and not assign.Atom_Judge(atom, "N3"):
+                    self.is_pure_aromatic_ring = False
+                    break
+                if assign.Atom_Judge(atom, "N3"):
+                    temp = 0
+                    for bonded_atom, bond_order in assign.bonds[atom].items():
+                        temp += bond_order
+                    if temp == 3:
+                        self.is_pure_aromatic_ring = False
+                        break
+                for bonded_atom, bond_order in assign.bonds[atom].items():
+                    if bond_order == 2 and "RG" not in assign.atom_marker[bonded_atom].keys():
+                        self.is_pure_aromatic_ring = False
+                        break
+                if self.is_pure_aromatic_ring == False:
+                    break
+        else:
+            self.is_pure_aromatic_ring = False
+    
+    def check_pure_aliphatic_and_planar(self, assign):
+        self.is_pure_aliphatic_ring = True
+        self.is_planar_ring = True
+        for atom in self.atoms:
+            if self.is_pure_aromatic_ring:
+                assign.Add_Atom_Marker(atom, "AR1")
+                for i in range(6):
+                    assign.Add_Bond_Marker(self.atoms[i - 1], self.atoms[i], "AB")
+            if not assign.Atom_Judge(atom, "C4"):
+                self.is_pure_aliphatic_ring = False
+            if (not assign.Atom_Judge(atom, "C3") and not assign.Atom_Judge(atom, "N2")
+                    and not assign.Atom_Judge(atom, "N3") and not assign.Atom_Judge(atom, "O2")
+                    and not assign.Atom_Judge(atom, "S2") and not assign.Atom_Judge(atom, "P2")
+                    and not assign.Atom_Judge(atom, "P3")):
+                self.is_planar_ring = False
+    def check_out_plane_double_bond(self, assign):
+        self.out_plane_double_bond = False
+        for atom in self.atoms:
+            for bonded_atom, order in assign.bonds[atom].items():
+                if assign.atoms[bonded_atom] != "C" and order == 2 and bonded_atom not in self.atoms:
+                    self.out_plane_double_bond = True
 
 
 class Assign():
@@ -143,103 +255,10 @@ class Assign():
         raise NotImplementedError
 
     def Determine_Ring_And_Bond_Type(self):
-        current_path = []
-        current_path_sons = {}
-        current_work = []
-        current_path_father = {}
-        have_found_rings = set([])
-        for atom0 in range(len(self.atoms)):
-            current_path.append(atom0)
-            current_work.extend([[atom, atom0] for atom in self.bonds[atom0].keys()])
-            current_path_sons[atom0] = len(self.bonds[atom0])
-            current_path_father = []
-            while current_path:
-                work_atom, from_atom = current_work.pop()
-                current_path.append(work_atom)
-                current_path_father.append(from_atom)
-                bond_atom = []
-                for atom in self.bonds[work_atom].keys():
-                    if atom != from_atom:
-                        try:
-                            index = current_path.index(atom)
-                            have_found_rings.add(_RING(current_path[index:]))
-                        except ValueError:
-                            bond_atom.append([atom, work_atom])
-
-                if len(current_path) < 9:
-                    current_path_sons[work_atom] = len(bond_atom)
-                    current_work.extend(bond_atom)
-
-                else:
-                    current_path_sons[work_atom] = 0
-
-                for atom in current_path[::-1]:
-                    if current_path_sons[atom] == 0:
-                        pop_atom = current_path.pop()
-                        current_path_sons.pop(pop_atom)
-                        if current_path_father:
-                            father_atom = current_path_father.pop()
-                            current_path_sons[father_atom] -= 1
-
-        for ring in have_found_rings:
-            for atom in ring.atoms:
-                self.Add_Atom_Marker(atom, "RG")
-                self.Add_Atom_Marker(atom, "RG%d" % len(ring.atoms))
-        for ring in have_found_rings:
-            if len(ring.atoms) == 6:
-                ring.is_pure_aromatic_ring = True
-                for atom in ring.atoms:
-                    if not self.Atom_Judge(atom, "C3") and not self.Atom_Judge(atom, "N2") and not self.Atom_Judge(atom, "N3"):
-                        ring.is_pure_aromatic_ring = False
-                        break
-                    if self.Atom_Judge(atom, "N3"):
-                        temp = 0
-                        for bonded_atom, bond_order in self.bonds[atom].items():
-                            temp += bond_order
-                        if temp == 3:
-                            ring.is_pure_aromatic_ring = False
-                            break
-                    for bonded_atom, bond_order in self.bonds[atom].items():
-                        if bond_order == 2 and "RG" not in self.atom_marker[bonded_atom].keys():
-                            ring.is_pure_aromatic_ring = False
-                            break
-                    if ring.is_pure_aromatic_ring == False:
-                        break
-            else:
-                ring.is_pure_aromatic_ring = False
-            ring.is_pure_aliphatic_ring = True
-            ring.is_planar_ring = True
-            for atom in ring.atoms:
-                if ring.is_pure_aromatic_ring:
-                    self.Add_Atom_Marker(atom, "AR1")
-                    for i in range(6):
-                        self.Add_Bond_Marker(ring.atoms[i - 1], ring.atoms[i], "AB")
-                if not self.Atom_Judge(atom, "C4"):
-                    ring.is_pure_aliphatic_ring = False
-                if (not self.Atom_Judge(atom, "C3") and not self.Atom_Judge(atom, "N2")
-                        and not self.Atom_Judge(atom, "N3") and not self.Atom_Judge(atom, "O2")
-                        and not self.Atom_Judge(atom, "S2") and not self.Atom_Judge(atom, "P2")
-                        and not self.Atom_Judge(atom, "P3")):
-                    ring.is_planar_ring = False
-
-            ring.out_plane_double_bond = False
-            for atom in ring.atoms:
-                for bonded_atom, order in self.bonds[atom].items():
-                    if self.atoms[bonded_atom] != "C" and order == 2 and bonded_atom not in ring.atoms:
-                        ring.out_plane_double_bond = True
-
-            if not ring.is_pure_aromatic_ring:
-                for atom in ring.atoms:
-                    if ring.is_pure_aliphatic_ring:
-                        self.Add_Atom_Marker(atom, "AR5")
-                    elif ring.is_planar_ring:
-                        if ring.out_plane_double_bond:
-                            self.Add_Atom_Marker(atom, "AR3")
-                        else:
-                            self.Add_Atom_Marker(atom, "AR2")
-                    else:
-                        self.Add_Atom_Marker(atom, "AR4")
-
+        have_found_rings = _RING.Get_Rings(self)
+        _RING.Add_Rings_Basic_Marker(self, have_found_rings)
+        _RING.Check_Rings_Type(self, have_found_rings)
+        
         for atom in range(len(self.atoms)):
             DLO = 0
             NOTO = 0
@@ -267,12 +286,10 @@ class Assign():
                 else:
                     self.Add_Bond_Marker(atom, atom2, "tb", True)
 
-        # print(self.atom_marker, "\n\n", self.atom_marker, "\n\n", self.bond_marker)
-
     def Determine_Atom_Type(self, rule):
         if isinstance(rule, str):
             rule = Judge_Rule.all[rule]
-        # print(self.atoms)
+
         for i in range(len(self.atoms)):
             find_type = False
             for atom_type, type_rule in rule.rules.items():
@@ -282,7 +299,6 @@ class Assign():
                     break
 
             assert find_type, "No atom type found for assignment %s of atom #%d"%(self.name, i)
-        # print(self.atom_types)
 
     def To_ResidueType(self, name, charge=None):
         temp = ResidueType(name=name)
@@ -512,6 +528,35 @@ def Get_Assignment_From_ResidueType(restype):
                 assign.Add_Bond(i, j)
     return assign
 
+def _deal_with_ar_bonds(assign):
+    ar_bonds_atoms = list(assign.ar_bonds.keys())
+    ar_bonds_atoms.sort(key = lambda x: (x, len(assign.ar_bonds[x])))
+    doubled = {}
+    checked = {}
+    for ar_atom in ar_bonds_atoms:
+        assign.ar_bonds[ar_atom].sort(key = lambda x: (x, len(assign.ar_bonds[x])))
+        doubled[ar_atom] = False
+        checked[ar_atom] = False
+        
+    working_space = []
+    while ar_bonds_atoms:
+         working_space.append(ar_bonds_atoms.pop())
+         while working_space:
+             work_atom = working_space.pop()
+             if checked[work_atom]:
+                 continue
+             checked[work_atom] = True
+             for neighbor in assign.ar_bonds[work_atom]:
+                 if not checked[neighbor]:
+                     working_space.append(neighbor)
+             for neighbor in assign.ar_bonds[work_atom][::-1]:
+                 if doubled[work_atom]:
+                     break
+                 if not doubled[neighbor] and not doubled[work_atom]:
+                     assign.bonds[neighbor][work_atom] = 2
+                     doubled[neighbor] = True
+                     doubled[work_atom] = True
+
 def Get_Assignment_From_Mol2(filename):
     with open(filename) as f:
         flag = None
@@ -565,36 +610,14 @@ def Get_Assignment_From_Mol2(filename):
                         assign.am_bonds[atom2].append(atom1)
                 else:
                     raise NotImplementedError("No implemented method to process bond #%s type %s"%(words[0], words[3]))
-    ar_bonds_atoms = list(assign.ar_bonds.keys())
-    ar_bonds_atoms.sort(key = lambda x: (x, len(assign.ar_bonds[x])))
-    doubled = {}
-    checked = {}
-    for ar_atom in ar_bonds_atoms:
-        assign.ar_bonds[ar_atom].sort(key = lambda x: (x, len(assign.ar_bonds[x])))
-        doubled[ar_atom] = False
-        checked[ar_atom] = False
-    
-    working_space = []
-    while ar_bonds_atoms:
-         working_space.append(ar_bonds_atoms.pop())
-         while working_space:
-             work_atom = working_space.pop()
-             if checked[work_atom]:
-                 continue
-             checked[work_atom] = True
-             for neighbor in assign.ar_bonds[work_atom]:
-                 if not checked[neighbor]:
-                     working_space.append(neighbor)
-             for neighbor in assign.ar_bonds[work_atom][::-1]:
-                 if doubled[work_atom]:
-                     break
-                 if not doubled[neighbor] and not doubled[work_atom]:
-                     assign.bonds[neighbor][work_atom] = 2
-                     doubled[neighbor] = True
-                     doubled[work_atom] = True
-
+                    
+    _deal_with_ar_bonds(assign)
     assign.Determine_Ring_And_Bond_Type()
-    return assign
+    return assign   
+    
+
+
+
 
 def Get_Assignment_From_SDF(filename):
     with open(filename) as f:

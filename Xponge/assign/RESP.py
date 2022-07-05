@@ -1,6 +1,6 @@
 try:
     import pyscf
-except:
+except ModuleNotFoundError:
     raise Exception("To calculate RESP charge, 'pyscf' package needed. Maybe you need 'pip install pyscf'")
 
 
@@ -52,11 +52,7 @@ def force_equivalence_q(q, extra_equivalence):
         q[eq_group] = q_mean
     return q
 
-#Pay Attention To !!!UNIT!!!
-def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 0, spin = 0, extra_equivalence = None, grid_density = 6, grid_cell_layer = 4, 
-    radius = None, a1 = 0.0005, a2 = 0.001, two_stage = True, only_ESP  = False):
-    if extra_equivalence is None:
-        extra_equivalence = []
+def _get_pyscf_mol(Assign, basis, charge, spin, opt):
     from pyscf import gto, scf
     mols = ""
     for i, atom in enumerate(Assign.atoms):
@@ -78,8 +74,141 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 
         Assign.coordinate = mol.atom_coords() * 0.52918
     
     fun.run()
+    return mol, fun
+
+def _resp_scf_kernel(mol, Assign, a, b, A, A0, B, q):
+    step = 0
+    while step == 0 or np.max(np.abs(q - q_last_step)) > 1e-4:
+        step += 1
+        q_last_step = q
+        for i in range(mol.natm):
+            if Assign.atoms[i] != "H":
+                A[i][i] = A0[i][i] + a / np.sqrt(q_last_step[i] *q_last_step[i] + b * b)
+
+        Ainv = np.linalg.inv(A)
+        q = np.dot(Ainv, B)
+        q = q[:-1]
+        
+    return q
+
+def _find_tofit_second(mol, Assign):
+    tofit_second = []
+    fit_group = {i : -1 for i in range(mol.natm)}
+    sublength = 0
+    for i in range(mol.natm):
+        if Assign.Atom_Judge(i, "C4"):
+            fit_group[i] = len(tofit_second)
+            tofit_second.append([i])
+            temp = []
+            for j in Assign.bonds[i].keys():
+                if Assign.atoms[j] == "H":
+                    temp.append(j)
+            if temp:
+                for j in temp:
+                    fit_group[j] = len(tofit_second)
+                tofit_second.append(temp)
+                sublength += len(temp) - 1
+                    
+        if Assign.Atom_Judge(i, "C3"):
+            temp = []
+            for j in Assign.bonds[i].keys():
+                if Assign.atoms[j] == "H":
+                    temp.append(j)
+            if len(temp) == 2:
+                fit_group[i] = len(tofit_second)
+                tofit_second.append([i])
+                for j in temp:
+                    fit_group[j] = len(tofit_second)
+                tofit_second.append(temp)
+                sublength += 1
+    return tofit_second, fit_group, sublength
+
+def _correct_extra_equivalence(tofit_second, fit_group, sublength, extra_equivalence):
+    if extra_equivalence:
+        equi_group = [set() for i in extra_equivalence]    
+        for i, eq in enumerate(extra_equivalence):
+            for eq_atom in eq:
+                if fit_group[eq_atom] != -1:
+                    equi_group[i].add(fit_group[eq_atom])
+            equi_group[i] = list(equi_group[i])
+            equi_group[i].sort()
+            
+        all_groups = set()
+        new_all_groups = set()
+        for atom in range(len(Assign.atoms)):
+            all_groups.add(fit_group[atom])
+        all_groups = list(all_groups)
+        all_groups.sort()
+        
+        
+        group_map = {i:i for i in all_groups}
+        for eq in equi_group:
+            for group in eq:
+                group_map[group] = eq[0]
+        
+        temp_max = 0
+        for group in all_groups:
+            if group == -1:
+                continue
+            elif group_map[group] == group:
+                group_map[group] = temp_max
+                temp_max += 1
+            else:
+                group_map[group] = group_map[group_map[group]]
+
+        
+        temp = tofit_second
+        tofit_second = [[] for i in range(temp_max)]
+        for i, group in enumerate(temp):
+            tofit_second[group_map[i]].extend(group)
+            sublength -= len(group) - 1
+        
+        for group in tofit_second:
+            sublength += len(group) - 1
+        
+        for atom in range(len(Assign.atoms)):
+            fit_group[atom] = group_map[fit_group[atom]]
+            
+    return tofit_second, fit_group, sublength
+
+def _get_A20_and_B20(total_length, tofit_second, fit_group, sublength, mol, A0, B, charge, q):
+    A20 = np.zeros((total_length, total_length))
+    count = len(tofit_second)
+    for i in range(mol.natm):
+        if fit_group[i] == -1:
+            fit_group[i] = count
+            count += 1
+        A20[mol.natm - sublength][fit_group[i]] += 1
+        A20[fit_group[i]][mol.natm - sublength] += 1
+        
+    B20 = np.zeros(total_length)
+    for i in range(mol.natm):
+        B20[fit_group[i]] += B[i]
+        for j in range(mol.natm):
+            A20[fit_group[i]][fit_group[j]] += A0[i][j]
+    
+    
+    B20[mol.natm - sublength] = charge
+    count = 0
+    for i in range(mol.natm):
+        if fit_group[i] >= len(tofit_second):
+            B20[mol.natm - sublength + count + 1] = q[i]
+            A20[mol.natm - sublength + count + 1][len(tofit_second) + count] = 1
+            A20[len(tofit_second) + count][mol.natm - sublength + count + 1] = 1
+            count += 1
+    return A20, B20
+        
+
+#Pay Attention To !!!UNIT!!!
+def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = None, spin = 0, extra_equivalence = None, grid_density = 6, grid_cell_layer = 4, 
+    radius = None, a1 = 0.0005, a2 = 0.001, two_stage = True, only_ESP  = False):
+    if extra_equivalence is None:
+        extra_equivalence = []
+    if charge is None:
+        charge = int(round(np.sum(Assign.charge)))
+
+    mol, fun = _get_pyscf_mol(Assign, basis, charge, spin, opt)
     grids = Get_MK_Grid(Assign, mol.atom_coords(), grid_density, grid_cell_layer, radius)
-    #print(len(grids))
     #step1
     #fit all atoms    
     Vnuc = 0
@@ -129,129 +258,21 @@ def RESP_Fit(Assign, basis = "6-31g*", opt = False, opt_params = None, charge = 
     if only_ESP:
         return force_equivalence_q(q, extra_equivalence)
 
-    step = 0
-    a = a1
-    b = 0.1
-    while step == 0 or np.max(np.abs(q - q_last_step)) > 1e-4:
-        step += 1
-        q_last_step = q
-        for i in range(mol.natm):
-            if Assign.atoms[i] != "H":
-                A[i][i] = A0[i][i] + a / np.sqrt(q_last_step[i] *q_last_step[i] + b * b)
-
-        Ainv = np.linalg.inv(A)
-        q = np.dot(Ainv, B)
-        q = q[:-1]
+    q = _resp_scf_kernel(mol, Assign, a1, 0.1, A, A0, B, q)
         
     if not two_stage:
         return force_equivalence_q(q, extra_equivalence)
     
     #step2
     #fit the sp3 C and the hydrogen connected to it (pay attention to the symmetry!)
-    tofit_second = []
-    fit_group = {i : -1 for i in range(mol.natm)}
-    sublength = 0
-    for i in range(mol.natm):
-        if Assign.Atom_Judge(i, "C4"):
-            fit_group[i] = len(tofit_second)
-            tofit_second.append([i])
-            temp = []
-            for j in Assign.bonds[i].keys():
-                if Assign.atoms[j] == "H":
-                    temp.append(j)
-            if temp:
-                for j in temp:
-                    fit_group[j] = len(tofit_second)
-                tofit_second.append(temp)
-                sublength += len(temp) - 1
-                    
-        if Assign.Atom_Judge(i, "C3"):
-            temp = []
-            for j in Assign.bonds[i].keys():
-                if Assign.atoms[j] == "H":
-                    temp.append(j)
-            if len(temp) == 2:
-                fit_group[i] = len(tofit_second)
-                tofit_second.append([i])
-                for j in temp:
-                    fit_group[j] = len(tofit_second)
-                tofit_second.append(temp)
-                sublength += 1
+    tofit_second, fit_group, sublength = _find_tofit_second(mol, Assign)
+    tofit_second, fit_group, sublength = _correct_extra_equivalence(tofit_second, fit_group, sublength, extra_equivalence)
 
-
-    if extra_equivalence:
-        equi_group = [set() for i in extra_equivalence]    
-        for i, eq in enumerate(extra_equivalence):
-            for eq_atom in eq:
-                if fit_group[eq_atom] != -1:
-                    equi_group[i].add(fit_group[eq_atom])
-            equi_group[i] = list(equi_group[i])
-            equi_group[i].sort()
-            
-        all_groups = set()
-        new_all_groups = set()
-        for atom in range(len(Assign.atoms)):
-            all_groups.add(fit_group[atom])
-        all_groups = list(all_groups)
-        all_groups.sort()
-        
-        
-        group_map = {i:i for i in all_groups}
-        for eq in equi_group:
-            for group in eq:
-                group_map[group] = eq[0]
-        
-        need_to_sub = 0
-        temp_max = 0
-        for group in all_groups:
-            if group == -1:
-                continue
-            elif group_map[group] == group:
-                group_map[group] = temp_max
-                temp_max += 1
-            else:
-                group_map[group] = group_map[group_map[group]]
-
-        
-        temp = tofit_second
-        tofit_second = [[] for i in range(temp_max)]
-        for i, group in enumerate(temp):
-            tofit_second[group_map[i]].extend(group)
-            sublength -= len(group) - 1
-        
-        for group in tofit_second:
-            sublength += len(group) - 1
-        
-        for atom in range(len(Assign.atoms)):
-            fit_group[atom] = group_map[fit_group[atom]]
-        
     if tofit_second:
         total_length = mol.natm - sublength + 1 + mol.natm - sublength - len(tofit_second)
-        A20 = np.zeros((total_length, total_length))
-        count = len(tofit_second)
-        for i in range(mol.natm):
-            if fit_group[i] == -1:
-                fit_group[i] = count
-                count += 1
-            A20[mol.natm - sublength][fit_group[i]] += 1
-            A20[fit_group[i]][mol.natm - sublength] += 1
-            
-        B20 = np.zeros(total_length)
-        for i in range(mol.natm):
-            B20[fit_group[i]] += B[i]
-            for j in range(mol.natm):
-                A20[fit_group[i]][fit_group[j]] += A0[i][j]
-        
-        
-        B20[mol.natm - sublength] = charge
-        count = 0
-        for i in range(mol.natm):
-            if fit_group[i] >= len(tofit_second):
-                B20[mol.natm - sublength + count + 1] = q[i]
-                A20[mol.natm - sublength + count + 1][len(tofit_second) + count] = 1
-                A20[len(tofit_second) + count][mol.natm - sublength + count + 1] = 1
-                count += 1
-        
+
+        A20, B20 = _get_A20_and_B20(total_length, tofit_second, fit_group, sublength, mol, A0, B, charge, q)
+
         A = np.zeros_like(A20)
         A[:] = A20[:]
         B = B20.reshape(-1,1)
