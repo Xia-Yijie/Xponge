@@ -74,8 +74,18 @@ class Assign():
             self.names[i] += str(i)
 
     def Atom_Judge(self, atom, string):
-        element, links = [''.join(list(g)) for k, g in groupby(string, key=lambda x: x.isdigit())]
-        return self.atoms[atom] == element and len(self.bonds[atom]) == int(links)
+        assert isinstance(string, list) or isinstance(string, str)
+        if isinstance(string, str):
+            todo = [string]
+        else:
+            todo = string
+        judge = False
+        for s in todo:
+            element, links = [''.join(list(g)) for k, g in groupby(s, key=lambda x: x.isdigit())]
+            if self.atoms[atom] == element and len(self.bonds[atom]) == int(links):
+                judge = True
+                break
+        return judge
 
     def Add_Atom(self, element, x, y, z, name="", charge = 0.0):
         if "." in element:
