@@ -18,16 +18,44 @@ def _get_crd(molecule):
     molecule.atom_index = { molecule.atoms[i]: i for i in range(len(molecule.atoms))}
     return np.array([[atom.x, atom.y, atom.z] for atom in molecule.atoms])
 
-def _get_friends(molecule, atom1, atom2):    
+def _set_friends_in_different_residue(molecule, atom1, atom2):
+    if molecule.atom_index[atom1.residue.atoms[0]] < molecule.atom_index[atom1.residue.atoms[1]]:
+        res_index = molecule.atom_index[atom1.residue.atoms[-1]]
+        atom1_friends = list(range(res_index+1))
+        atom2_friends = list(range(res_index+1, len(molecule.atoms)))
+    else:
+        res_index = molecule.atom_index[atom2.residue.atoms[-1]]
+        atom2_friends = list(range(res_index+1))
+        atom1_friends = list(range(res_index+1, len(molecule.atoms)))
+    return atom1_friends, atom2_friends
+
+
+
+def _get_head_and_tail(head, tail, molecule, typeatom1, typeatom2, restype, toset, atom1_friends, _resatom):
+    assert typeatom2 in restype.connectivity[typeatom1]
+    index_dict = {}.fromkeys(restype.connectivity[typeatom1], typeatom1)
+    if typeatom2 in index_dict.keys():
+        index_dict.pop(typeatom2)
+
+    while index_dict:
+        index_next = {}
+        for atom0, from_atom in index_dict.items():
+            if atom0.name == restype.head:
+                head = toset
+            elif atom0.name == restype.tail:
+                tail = toset
+            atom1_friends.append(molecule.atom_index[_resatom(atom0)])
+            index_temp = {}.fromkeys(restype.connectivity[atom0], atom0)
+            index_temp.pop(from_atom)
+            if typeatom2 in index_temp.keys():
+                index_temp.pop(typeatom2)
+            index_next.update(index_temp)
+        index_dict = index_next
+    return head, tail
+
+def _get_friends(molecule, atom1, atom2):
     if atom1.residue != atom2.residue:
-        if molecule.atom_index[atom1.residue.atoms[0]] < molecule.atom_index[atom1.residue.atoms[1]]:
-            res_index = molecule.atom_index[atom1.residue.atoms[-1]]
-            atom1_friends = list(range(res_index+1))
-            atom2_friends = list(range(res_index+1, len(molecule.atoms)))
-        else:
-            res_index = molecule.atom_index[atom2.residue.atoms[-1]]
-            atom2_friends = list(range(res_index+1))
-            atom1_friends = list(range(res_index+1, len(molecule.atoms)))
+        atom1_friends, atom2_friends = _set_friends_in_different_residue(molecule, atom1, atom2)
     else:
         link_front = 0
         atom1_friends = []
@@ -36,51 +64,16 @@ def _get_friends(molecule, atom1, atom2):
         tail = 0
 
         restype = atom1.residue.type
-        def restype_atom(atom):
-            return restype._name2atom[atom.name]
-        
-        def resatom(atom):
-            return atom1.residue._name2atom[atom.name]
-        
-        typeatom1 = restype_atom(atom1)
-        typeatom2 = restype_atom(atom2)
-        assert typeatom2 in restype.connectivity[typeatom1] and typeatom1 in restype.connectivity[typeatom2]
-        index_dict = {}.fromkeys(restype.connectivity[typeatom1], typeatom1)
-        if typeatom2 in index_dict.keys():
-            index_dict.pop(typeatom2)
 
-        while index_dict:
-            index_next = {}
-            for atom0, from_atom in index_dict.items():
-                if atom0.name == restype.head:
-                    head = 1
-                elif atom0.name == restype.tail:
-                    tail = 1
-                atom1_friends.append(molecule.atom_index[resatom(atom0)])
-                index_temp = {}.fromkeys(restype.connectivity[atom0], atom0)
-                index_temp.pop(from_atom)
-                if typeatom2 in index_temp.keys():
-                    index_temp.pop(typeatom2)
-                index_next.update(index_temp)
-            index_dict = index_next
+        _restype_atom = lambda atom: restype._name2atom[atom.name]
+        _resatom = lambda atom: atom1.residue._name2atom[atom.name]
 
-        index_dict = {}.fromkeys(restype.connectivity[typeatom2], typeatom2)
-        if typeatom1 in index_dict.keys():
-            index_dict.pop(typeatom1)
-        while index_dict:
-            index_next = {}
-            for atom0, from_atom in index_dict.items():
-                if atom0.name == restype.head:
-                    head = 2
-                elif atom0.name == restype.tail:
-                    tail = 2
-                atom2_friends.append(molecule.atom_index[resatom(atom0)])
-                index_temp = {}.fromkeys(restype.connectivity[atom0], atom0)
-                index_temp.pop(from_atom)
-                if typeatom1 in index_temp.keys():
-                    index_temp.pop(typeatom1)
-                index_next.update(index_temp)
-            index_dict = index_next
+
+        typeatom1 = _restype_atom(atom1)
+        typeatom2 = _restype_atom(atom2)
+        
+        head, tail = _get_head_and_tail(head, tail, molecule, typeatom1, typeatom2, restype, 1, atom1_friends, _resatom)
+        head, tail = _get_head_and_tail(head, tail, molecule, typeatom2, typeatom1, restype, 2, atom2_friends, _resatom)
         
         if atom1.name == restype.head:
             head = 1

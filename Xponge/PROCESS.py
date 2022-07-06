@@ -1,7 +1,7 @@
 from . import *
 import sys
 
-def _Box(molecule, new_molecule, molmin, solshape, distance):
+def _Box(molecule, new_molecule, molmin, molmax, solshape, distance, tolerance, solcrd):
     x0 = molmin[0] - solshape[0] - distance[0]
     while x0 < molmax[0] + distance[3] + solshape[0]:
         y0 = molmin[1] - solshape[1] - distance[1]
@@ -63,7 +63,7 @@ def Box(molecule, solvent, distance, tolerance = 3):
     maxindex = np.argmin(solcrd, axis=0)
     solshape = solmax - solmin + tolerance
 
-    _Box(molecule, new_molecule, molmin, solshape, distance)
+    _Box(molecule, new_molecule, molmin, molmax, solshape, distance, tolerance, solcrd)
 
 
 

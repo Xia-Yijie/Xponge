@@ -5,6 +5,86 @@ import sys
 ##########################################################################
 #General Format
 ##########################################################################
+def _mol2_atom(line, current_residue_index, current_residue, ignore_atom_type, temp, current_molecule, atom_residue_map):
+    words = line.split()
+    if current_residue_index is None or int(words[6]) != current_residue_index:
+        current_residue_index = int(words[6])
+        if words[7] not in ResidueType.types.keys():
+            sys.modules['__main__'].__dict__[words[7]] = ResidueType(name = words[7])
+            temp = True
+        else:
+            temp = False
+        if current_residue:
+            current_molecule.Add_Residue(current_residue)
+        current_residue = Residue(ResidueType.types[words[7]])
+    if ignore_atom_type:
+        temp_atom_type = AtomType.types["UNKNOWN"]
+    else:
+        temp_atom_type = AtomType.types[words[5]]
+    
+    #print(line)
+    if temp:
+        current_residue.type.Add_Atom(words[1], temp_atom_type, *words[2:5])
+        current_residue.type.atoms[-1].Update(**{"charge[e]": float(words[8])})
+    current_residue.Add_Atom(words[1], temp_atom_type, *words[2:5])
+    current_residue.atoms[-1].Update(**{"charge[e]": float(words[8])})
+    atom_residue_map[words[0]]=[words[1], current_residue, current_residue_index, temp, current_residue.atoms[-1], current_residue.type.atoms[-1]]
+    return current_residue_index, current_residue, temp
+
+def _mol2_bond(line, current_molecule, atom_residue_map):
+    words = line.split()
+    if atom_residue_map[words[1]][1] == atom_residue_map[words[2]][1]:
+        if atom_residue_map[words[1]][3]:
+            atom_residue_map[words[1]][1].type.Add_Connectivity(atom_residue_map[words[1]][0], atom_residue_map[words[2]][0])
+        atom_residue_map[words[1]][1].Add_Connectivity(atom_residue_map[words[1]][0], atom_residue_map[words[2]][0])
+    else:
+        current_molecule.Add_Residue_Link(atom_residue_map[words[1]][4], atom_residue_map[words[2]][4])
+        index_diff = atom_residue_map[words[1]][2] - atom_residue_map[words[2]][2]
+        if  abs(index_diff) == 1:
+            if atom_residue_map[words[1]][3]:
+                if index_diff < 0:
+                    atom_residue_map[words[1]][1].type.tail = atom_residue_map[words[1]][0]
+                else:
+                    atom_residue_map[words[1]][1].type.head = atom_residue_map[words[1]][0]
+            if atom_residue_map[words[2]][3]:
+                if index_diff < 0:
+                    atom_residue_map[words[2]][1].type.head = atom_residue_map[words[2]][0]
+                else:
+                    atom_residue_map[words[2]][1].type.tail = atom_residue_map[words[2]][0]
+                    
+def mol2(filename, ignore_atom_type = False):
+    with open(filename) as f:
+        #存储读的时候的临时信息，key是编号
+        #value是list：原子名(0)、residue(1)、residue编号(2)、是否是新的residue type(3)、该原子(4)、residue type的最新原子(5)
+        atom_residue_map = {}  
+        flag = None
+        nline = 0
+        current_molecule = None
+        current_residue = None
+        current_residue_index = None
+        temp = None
+        for line in f:
+            if line.strip():
+                nline += 1
+            else:
+                continue
+            
+            if line.startswith("@<TRIPOS>"):
+                if flag == "ATOM":
+                    current_molecule.Add_Residue(current_residue)
+                flag = line[9:].strip()
+                nline = 0
+            elif flag == "MOLECULE":
+                if nline == 1:
+                    current_molecule = Molecule(line.strip())
+            elif flag == "ATOM":
+                current_residue_index, current_residue, temp = _mol2_atom(line, current_residue_index, current_residue, ignore_atom_type, temp, current_molecule, atom_residue_map)
+            elif flag == "BOND":
+                _mol2_bond(line, current_molecule, atom_residue_map)
+    return current_molecule
+    
+sys.modules['__main__'].__dict__["loadmol2"] = mol2    
+"""
 def mol2(filename, ignore_atom_type = False):
     with open(filename) as f:
         #存储读的时候的临时信息，key是编号
@@ -77,7 +157,7 @@ def mol2(filename, ignore_atom_type = False):
     return current_molecule
     
 sys.modules['__main__'].__dict__["loadmol2"] = mol2    
-                
+"""
 
 def _pdb_SSBONDS(chain, residue_type_map, SSBOND):
     SSBONDS = {}
