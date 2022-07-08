@@ -131,6 +131,7 @@ def _mol2rfe(subparsers):
     mol2rfe.add_argument("-nl", "-lambda_numbers", metavar = 20, type = int, default = 20, help = "the number of lambda groups - 1, default 20 for 0, 0.05, 0.10, 0.15..., 1.0")
 
     mol2rfe.add_argument("-dohmr", "-do_hydrogen_mass_repartition", action = "store_true", help = "use the hydrogen mass repartition method")
+    mol2rfe.add_argument("-mlast", "-min_from_last_lambda_stat", action = "store_true", help = "minimization from the last lambda stat")
     mol2rfe.add_argument("-ff", "-forcefield", help = "Use this force field file instead of the default ff14SB and gaff")
     mol2rfe.add_argument("-pi", "-prebalance_mdin", help = "Use this prebalance mdin file instead of the default one")
     mol2rfe.add_argument("-bi", "-balance_mdin", help = "Use this balance mdin file instead of the default one")

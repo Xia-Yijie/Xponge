@@ -349,6 +349,34 @@ def Get_Free_Molecule(molA, perturbing_residues, intra_FEP=False):
 
     return molB
 
+def _correct_residueB_coordinates(residueA, residueB, matchmap):
+    uncertified = set([])
+    certified = {}
+    for i, atom in enumerate(residueB.atoms):
+        if i in matchmap.keys():
+            temp_atom = residueA.atoms[matchmap[i]]
+            certified[atom] = [temp_atom.x, temp_atom.y, temp_atom.z]
+        else:
+            uncertified.add(i)
+    while uncertified:
+        movedlist = []
+        for i in uncertified:
+            atom = residueB.atoms[i]
+            for connected_atom in residueB.connectivity[atom]:
+                if connected_atom in certified.keys():
+                    temp_list = [0, 0, 0]
+                    temp_list[0] = atom.x - connected_atom.x + certified[connected_atom][0]
+                    temp_list[1] = atom.y - connected_atom.y + certified[connected_atom][1]
+                    temp_list[2] = atom.z - connected_atom.z + certified[connected_atom][2]
+                    certified[atom] = temp_list
+                    movedlist.append(i)
+                    break
+        for i in movedlist:
+            uncertified.remove(i)
+    for atom, crd in certified.items():
+        atom.x, atom.y, atom.z = crd[0], crd[1], crd[2]
+    
+
 def _get_extra_atoms_and_RBmap(restypeAB, ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB):
     extraA = []
     extraB = []
@@ -443,10 +471,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
     matchB = RDmolB.GetSubstructMatch(RDmol_mcs)
     matchmap = {matchB[j]: matchA[j] for j in range(len(matchA))}
   
-    Set_Conformer_Coordinate_From_Residue(RDmolA, ResidueA, AssignA)
-    Set_Conformer_Coordinate_From_Residue(RDmolB, ResidueB, AssignB)
     print("ALIGNING TOPOLOGY AND COORDINATE")
-    Get_Part_Align(RDmolA, RDmolB, matchA, matchB)
 
     ResidueTypeA = ResidueA.type
 
@@ -457,7 +482,7 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs = 60):
     else:
         raise TypeError
 
-    Get_Conformer_Coordinate_To_Residue(RDmolB, ResidueTypeB, AssignB)
+    _correct_residueB_coordinates(ResidueA, ResidueTypeB, matchmap)
     
     forcopy = hash(str(time.time()))
     restypeAB, RBmap = _get_ResidueAB(ResidueTypeA, ResidueTypeB, ResidueA, forcopy, matchmap, matchA, matchB)

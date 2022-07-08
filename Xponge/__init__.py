@@ -555,7 +555,6 @@ class Residue(Entity):
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
     
     def Add_Missing_Atoms(self):
-        from random import uniform
         t = set([atom.name for atom in self.atoms])
         uncertified = set([atom.name for atom in self.type.atoms])
         for atom in self.type.atoms:
