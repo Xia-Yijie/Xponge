@@ -22,7 +22,6 @@ def _mol2_atom(line, current_residue_index, current_residue, ignore_atom_type, t
     else:
         temp_atom_type = AtomType.types[words[5]]
     
-    #print(line)
     if temp:
         current_residue.type.Add_Atom(words[1], temp_atom_type, *words[2:5])
         current_residue.type.atoms[-1].Update(**{"charge[e]": float(words[8])})
@@ -83,84 +82,9 @@ def mol2(filename, ignore_atom_type = False):
                 _mol2_bond(line, current_molecule, atom_residue_map)
     return current_molecule
     
-sys.modules['__main__'].__dict__["loadmol2"] = mol2    
-"""
-def mol2(filename, ignore_atom_type = False):
-    with open(filename) as f:
-        #存储读的时候的临时信息，key是编号
-        #value是list：原子名(0)、residue(1)、residue编号(2)、是否是新的residue type(3)、该原子(4)、residue type的最新原子(5)
-        atom_residue_map = {}  
-        flag = None
-        nline = 0
-        current_molecule = None
-        current_residue = None
-        current_residue_index = None
-        for line in f:
-            if line.strip():
-                nline += 1
-            else:
-                continue
-            
-            if line.startswith("@<TRIPOS>"):
-                if flag == "ATOM":
-                    current_molecule.Add_Residue(current_residue)
-                flag = line[9:].strip()
-                nline = 0
-            #处理分子信息    
-            elif flag == "MOLECULE":
-                if nline == 1:
-                    current_molecule = Molecule(line.strip())
-            #处理原子信息
-            elif flag == "ATOM":
-                words = line.split()
-                #新的残基
-                if not current_residue_index or int(words[6]) != current_residue_index:
-                    current_residue_index = int(words[6])
-                    if words[7] in ResidueType.types.keys():
-                        temp = False
-                    else:
-                        sys.modules['__main__'].__dict__[words[7]] = ResidueType(name = words[7])
-                        temp = True
-                    if current_residue:
-                        current_molecule.Add_Residue(current_residue)
-                    current_residue = Residue(ResidueType.types[words[7]])
-                if ignore_atom_type:
-                    temp_atom_type = AtomType.types["UNKNOWN"]
-                else:
-                    temp_atom_type = AtomType.types[words[5]]
-                if temp:
-                    current_residue.type.Add_Atom(words[1], temp_atom_type, *words[2:5])
-                    current_residue.type.atoms[-1].Update(**{"charge[e]": float(words[8])})
-                current_residue.Add_Atom(words[1], temp_atom_type, *words[2:5])
-                current_residue.atoms[-1].Update(**{"charge[e]": float(words[8])})
-                atom_residue_map[words[0]]=[words[1], current_residue, current_residue_index, temp, current_residue.atoms[-1], current_residue.type.atoms[-1]]
-            elif flag == "BOND":
-                words = line.split()
-                if atom_residue_map[words[1]][1] == atom_residue_map[words[2]][1]:
-                    if atom_residue_map[words[1]][3]:
-                        atom_residue_map[words[1]][1].type.Add_Connectivity(atom_residue_map[words[1]][0], atom_residue_map[words[2]][0])
-                    atom_residue_map[words[1]][1].Add_Connectivity(atom_residue_map[words[1]][0], atom_residue_map[words[2]][0])
-                else:
-                    current_molecule.Add_Residue_Link(atom_residue_map[words[1]][4], atom_residue_map[words[2]][4])
-                    index_diff = atom_residue_map[words[1]][2] - atom_residue_map[words[2]][2]
-                    if  abs(index_diff) == 1:
-                        if atom_residue_map[words[1]][3]:
-                            if index_diff < 0:
-                                atom_residue_map[words[1]][1].type.tail = atom_residue_map[words[1]][0]
-                            else:
-                                atom_residue_map[words[1]][1].type.head = atom_residue_map[words[1]][0]
-                        if atom_residue_map[words[2]][3]:
-                            if index_diff < 0:
-                                atom_residue_map[words[2]][1].type.head = atom_residue_map[words[2]][0]
-                            else:
-                                atom_residue_map[words[2]][1].type.tail = atom_residue_map[words[2]][0]
-    return current_molecule
-    
-sys.modules['__main__'].__dict__["loadmol2"] = mol2    
-"""
+sys.modules['__main__'].__dict__["loadmol2"] = mol2
 
-def _pdb_SSBONDS(chain, residue_type_map, SSBOND):
-    SSBONDS = {}
+def _pdb_SSBONDS(chain, residue_type_map, SSBOND, molecule):
     for ssbond in SSBOND:
         resA = chain[ssbond[15]][int(ssbond[17:21])]
         residue_type_map[resA] = "CYX"
@@ -168,85 +92,14 @@ def _pdb_SSBONDS(chain, residue_type_map, SSBOND):
         residue_type_map[resB] = "CYX"
         if resA > resB:
             resA, resB = (resB, resA)
-        SSBONDS[resB] = resA
-    return SSBONDS
+        ResA = molecule.residues[resA]
+        ResB = molecule.residues[resB]
+        molecule.Add_Residue_Link(ResA._name2atom[ResA.type.connect_atoms["ssbond"]], ResB._name2atom[ResB.type.connect_atoms["ssbond"]])
 
-def pdb(filename, judge_HIS = True, position_need = "A", ignoreH = False):
-    molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
-    chain = {}
-    SSBOND = []
-    residue_type_map = []
+    
+def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignoreH):
     current_residue_count = -1
     current_residue_index = None
-    current_resname = None
-    current_HIS = {"DeltaH":False, "EpsilonH":False}
-    with open(filename) as f:
-        for line in f:
-            if line.startswith("ATOM") or line.startswith("HETATM"):
-                resindex = int(line[22:26])
-                resname = line[17:20].strip()
-                atomname = line[12:16].strip()
-                if current_residue_index == None:
-                    current_residue_count += 1
-                    if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
-                        if current_HIS["DeltaH"]: 
-                            if current_HIS["EpsilonH"]:
-                                residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIP"]
-                            else:
-                                residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HID"]
-                        else:
-                            residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIE"]
-                        current_HIS = {"DeltaH":False, "EpsilonH":False}
-                    current_resname = resname
-                    if resname in GlobalSetting.PDBResidueNameMap["head"].keys():
-                        resname = GlobalSetting.PDBResidueNameMap["head"][resname]
-                    residue_type_map.append(resname)
-                    current_residue_index = resindex
-                    chain[chr(ord("A") + len(chain.keys()))] = {resindex:current_residue_count}
-                elif current_residue_index != resindex or current_resname != resname:
-                    if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
-                        if current_HIS["DeltaH"]: 
-                            if current_HIS["EpsilonH"]:
-                                residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIP"]
-                            else:
-                                residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HID"]
-                        else:
-                            residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIE"]
-                        current_HIS = {"DeltaH":False, "EpsilonH":False}
-                    current_residue_count += 1
-                    residue_type_map.append(resname)
-                    current_residue_index = resindex
-                    current_resname = resname
-                    chain[chr(ord("A") + len(chain.keys()) - 1)][resindex] = current_residue_count
-                if judge_HIS and resname in GlobalSetting.HISMap["HIS"].keys():
-                    if atomname == GlobalSetting.HISMap["DeltaH"]:
-                        current_HIS["DeltaH"] = True
-                    elif atomname == GlobalSetting.HISMap["EpsilonH"]:
-                        current_HIS["EpsilonH"] = True
-            elif line.startswith("TER"):
-                current_residue_index = None
-                current_resname = None
-                if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
-                   residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
-                if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
-                    if current_HIS["DeltaH"]: 
-                        if current_HIS["EpsilonH"]:
-                            residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIP"]
-                        else:
-                            residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HID"]
-                    else:
-                        residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIE"]
-                    current_HIS = {"DeltaH":False, "EpsilonH":False}
-            elif line.startswith("SSBOND"):
-                SSBOND.append(line)
-    
-    current_residue_index = None
-    if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
-       residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
-    
-    SSBONDS = _pdb_SSBONDS(chain, residue_type_map, SSBOND)
-
-    current_residue_count = -1
     current_residue = None
     current_resname = None
     links = []
@@ -281,17 +134,80 @@ def pdb(filename, judge_HIS = True, position_need = "A", ignoreH = False):
                 
     if current_residue:
         molecule.Add_Residue(current_residue)
-    for resA, resB in SSBONDS.items():
-        ResA = molecule.residues[resA]
-        ResB = molecule.residues[resB]
-        molecule.Add_Residue_Link(ResA._name2atom[ResA.type.connect_atoms["ssbond"]], ResB._name2atom[ResB.type.connect_atoms["ssbond"]])
     for count in links:
         ResA = molecule.residues[count]
         ResB = molecule.residues[count-1]
         molecule.Add_Residue_Link(ResA._name2atom[ResA.type.head], ResB._name2atom[ResB.type.tail])
+        
+def _pdb_judge_histone(judge_HIS, residue_type_map, current_HIS):
+    if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
+        if current_HIS["DeltaH"]: 
+            if current_HIS["EpsilonH"]:
+                residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIP"]
+            else:
+                residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HID"]
+        else:
+            residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIE"]
+        current_HIS = {"DeltaH":False, "EpsilonH":False}
+
+def pdb(filename, judge_HIS = True, position_need = "A", ignoreH = False):
+    molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
+    chain = {}
+    SSBOND = []
+    residue_type_map = []
+    current_residue_count = -1
+    current_residue_index = None
+    current_resname = None
+    current_HIS = {"DeltaH":False, "EpsilonH":False}
+    with open(filename) as f:
+        for line in f:
+            if line.startswith("ATOM") or line.startswith("HETATM"):
+                resindex = int(line[22:26])
+                resname = line[17:20].strip()
+                atomname = line[12:16].strip()
+                if current_residue_index == None:
+                    _pdb_judge_histone(judge_HIS, residue_type_map, current_HIS)
+                    current_residue_count += 1
+                    current_resname = resname
+                    residue_type_map.append(resname)
+                    current_residue_index = resindex
+                    chain[chr(ord("A") + len(chain.keys()))] = {resindex:current_residue_count}
+                    if resname in GlobalSetting.PDBResidueNameMap["head"].keys():
+                        resname = GlobalSetting.PDBResidueNameMap["head"][resname]
+                elif current_residue_index != resindex or current_resname != resname:
+                    _pdb_judge_histone(judge_HIS, residue_type_map, current_HIS)
+                    current_residue_count += 1
+                    current_resname = resname
+                    current_residue_index = resindex
+                    chain[chr(ord("A") + len(chain.keys()) - 1)][resindex] = current_residue_count
+                    
+                    residue_type_map.append(resname)
+
+                if judge_HIS and resname in GlobalSetting.HISMap["HIS"].keys():
+                    if atomname == GlobalSetting.HISMap["DeltaH"]:
+                        current_HIS["DeltaH"] = True
+                    elif atomname == GlobalSetting.HISMap["EpsilonH"]:
+                        current_HIS["EpsilonH"] = True
+            elif line.startswith("TER"):
+                current_residue_index = None
+                current_resname = None
+                if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
+                   residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
+                _pdb_judge_histone(judge_HIS, residue_type_map, current_HIS)
+
+            elif line.startswith("SSBOND"):
+                SSBOND.append(line)
+    
+    current_residue_index = None
+    if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
+       residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
+    
+    _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignoreH)
+    _pdb_SSBONDS(chain, residue_type_map, SSBOND, molecule)
+    
     return molecule
     
-sys.modules['__main__'].__dict__["loadpdb"] = pdb    
+sys.modules['__main__'].__dict__["loadpdb"] = pdb     
 
 ##########################################################################
 #AMBER Format
