@@ -791,6 +791,7 @@ class GROMACS_TOPOLOGY_ITERATOR():
         elif words[0] == "#error":
             raise Exception(line)
         line = next(self)
+        return line
         
     def __iter__(self):
         self.flag = ""
@@ -800,12 +801,10 @@ class GROMACS_TOPOLOGY_ITERATOR():
         while self.files:
             f = self.files[-1]
             line = f.readline()
-            
             if line:
                 line = self._line_preprocess(line)
-                print(line, self.filenames[-1])
                 if line[0] == "#":
-                    self._line_define(line)
+                    line = self._line_define(line)
                 elif self.macro_define_stat and self.macro_define_stat[-1] == False:
                     line = next(self)
                 elif "[" in line and "]" in line:
@@ -820,7 +819,25 @@ class GROMACS_TOPOLOGY_ITERATOR():
                 self.filenames.pop()
                 continue
         raise StopIteration
-            
+        
+def _ffitp_dihedrals(line, output):
+    words = line.split()
+    func = words[4]
+    if func == "1":
+        output["dihedrals"] += "-".join(words[:4]) + " " + " ".join(words[5:]) + " 0\n"
+    elif func == "2":
+        temp1 = [words[1], words[2], words[0], words[3]]
+        temp2 = [words[1], words[2], words[3], words[0]]
+        if words[0][0].upper() in ("C", "N", "S"):
+            output["impropers"] += "-".join(temp1) + " {b} {k}".format(b = float(words[5]), k = float(words[6])/2)  + "\n"
+        else:
+            output["impropers"] += "-".join(temp2) + " {b} {k}".format(b = float(words[5]), k = float(words[6])/2)  + "\n"
+    elif func == "9":
+        for i in range(5,len(words),20):
+            output["dihedrals"] += "-".join(words[:4]) + " " + " ".join(words[i:i+3]) + " 0\n"
+    else:
+        raise NotImplementedError
+        
 def ffitp(filename, macros = None):
     iterator = GROMACS_TOPOLOGY_ITERATOR(filename, macros)
     output = {}
@@ -879,22 +896,7 @@ def ffitp(filename, macros = None):
             else:
                 raise NotImplementedError
         elif iterator.flag == "dihedraltypes":
-            words = line.split()
-            func = words[4]
-            if func == "1":
-                output["dihedrals"] += "-".join(words[:4]) + " " + " ".join(words[5:]) + " 0\n"
-            elif func == "2":
-                temp1 = [words[1], words[2], words[0], words[3]]
-                temp2 = [words[1], words[2], words[3], words[0]]
-                if words[0][0].upper() in ("C", "N", "S"):
-                    output["impropers"] += "-".join(temp1) + " {b} {k}".format(b = float(words[5]), k = float(words[6])/2)  + "\n"
-                else:
-                    output["impropers"] += "-".join(temp2) + " {b} {k}".format(b = float(words[5]), k = float(words[6])/2)  + "\n"
-            elif func == "9":
-                for i in range(5,len(words),20):
-                    output["dihedrals"] += "-".join(words[:4]) + " " + " ".join(words[i:i+3]) + " 0\n"
-            else:
-                raise NotImplementedError
+            _ffitp_dihedrals(line, output)
         elif iterator.flag == "cmaptypes":
             words = line.split()
             output["cmaps"]["-".join(words[:5])] = {"resolution": int(words[7]), "parameters":list(map(lambda x:float(x) / 4.184, words[8:]))}
