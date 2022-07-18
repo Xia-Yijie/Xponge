@@ -1,4 +1,5 @@
 import sys
+from Xponge import *
 
 __main__ = sys.modules["__main__"]
 
@@ -400,10 +401,10 @@ def mol2opt(args):
         return
     os.system(
         "%s -mode minimization -rst %s -mdinfo %s.mdinfo -mdout %s.mdout -minimization_dynamic_dt 1 -default_in_file_prefix %s -step_limit %d -write_mdout_interval %d -write_restart_file_interval %d -write_information_interval 0 " % (
-        args.sponge, args.temp, args.temp, args.temp, args.temp, args.step1, args.step1, args.step1))
+            args.sponge, args.temp, args.temp, args.temp, args.temp, args.step1, args.step1, args.step1))
     os.system(
         "%s -mode minimization -dt 1e-3 -rst %s -mdinfo %s.mdinfo -mdout %s.mdout -default_in_file_prefix %s -step_limit %d -write_mdout_interval %d -write_restart_file_interval %d -write_information_interval 0 -coordinate_in_file %s_coordinate.txt" % (
-        args.sponge, args.temp, args.temp, args.temp, args.temp, args.step2, args.step2, args.step2, args.temp))
+            args.sponge, args.temp, args.temp, args.temp, args.temp, args.step2, args.step2, args.step2, args.temp))
     with open("%s_coordinate.txt" % args.temp) as f:
         f.readline()
         tt = f.read()
@@ -568,7 +569,7 @@ def mol2rfe_analysis(args, merged_from):
                     os.system(
                         "{0} -LJ_soft_core_in_file {2}/{1}_LJ_soft_core.txt -exclude_in_file {2}/{1}_exclude.txt -charge_in_file {2}/{1}_charge.txt -chargeA_in_file 0/{1}_charge.txt -chargeB_in_file {4}/{1}_charge.txt -mdinfo {2}/ti/{1}.mdinfo -mdout {2}/ti/{1}.mdout -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -subsys_division_in_file {2}/{1}_subsys_division.txt  -charge_pertubated 1 -atom_numbers {5} -frame_numbers {6} -TI dh_dlambda.txt".format(
                             args.sponge_ti, args.temp, i, i / args.nl, args.nl, len(merged_from.atoms),
-                            args.balance_step // 100))
+                                                          args.balance_step // 100))
                 else:
                     os.system(
                         "{0} -LJ_soft_core_in_file {2}/{1}_LJ_soft_core.txt -exclude_in_file {2}/{1}_exclude.txt -charge_in_file {2}/{1}_charge.txt -chargeA_in_file 0/{1}_charge.txt -chargeB_in_file {4}/{1}_charge.txt -mdinfo {2}/ti/{1}.mdinfo -mdout {2}/ti/{1}.mdout -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -subsys_division_in_file {2}/{1}_subsys_division.txt  -charge_pertubated 1 -TI dh_dlambda.txt -mdin {5}".format(
@@ -735,7 +736,7 @@ def mol2hfe(args):
             os.system(
                 "{0} -LJ_soft_core_in_file {2}/{1}_LJ_soft_core.txt -exclude_in_file {2}/{1}_exclude.txt -charge_in_file {2}/{1}_charge.txt -chargeA_in_file 0/{1}_charge.txt -chargeB_in_file {4}/{1}_charge.txt -mdinfo {2}/ti/{1}.mdinfo -mdout {2}/ti/{1}.mdout -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -subsys_division_in_file {2}/{1}_subsys_division.txt  -charge_pertubated 1 -atom_numbers {5} -frame_numbers {6} -TI dh_dlambda.txt".format(
                     args.sponge_ti, args.temp, i, i / args.lambda_numbers, args.lambda_numbers, len(rmol.atoms),
-                    args.balance_step // 10))
+                                                  args.balance_step // 10))
 
         dh_dlambda = np.loadtxt("dh_dlambda.txt")
         dh = []

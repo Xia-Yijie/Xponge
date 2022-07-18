@@ -1,8 +1,10 @@
 """
 this **module** is used to build and save
 """
-from . import *
-import sys
+import os
+from itertools import product
+from . import assign
+from .helper import ResidueType, Molecule, Residue, ResidueLink, GlobalSetting
 
 
 def _analyze_connectivity(cls):
@@ -23,6 +25,31 @@ def _analyze_connectivity(cls):
             index_dict = index_next
 
 
+def _check_backup(backups, atom1, top_matrix, i, d):
+    """
+
+    :param backups:
+    :param atom1:
+    :param top_matrix:
+    :param d:
+    :return:
+    """
+    for backup in backups[i - 1]:
+        good_backup = True
+        for j, atomj in enumerate(backup):
+            if atomj == atom1 or abs(top_matrix[j][i]) <= 1 \
+                    or atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
+                good_backup = False
+                break
+            if top_matrix[j][i] <= -1:
+                for d2 in range(2, d):
+                    if atom1 in atomj.linked_atoms[d2]:
+                        good_backup = False
+                        break
+        if good_backup:
+            backups[i].append([*backup, atom1])
+
+
 def _get_frc_all(frc, cls):
     """
 
@@ -40,20 +67,8 @@ def _get_frc_all(frc, cls):
             if i == 0:
                 continue
             for atom1 in atom0.linked_atoms[d]:
-                for backup in backups[i - 1]:
-                    good_backup = True
-                    for j, atomj in enumerate(backup):
-                        if atomj == atom1 or abs(top_matrix[j][i]) <= 1 \
-                                or atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
-                            good_backup = False
-                            break
-                        if top_matrix[j][i] <= -1:
-                            for d2 in range(2, d):
-                                if atom1 in atomj.linked_atoms[d2]:
-                                    good_backup = False
-                                    break
-                    if good_backup:
-                        backups[i].append([*backup, atom1])
+                _check_backup(backups, atom1, top_matrix, i, d)
+
         frc_all.extend(backups[len(top) - 1])
     return frc_all
 
@@ -98,17 +113,17 @@ def _find_the_force(frc, frc_all_final, cls):
                 break
         # 没找到再找通用的
         if not finded:
-            leastfindedX = 999
+            leastfinded_x = 999
             for frc_one in frc_ones:
                 tofind = [[atom.type.name, "X"] for atom in frc_one]
                 for p in product(*tofind):
                     pcountx = p.count("X")
-                    if pcountx > leastfindedX:
+                    if pcountx > leastfinded_x:
                         continue
                     tofindname = "-".join(p)
                     if tofindname in frc.types.keys():
                         finded = {tofindname: [frc.types[tofindname], frc_one]}
-                        leastfindedX = pcountx
+                        leastfinded_x = pcountx
                         break
 
         assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s" % (
@@ -119,7 +134,7 @@ def _find_the_force(frc, frc_all_final, cls):
                 cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
 
 
-def _build_bfrc(cls):
+def _build_residue_type(cls):
     """
 
     :param cls:
@@ -132,14 +147,14 @@ def _build_bfrc(cls):
         _find_the_force(frc, frc_all_final, cls)
 
 
-def _build_bfrc_from_type(cls):
+def _build_residue(cls):
     """
 
     :param cls:
     :return:
     """
     if not cls.type.built:
-        _build_bfrc(cls.type)
+        _build_residue_type(cls.type)
 
     res_type_atom_map = {}
     res_type_atom_map_inverse = {}
@@ -209,7 +224,7 @@ def _modify_linked_atoms(cls):
     return atom1_friends, atom2_friends
 
 
-def _build_bfrc_link(cls):
+def _build_residue_link(cls):
     """
 
     :param cls:
@@ -228,21 +243,8 @@ def _build_bfrc_link(cls):
             for i, d in enumerate(top):
                 if i == 0:
                     continue
-                for _atom1 in atom0.linked_atoms[d]:
-                    for backup in backups[i - 1]:
-                        good_backup = True
-                        for j, atomj in enumerate(backup):
-                            if atomj == _atom1 or abs(top_matrix[j][i]) <= 1 or \
-                                    _atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
-                                good_backup = False
-                                break
-                            if top_matrix[j][i] <= -1:
-                                for d2 in range(2, d):
-                                    if _atom1 in atomj.linked_atoms[d2]:
-                                        good_backup = False
-                                        break
-                        if good_backup:
-                            backups[i].append([*backup, _atom1])
+                for atom1 in atom0.linked_atoms[d]:
+                    _check_backup(backups, atom1, top_matrix, i, d)
             for backup in backups[len(top) - 1]:
                 backupset = set(backup)
                 if atom1_friends & backupset and backupset & atom2_friends:
@@ -260,10 +262,10 @@ def _build_molecule(cls):
     """
     for res in cls.residues:
         if not res.type.built:
-            Build_Bonded_Force(res.type)
-        Build_Bonded_Force(res)
+            build_bonded_force(res.type)
+        build_bonded_force(res)
     for link in cls.residue_links:
-        Build_Bonded_Force(link)
+        build_bonded_force(link)
 
     cls.atoms = []
     cls.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
@@ -288,121 +290,138 @@ def _build_molecule(cls):
                     tolink.Link_Atom("v", i)
 
 
-def Build_Bonded_Force(cls):
+def build_bonded_force(cls):
+    """
+
+    :param cls:
+    :return:
+    """
     if cls.built:
         return
 
-    if type(cls) == ResidueType:
-        _build_bfrc(cls)
+    if isinstance(cls, ResidueType):
+        _build_residue_type(cls)
         cls.built = True
 
-    elif type(cls) == Residue:
-        _build_bfrc_from_type(cls)
+    elif isinstance(cls, Residue):
+        _build_residue(cls)
         cls.built = True
 
-    elif type(cls) == ResidueLink:
-        _build_bfrc_link(cls)
+    elif isinstance(cls, ResidueLink):
+        _build_residue_link(cls)
         cls.built = True
 
-    elif type(cls) == Molecule:
+    elif isinstance(cls, Molecule):
         _build_molecule(cls)
         cls.built = True
     else:
         raise NotImplementedError
 
 
-def Save_SPONGE_Input(molecule, prefix=None, dirname="."):
-    if type(molecule) == Molecule:
-        Build_Bonded_Force(molecule)
+def save_sponge_input(cls, prefix=None, dirname="."):
+    """
+
+    :param cls:
+    :param prefix:
+    :param dirname:
+    :return:
+    """
+    if isinstance(cls, Molecule):
+        build_bonded_force(cls)
 
         if not prefix:
-            prefix = molecule.name
+            prefix = cls.name
 
         for key, func in Molecule.save_functions.items():
-            towrite = func(molecule)
+            towrite = func(cls)
             if towrite:
                 f = open(os.path.join(dirname, prefix + "_" + key + ".txt"), "w")
                 f.write(towrite)
                 f.close()
 
-    elif type(molecule) == Residue:
-        mol = Molecule(name=molecule.name)
-        mol.Add_Residue(molecule)
-        Save_SPONGE_Input(mol, prefix, dirname)
-    elif type(molecule) == ResidueType:
-        residue = Residue(molecule, name=molecule.name)
-        for atom in molecule.atoms:
+    elif isinstance(cls, Residue):
+        mol = Molecule(name=cls.name)
+        mol.Add_Residue(cls)
+        save_sponge_input(mol, prefix, dirname)
+
+    elif isinstance(cls, ResidueType):
+        residue = Residue(cls, name=cls.name)
+        for atom in cls.atoms:
             residue.Add_Atom(atom)
-        Save_SPONGE_Input(residue, prefix, dirname)
+        save_sponge_input(residue, prefix, dirname)
 
 
-sys.modules['__main__'].__dict__["Save_SPONGE_Input"] = Save_SPONGE_Input
+def save_pdb(cls, filename=None):
+    """
 
+    :param cls:
+    :param filename:
+    :return:
+    """
+    if isinstance(cls, Molecule):
+        cls.atoms = []
+        for res in cls.residues:
+            cls.atoms.extend(res.atoms)
 
-def Save_PDB(molecule, filename=None):
-    if type(molecule) == Molecule:
-
-        molecule.atoms = []
-        for res in molecule.residues:
-            molecule.atoms.extend(res.atoms)
-
-        molecule.atom_index = {molecule.atoms[i]: i for i in range(len(molecule.atoms))}
-        molecule.residue_index = {molecule.residues[i]: i for i in range(len(molecule.residues))}
-        molecule.link_to_next = [False for res in molecule.residues]
-        for link in molecule.residue_links:
-            if molecule.residue_index[link.atom1.residue] - molecule.residue_index[link.atom2.residue] == 1:
-                molecule.link_to_next[molecule.residue_index[link.atom2.residue]] = True
-            elif molecule.residue_index[link.atom2.residue] - molecule.residue_index[link.atom1.residue] == 1:
-                molecule.link_to_next[molecule.residue_index[link.atom1.residue]] = True
+        cls.atom_index = {cls.atoms[i]: i for i in range(len(cls.atoms))}
+        cls.residue_index = {cls.residues[i]: i for i in range(len(cls.residues))}
+        cls.link_to_next = [False for res in cls.residues]
+        for link in cls.residue_links:
+            if cls.residue_index[link.atom1.residue] - cls.residue_index[link.atom2.residue] == 1:
+                cls.link_to_next[cls.residue_index[link.atom2.residue]] = True
+            elif cls.residue_index[link.atom2.residue] - cls.residue_index[link.atom1.residue] == 1:
+                cls.link_to_next[cls.residue_index[link.atom1.residue]] = True
 
         towrite = "REMARK   Generated By Xponge (Molecule)\n"
 
         chain_atom0 = -1
         chain_residue0 = -1
         real_chain_residue0 = -1
-        chain_counter = 0
-        for atom in molecule.atoms:
+        for atom in cls.atoms:
             resname = atom.residue.name
             if resname in GlobalSetting.PDBResidueNameMap["save"].keys():
                 resname = GlobalSetting.PDBResidueNameMap["save"][resname]
             towrite += "ATOM  %5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%17s%2s\n" % (
-                molecule.atom_index[atom] - chain_atom0, atom.name,
-                resname, " ", (molecule.residue_index[atom.residue] - chain_residue0) % 10000,
+                cls.atom_index[atom] - chain_atom0, atom.name,
+                resname, " ", (cls.residue_index[atom.residue] - chain_residue0) % 10000,
                 atom.x, atom.y, atom.z, " ", " ")
-            if atom == atom.residue.atoms[-1] and molecule.link_to_next[molecule.residue_index[atom.residue]] == False:
+            if atom == atom.residue.atoms[-1] and not cls.link_to_next[cls.residue_index[atom.residue]]:
                 towrite += "TER\n"
-                chain_atom0 = molecule.atom_index[atom]
-                if molecule.residue_index[atom.residue] - real_chain_residue0 != 1:
-                    chain_residue0 = molecule.residue_index[atom.residue]
+                chain_atom0 = cls.atom_index[atom]
+                if cls.residue_index[atom.residue] - real_chain_residue0 != 1:
+                    chain_residue0 = cls.residue_index[atom.residue]
                     real_chain_residue0 = chain_residue0
                 else:
-                    real_chain_residue0 = molecule.residue_index[atom.residue]
+                    real_chain_residue0 = cls.residue_index[atom.residue]
         if not filename:
-            filename = molecule.name + ".pdb"
+            filename = cls.name + ".pdb"
 
         f = open(filename, "w")
         f.write(towrite)
         f.close()
-    elif type(molecule) == Residue:
-        mol = Molecule(name=molecule.name)
-        mol.Add_Residue(molecule)
-        Save_PDB(mol, filename)
-    elif type(molecule) == ResidueType:
-        residue = Residue(molecule, name=molecule.name)
-        for atom in molecule.atoms:
+    elif isinstance(cls, Residue):
+        mol = Molecule(name=cls.name)
+        mol.Add_Residue(cls)
+        save_pdb(mol, filename)
+    elif isinstance(cls, ResidueType):
+        residue = Residue(cls, name=cls.name)
+        for atom in cls.atoms:
             residue.Add_Atom(atom)
-        Save_PDB(residue, filename)
-    elif type(molecule) == assign.Assign:
-        molecule.Save_As_PDB(filename)
+        save_pdb(residue, filename)
+    elif isinstance(cls, assign.Assign):
+        cls.Save_As_PDB(filename)
     else:
         raise NotImplementedError
 
 
-sys.modules['__main__'].__dict__["Save_PDB"] = Save_PDB
+def save_mol2(molecule, filename=None):
+    """
 
-
-def Save_Mol2(molecule, filename=None):
-    if type(molecule) == Molecule:
+    :param molecule:
+    :param filename:
+    :return:
+    """
+    if isinstance(molecule, Molecule):
         molecule.atoms = []
         for res in molecule.residues:
             molecule.atoms.extend(res.atoms)
@@ -410,9 +429,9 @@ def Save_Mol2(molecule, filename=None):
         bonds = []
         for res in molecule.residues:
             for atom1, atom1_con in res.type.connectivity.items():
-                atom1_index = molecule.atom_index[res._name2atom[atom1.name]] + 1
+                atom1_index = molecule.atom_index[res.name2atom(atom1.name)] + 1
                 for atom2 in atom1_con:
-                    atom2_index = molecule.atom_index[res._name2atom[atom2.name]] + 1
+                    atom2_index = molecule.atom_index[res.name2atom(atom2.name)] + 1
                     if atom1_index < atom2_index:
                         bonds.append("%6d %6d" % (atom1_index, atom2_index))
 
@@ -456,25 +475,28 @@ def Save_Mol2(molecule, filename=None):
         f = open(filename, "w")
         f.write(towrite)
         f.close()
-    elif type(molecule) == Residue:
+    elif isinstance(molecule, Residue):
         mol = Molecule(name=molecule.name)
         mol.Add_Residue(molecule)
-        Save_Mol2(mol, filename)
-    elif type(molecule) == ResidueType:
+        save_mol2(mol, filename)
+    elif isinstance(molecule, ResidueType):
         residue = Residue(molecule, name=molecule.name)
         for atom in molecule.atoms:
             residue.Add_Atom(atom)
-        Save_Mol2(residue, filename)
-    elif type(molecule) == assign.Assign:
+        save_mol2(residue, filename)
+    elif isinstance(molecule, assign.Assign):
         molecule.Save_As_Mol2(filename)
     else:
         raise NotImplementedError
 
 
-sys.modules['__main__'].__dict__["Save_Mol2"] = Save_Mol2
+def save_gro(molecule, filename):
+    """
 
-
-def Save_Gro(molecule, filename):
+    :param molecule:
+    :param filename:
+    :return:
+    """
     towrite = "Generated By Xponge\n"
     molecule.atoms = []
     for res in molecule.residues:
@@ -523,6 +545,3 @@ def Save_Gro(molecule, filename):
         molecule.box_length[0] / 10, molecule.box_length[1] / 10, molecule.box_length[2] / 10)
     with open(filename, "w") as f:
         f.write(towrite)
-
-
-sys.modules['__main__'].__dict__["Save_Gro"] = Save_Gro
