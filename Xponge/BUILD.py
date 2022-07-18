@@ -13,78 +13,87 @@ def _analyze_connectivity(cls):
                 index_next.update(index_temp)
             index_dict = index_next
 
+def _get_frc_all(frc, cls):
+    top = frc.topology_like
+    top_matrix = frc.topology_matrix
+    frc_all = []
+    for atom0 in cls.atoms:
+        backups = {i: [] for i in range(len(top))}
+        backups[0].append([atom0])
+        for i, d in enumerate(top):
+            if i == 0:
+                continue
+            for atom1 in atom0.linked_atoms[d]:
+                for backup in backups[i - 1]:
+                    good_backup = True
+                    for j, atomj in enumerate(backup):
+                        if atomj == atom1 or abs(top_matrix[j][i]) <= 1 \
+                                or atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
+                            good_backup = False
+                            break
+                        if top_matrix[j][i] <= -1:
+                            for d2 in range(2, d):
+                                if atom1 in atomj.linked_atoms[d2]:
+                                    good_backup = False
+                                    break
+                    if good_backup:
+                        backups[i].append([*backup, atom1])
+        frc_all.extend(backups[len(top) - 1])
+    return frc_all
+
+def _get_frc_all_final(frc, frc_all):
+    frc_all_final = []
+    frc_keys = {}
+    for frc_one in frc_all:
+        frc_one_name = "".join([str(hash(atom)) for atom in frc_one])
+        if frc_one_name in frc_keys.keys():
+            frc_keys[frc_one_name].append(frc_one)
+        else:
+            temp_list = [frc_one]
+            frc_all_final.append(temp_list)
+            for atom_permutation in frc.Same_Force(frc_one):
+                frc_one_name = "".join([str(hash(atom)) for atom in atom_permutation])
+                frc_keys[frc_one_name] = temp_list
+    return frc_all_final
+
+def _find_the_force(frc, frc_all_final, cls):
+    for frc_ones in frc_all_final:
+        finded = {}
+        # 先直接找
+        for frc_one in frc_ones:
+            tofindname = "-".join([atom.type.name for atom in frc_one])
+            if tofindname in frc.types.keys():
+                finded[tofindname] = [frc.types[tofindname], frc_one]
+                break
+        # 没找到再找通用的
+        if not finded:
+            leastfindedX = 999
+            for frc_one in frc_ones:
+                tofind = [[atom.type.name, "X"] for atom in frc_one]
+                for p in product(*tofind):
+                    pcountx = p.count("X")
+                    if pcountx > leastfindedX:
+                        continue
+                    tofindname = "-".join(p)
+                    if tofindname in frc.types.keys():
+                        finded = {tofindname: [frc.types[tofindname], frc_one]}
+                        leastfindedX = pcountx
+                        break
+
+        assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s" % (
+            frc.name, "-".join([atom.type.name for atom in frc_one]))
+
+        if finded:
+            for finded_type, finded_atoms in finded.values():
+                cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
 
 def _build_bfrc(cls):
     _analyze_connectivity(cls)
     for frc in GlobalSetting.BondedForces:
-        top = frc.topology_like
-        top_matrix = frc.topology_matrix
-        frc_all = []
-        for atom0 in cls.atoms:
-            backups = {i: [] for i in range(len(top))}
-            backups[0].append([atom0])
-            for i, d in enumerate(top):
-                if i == 0:
-                    continue
-                for atom1 in atom0.linked_atoms[d]:
-                    for backup in backups[i - 1]:
-                        good_backup = True
-                        for j, atomj in enumerate(backup):
-                            if atomj == atom1 or abs(top_matrix[j][i]) <= 1 \
-                                    or atom1 not in atomj.linked_atoms[abs(top_matrix[j][i])]:
-                                good_backup = False
-                                break
-                            if top_matrix[j][i] <= -1:
-                                for d2 in range(2, d):
-                                    if atom1 in atomj.linked_atoms[d2]:
-                                        good_backup = False
-                                        break
-                        if good_backup:
-                            backups[i].append([*backup, atom1])
-            frc_all.extend(backups[len(top) - 1])
+        frc_all = _get_frc_all(frc, cls)
+        frc_all_final = _get_frc_all_final(frc, frc_all)
+        _find_the_force(frc, frc_all_final, cls)
 
-        frc_all_final = []
-        frc_keys = {}
-        for frc_one in frc_all:
-            frc_one_name = "".join([str(hash(atom)) for atom in frc_one])
-            if frc_one_name in frc_keys.keys():
-                frc_keys[frc_one_name].append(frc_one)
-            else:
-                temp_list = [frc_one]
-                frc_all_final.append(temp_list)
-                for atom_permutation in frc.Same_Force(frc_one):
-                    frc_one_name = "".join([str(hash(atom)) for atom in atom_permutation])
-                    frc_keys[frc_one_name] = temp_list
-
-        for frc_ones in frc_all_final:
-            finded = {}
-            # 先直接找
-            for frc_one in frc_ones:
-                tofindname = "-".join([atom.type.name for atom in frc_one])
-                if tofindname in frc.types.keys():
-                    finded[tofindname] = [frc.types[tofindname], frc_one]
-                    break
-            # 没找到再找通用的
-            if not finded:
-                leastfindedX = 999
-                for frc_one in frc_ones:
-                    tofind = [[atom.type.name, "X"] for atom in frc_one]
-                    for p in product(*tofind):
-                        pcountx = p.count("X")
-                        if pcountx > leastfindedX:
-                            continue
-                        tofindname = "-".join(p)
-                        if tofindname in frc.types.keys():
-                            finded = {tofindname: [frc.types[tofindname], frc_one]}
-                            leastfindedX = pcountx
-                            break
-
-            assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s" % (
-                frc.name, "-".join([atom.type.name for atom in frc_one]))
-
-            if finded:
-                for finded_type, finded_atoms in finded.values():
-                    cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
 
 
 def _build_bfrc_from_type(cls):
@@ -116,8 +125,7 @@ def _build_bfrc_from_type(cls):
             cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
             cls.bonded_forces[frc.name][-1].contents = frc_entity.contents
 
-
-def _build_bfrc_link(cls):
+def _modify_linked_atoms(cls):
     atom1 = cls.atom1
     atom2 = cls.atom2
 
@@ -151,7 +159,10 @@ def _build_bfrc_link(cls):
                     if atom1_linked_atom not in atom2_friends and atom2_linked_atom not in atom1_friends:
                         atom1_linked_atom.Link_Atom(i + j, atom2_linked_atom)
                         atom2_linked_atom.Link_Atom(i + j, atom1_linked_atom)
-
+    return atom1_friends, atom2_friends
+                        
+def _build_bfrc_link(cls):
+    atom1_friends, atom2_friends = _modify_linked_atoms(cls)
     atom12_friends = atom1_friends | atom2_friends
     for frc in GlobalSetting.BondedForces:
         top = frc.topology_like
@@ -183,50 +194,39 @@ def _build_bfrc_link(cls):
                 backupset = set(backup)
                 if atom1_friends & backupset and backupset & atom2_friends:
                     frc_all.append(backup)
+                    
+        frc_all_final = _get_frc_all_final(frc, frc_all)
+        _find_the_force(frc, frc_all_final, cls)
 
-        frc_all_final = []
-        frc_keys = {}
-        for frc_one in frc_all:
-            frc_one_name = "".join([str(hash(atom)) for atom in frc_one])
-            if frc_one_name in frc_keys.keys():
-                frc_keys[frc_one_name].append(frc_one)
-            else:
-                temp_list = [frc_one]
-                frc_all_final.append(temp_list)
-                for atom_permutation in frc.Same_Force(frc_one):
-                    frc_one_name = "".join([str(hash(atom)) for atom in atom_permutation])
-                    frc_keys[frc_one_name] = temp_list
+def _build_molecule(cls):
+    for res in cls.residues:
+        if not res.type.built:
+            Build_Bonded_Force(res.type)
+        Build_Bonded_Force(res)
+    for link in cls.residue_links:
+        Build_Bonded_Force(link)
 
-        for frc_ones in frc_all_final:
-           
-            finded = {}
-            # 先直接找
-            for frc_one in frc_ones:
-                tofindname = "-".join([atom.type.name for atom in frc_one])
-                if tofindname in frc.types.keys():
-                    finded[tofindname] = [frc.types[tofindname], frc_one]
-                    break
-            # 没找到再找通用的
-            if not finded:
-                leastfindedX = 999
-                for frc_one in frc_ones:
-                    tofind = [[atom.type.name, "X"] for atom in frc_one]
-                    for p in product(*tofind):
-                        pcountx = p.count("X")
-                        if pcountx > leastfindedX:
-                            continue
-                        tofindname = "-".join(p)
-                        if tofindname in frc.types.keys():
-                            finded = {tofindname: [frc.types[tofindname], frc_one]}
-                            leastfindedX = pcountx
-                            break
-            
-            assert (not frc.compulsory or len(finded) > 0), "None of %s type found for %s" % (
-                frc.name, "-".join([atom.type.name for atom in frc_one]))
+    cls.atoms = []
+    cls.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+    for res in cls.residues:
+        cls.atoms.extend(res.atoms)
+        for frc in GlobalSetting.BondedForces:
+            cls.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name, []))
+    for link in cls.residue_links:
+        for frc in GlobalSetting.BondedForces:
+            cls.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name, []))
+    cls.atom_index = {cls.atoms[i]: i for i in range(len(cls.atoms))}
 
-            if finded:
-                for finded_type, finded_atoms in finded.values():
-                    cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
+    for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
+        for vatom in cls.bonded_forces.get(vatom_type_name, []):
+            this_vatoms = [vatom.atoms[0]]
+            for i in range(vatom_type_atom_numbers):
+                this_vatoms.append(cls.atoms[cls.atom_index[vatom.atoms[0]] + getattr(vatom, "atom%d" % i)])
+            this_vatoms.sort(key=lambda x: cls.atom_index[x])
+            while this_vatoms:
+                tolink = this_vatoms.pop(0)
+                for i in this_vatoms:
+                    tolink.Link_Atom("v", i)
 
 
 def Build_Bonded_Force(cls):
@@ -246,35 +246,7 @@ def Build_Bonded_Force(cls):
             cls.built = True
 
         elif type(cls) == Molecule:
-            for res in cls.residues:
-                if not res.type.built:
-                    Build_Bonded_Force(res.type)
-                Build_Bonded_Force(res)
-            for link in cls.residue_links:
-                Build_Bonded_Force(link)
-
-            cls.atoms = []
-            cls.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
-            for res in cls.residues:
-                cls.atoms.extend(res.atoms)
-                for frc in GlobalSetting.BondedForces:
-                    cls.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name, []))
-            for link in cls.residue_links:
-                for frc in GlobalSetting.BondedForces:
-                    cls.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name, []))
-            cls.atom_index = {cls.atoms[i]: i for i in range(len(cls.atoms))}
-
-            for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
-                for vatom in cls.bonded_forces.get(vatom_type_name, []):
-                    this_vatoms = [vatom.atoms[0]]
-                    for i in range(vatom_type_atom_numbers):
-                        this_vatoms.append(cls.atoms[cls.atom_index[vatom.atoms[0]] + getattr(vatom, "atom%d" % i)])
-                    this_vatoms.sort(key=lambda x: cls.atom_index[x])
-                    while this_vatoms:
-                        tolink = this_vatoms.pop(0)
-                        for i in this_vatoms:
-                            tolink.Link_Atom("v", i)
-
+            _build_molecule(cls)
             cls.built = True
         else:
             raise NotImplementedError
