@@ -3,14 +3,16 @@ try:
 except:
     raise Exception("'MDAnalysis' package needed. Maybe you need 'pip install MDANalysis'")
 
-from MDAnalysis.coordinates import  base
+from MDAnalysis.coordinates import base
 from MDAnalysis.lib import util
-import os.path 
+import os.path
 import numpy as np
+
+
 class SPONGE_Trajectory_Reader(base.ReaderBase):
     def __init__(self, dat_file_name, box, n_atoms, **kwargs):
         super().__init__(dat_file_name, **kwargs)
-        if isinstance(box,str):
+        if isinstance(box, str):
             self.boxname = box
             self.box = None
             self._get_box_offset()
@@ -18,11 +20,11 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
             self.boxname = None
             self.box = box
         self._n_atoms = n_atoms
-        self._n_frames = os.path.getsize(dat_file_name)//12//self.n_atoms
+        self._n_frames = os.path.getsize(dat_file_name) // 12 // self.n_atoms
         self.trajfile = None
         self.boxfile = None
         self.ts = base.Timestep(self.n_atoms, **self._ts_kwargs)
-        self._read_next_timestep()        
+        self._read_next_timestep()
 
     def _read_frame(self, frame):
         if self.trajfile is None:
@@ -40,8 +42,8 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
         t = self.trajfile.read(12 * self.n_atoms)
         if not t:
             raise EOFError
-        ts._pos = np.frombuffer(t, dtype=np.float32).reshape(self.n_atoms,3)
-        
+        ts._pos = np.frombuffer(t, dtype=np.float32).reshape(self.n_atoms, 3)
+
         if self.box is not None:
             ts.dimensions = self.box
         else:
@@ -56,7 +58,7 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
     @property
     def n_atoms(self):
         return self._n_atoms
-    
+
     def close(self):
         if self.trajfile is not None:
             self.trajfile.close()
@@ -86,6 +88,7 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
                 line = f.readline()
         self._offsets.pop()
 
+
 def Universe(topname, trajname, box, **kwargs):
     import warnings
     warnings.filterwarnings("ignore", message='No coordinate reader found for')
@@ -93,5 +96,3 @@ def Universe(topname, trajname, box, **kwargs):
     warnings.filterwarnings("default", message='No coordinate reader found for')
     u._trajectory = SPONGE_Trajectory_Reader(trajname, box, len(u.atoms), **kwargs)
     return u
-   
-

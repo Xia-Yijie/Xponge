@@ -29,7 +29,7 @@ class _RING():
             for atom in ring.atoms:
                 assign.Add_Atom_Marker(atom, "RG")
                 assign.Add_Atom_Marker(atom, "RG%d" % len(ring.atoms))
-        
+
     @staticmethod
     def Check_Rings_Type(assign, rings):
         for ring in rings:
@@ -48,7 +48,7 @@ class _RING():
                             assign.Add_Atom_Marker(atom, "AR2")
                     else:
                         assign.Add_Atom_Marker(atom, "AR4")
-        
+
     @staticmethod
     def Get_Rings(assign):
         current_path = []
@@ -89,7 +89,7 @@ class _RING():
                             father_atom = current_path_father.pop()
                             current_path_sons[father_atom] -= 1
         return have_found_rings
-        
+
     def __repr__(self):
         return self.tohash
 
@@ -111,12 +111,13 @@ class _RING():
     def get_3_neighbors(self):
         for i in range(len(self.atoms)):
             yield self.atoms[i - 2], self.atoms[i - 1], self.atoms[i]
-    
+
     def check_pure_aromatic(self, assign):
         if len(self.atoms) == 6:
             self.is_pure_aromatic_ring = True
             for atom in self.atoms:
-                if not assign.Atom_Judge(atom, "C3") and not assign.Atom_Judge(atom, "N2") and not assign.Atom_Judge(atom, "N3"):
+                if not assign.Atom_Judge(atom, "C3") and not assign.Atom_Judge(atom, "N2") and not assign.Atom_Judge(
+                        atom, "N3"):
                     self.is_pure_aromatic_ring = False
                     break
                 if assign.Atom_Judge(atom, "N3"):
@@ -134,7 +135,7 @@ class _RING():
                     break
         else:
             self.is_pure_aromatic_ring = False
-    
+
     def check_pure_aliphatic_and_planar(self, assign):
         self.is_pure_aliphatic_ring = True
         self.is_planar_ring = True
@@ -150,6 +151,7 @@ class _RING():
                     and not assign.Atom_Judge(atom, "S2") and not assign.Atom_Judge(atom, "P2")
                     and not assign.Atom_Judge(atom, "P3")):
                 self.is_planar_ring = False
+
     def check_out_plane_double_bond(self, assign):
         self.out_plane_double_bond = False
         for atom in self.atoms:
@@ -166,7 +168,7 @@ class Assign():
     XD = set("SP")
     XE = set(["N", "O", "F", "Cl", "Br", "S", "I"])
 
-    def __init__(self, name = "ASN"):
+    def __init__(self, name="ASN"):
         self.name = name
         self.atom_numbers = 0
         self.atoms = []
@@ -199,7 +201,7 @@ class Assign():
                 break
         return judge
 
-    def Add_Atom(self, element, x, y, z, name="", charge = 0.0):
+    def Add_Atom(self, element, x, y, z, name="", charge=0.0):
         if "." in element:
             element, element_detail = element.split(".")
             element_detail = "." + element_detail
@@ -221,7 +223,7 @@ class Assign():
             self.charge = np.array([charge])
         else:
             self.charge = np.hstack((self.charge, np.array([charge])))
- 
+
     def Add_Atom_Marker(self, atom, marker):
         if marker in self.atom_marker[atom].keys():
             self.atom_marker[atom][marker] += 1
@@ -258,7 +260,7 @@ class Assign():
         have_found_rings = _RING.Get_Rings(self)
         _RING.Add_Rings_Basic_Marker(self, have_found_rings)
         _RING.Check_Rings_Type(self, have_found_rings)
-        
+
         for atom in range(len(self.atoms)):
             DLO = 0
             NOTO = 0
@@ -298,7 +300,7 @@ class Assign():
                     find_type = True
                     break
 
-            assert find_type, "No atom type found for assignment %s of atom #%d"%(self.name, i)
+            assert find_type, "No atom type found for assignment %s of atom #%d" % (self.name, i)
 
     def To_ResidueType(self, name, charge=None):
         temp = ResidueType(name=name)
@@ -358,7 +360,8 @@ class Assign():
                 self.names[i] = atom_name
         for i, atom in enumerate(self.atoms):
             towrite += "ATOM  %5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%17s%2s\n" % (i + 1, self.names[i],
-                                                                                 self.name, " ", 1, self.coordinate[i][0],
+                                                                                 self.name, " ", 1,
+                                                                                 self.coordinate[i][0],
                                                                                  self.coordinate[i][1],
                                                                                  self.coordinate[i][2], " ", atom)
 
@@ -382,7 +385,7 @@ class Assign():
         for i in range(self.atom_numbers):
             for j, order in self.bonds[i].items():
                 if i < j:
-                    if  i in self.ar_bonds.keys() and j in self.ar_bonds[i]:
+                    if i in self.ar_bonds.keys() and j in self.ar_bonds[i]:
                         bonds.append("%6d %6d ar\n" % (i + 1, j + 1))
                     elif i in self.am_bonds.keys() and j in self.am_bonds[i]:
                         bonds.append("%6d %6d am\n" % (i + 1, j + 1))
@@ -401,12 +404,13 @@ class Assign():
                 count[self.atoms[i]] = 1
                 atom_name = self.atoms[i]
                 self.names[i] = atom_name
-        towrite = "@<TRIPOS>MOLECULE\n%s\n %d %d 1 0 1\nSMALL\nUSER_CHARGES\n" % (self.name, self.atom_numbers, len(bonds))
+        towrite = "@<TRIPOS>MOLECULE\n%s\n %d %d 1 0 1\nSMALL\nUSER_CHARGES\n" % (
+        self.name, self.atom_numbers, len(bonds))
         towrite += "@<TRIPOS>ATOM\n"
         for i, atom in enumerate(self.atoms):
             towrite += "%6d %4s %8.4f %8.4f %8.4f   %-8s %5d %8s %10.6f\n" % (
                 i + 1, self.names[i], self.coordinate[i][0], self.coordinate[i][1], self.coordinate[i][2],
-                atom+self.element_details[i], 1, self.name, self.charge[i])
+                atom + self.element_details[i], 1, self.name, self.charge[i])
 
         towrite += "@<TRIPOS>BOND\n"
         for i, bond in enumerate(bonds):
@@ -420,49 +424,50 @@ class Assign():
 
 
 def Guess_Element_From_Mass(mass):
-    elements = ["X",  "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne",
-    "Na", "Mg", "Al", "Si", "P" , "S",  "Cl", "Ar", "K",  "Ca", "Sc",
-    "Ti", "V",  "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", 
-    "As", "Se", "Br", "Kr", "Rb", "Sr", "Y",  "Zr", "Nb", "Mo", "Tc",
-    "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I",  "Xe",
-    "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb",
-    "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W",  "Re", "Os",
-    "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr",
-    "Ra", "Ac", "Th", "Pa", "U",  "Np", "Pu", "Am", "Cm", "Bk", "Cf",
-    "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt",
-    "Ds", "Rg"]
-    masses =  [ 0.00000, 1.00794, 4.00260, 6.941, 9.012182, 10.811,  
-    12.0107, 14.0067, 15.9994, 18.9984032, 20.1797, 
-    22.989770, 24.3050, 26.981538, 28.0855, 30.973761,
-    32.065, 35.453, 39.948, 39.0983, 40.078, 44.955910,
-    47.867, 50.9415, 51.9961, 54.938049, 55.845, 58.9332,
-    58.6934, 63.546, 65.409, 69.723, 72.64, 74.92160, 
-    78.96, 79.904, 83.798, 85.4678, 87.62, 88.90585, 
-    91.224, 92.90638, 95.94, 98.0, 101.07, 102.90550,
-    106.42, 107.8682, 112.411, 114.818, 118.710, 121.760, 
-    127.60, 126.90447, 131.293, 132.90545, 137.327, 
-    138.9055, 140.116, 140.90765, 144.24, 145.0, 150.36,
-    151.964, 157.25, 158.92534, 162.500, 164.93032, 
-    167.259, 168.93421, 173.04, 174.967, 178.49, 180.9479,
-    183.84, 186.207, 190.23, 192.217, 195.078, 196.96655, 
-    200.59, 204.3833, 207.2, 208.98038, 209.0, 210.0, 222.0, 
-    223.0, 226.0, 227.0, 232.0381, 231.03588, 238.02891,
-    237.0, 244.0, 243.0, 247.0, 247.0, 251.0, 252.0, 257.0,
-    258.0, 259.0, 262.0, 261.0, 262.0, 266.0, 264.0, 269.0,
-    268.0, 271.0, 272.0 ]
+    elements = ["X", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne",
+                "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc",
+                "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge",
+                "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc",
+                "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe",
+                "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb",
+                "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os",
+                "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr",
+                "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf",
+                "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt",
+                "Ds", "Rg"]
+    masses = [0.00000, 1.00794, 4.00260, 6.941, 9.012182, 10.811,
+              12.0107, 14.0067, 15.9994, 18.9984032, 20.1797,
+              22.989770, 24.3050, 26.981538, 28.0855, 30.973761,
+              32.065, 35.453, 39.948, 39.0983, 40.078, 44.955910,
+              47.867, 50.9415, 51.9961, 54.938049, 55.845, 58.9332,
+              58.6934, 63.546, 65.409, 69.723, 72.64, 74.92160,
+              78.96, 79.904, 83.798, 85.4678, 87.62, 88.90585,
+              91.224, 92.90638, 95.94, 98.0, 101.07, 102.90550,
+              106.42, 107.8682, 112.411, 114.818, 118.710, 121.760,
+              127.60, 126.90447, 131.293, 132.90545, 137.327,
+              138.9055, 140.116, 140.90765, 144.24, 145.0, 150.36,
+              151.964, 157.25, 158.92534, 162.500, 164.93032,
+              167.259, 168.93421, 173.04, 174.967, 178.49, 180.9479,
+              183.84, 186.207, 190.23, 192.217, 195.078, 196.96655,
+              200.59, 204.3833, 207.2, 208.98038, 209.0, 210.0, 222.0,
+              223.0, 226.0, 227.0, 232.0381, 231.03588, 238.02891,
+              237.0, 244.0, 243.0, 247.0, 247.0, 251.0, 252.0, 257.0,
+              258.0, 259.0, 262.0, 261.0, 262.0, 266.0, 264.0, 269.0,
+              268.0, 271.0, 272.0]
     if mass > 0.0 and mass < 3.8:
         index = 1;
-    elif mass > 207.85 and mass < 208.99: 
+    elif mass > 207.85 and mass < 208.99:
         index = 83;
     elif mass > 56.50 and mass < 58.8133:
         index = 27;
     else:
         index = 0;
-        for j in range(0,111):
+        for j in range(0, 111):
             if abs(mass - masses[j]) < 0.65:
                 index = j
                 break
     return elements[index]
+
 
 def Get_Assignment_From_PubChem(parameter, keyword):
     cs = pcp.get_compounds(parameter, keyword, record_type='3d')
@@ -481,7 +486,7 @@ def Get_Assignment_From_PubChem(parameter, keyword):
         raise NotImplementedError
 
 
-def Get_Assignment_From_PDB(filename, determine_bond_order = True, only_residue = ""):
+def Get_Assignment_From_PDB(filename, determine_bond_order=True, only_residue=""):
     assign = Assign()
     index_atom_map = {}
     with open(filename) as f:
@@ -503,9 +508,9 @@ def Get_Assignment_From_PDB(filename, determine_bond_order = True, only_residue 
                 atom = int(line[6:11])
                 if atom not in index_atom_map.keys():
                     continue
-                for bonded_atom_i in range(11,31,5):
+                for bonded_atom_i in range(11, 31, 5):
                     try:
-                        temp = line[bonded_atom_i:bonded_atom_i+5]
+                        temp = line[bonded_atom_i:bonded_atom_i + 5]
                         bonded_atom = int(temp)
                     except:
                         break
@@ -515,6 +520,7 @@ def Get_Assignment_From_PDB(filename, determine_bond_order = True, only_residue 
         assign.Determine_Bond_Order()
         assign.Determine_Ring_And_Bond_Type()
     return assign
+
 
 def Get_Assignment_From_ResidueType(restype):
     assign = Assign()
@@ -528,34 +534,36 @@ def Get_Assignment_From_ResidueType(restype):
                 assign.Add_Bond(i, j)
     return assign
 
+
 def _deal_with_ar_bonds(assign):
     ar_bonds_atoms = list(assign.ar_bonds.keys())
-    ar_bonds_atoms.sort(key = lambda x: (x, len(assign.ar_bonds[x])))
+    ar_bonds_atoms.sort(key=lambda x: (x, len(assign.ar_bonds[x])))
     doubled = {}
     checked = {}
     for ar_atom in ar_bonds_atoms:
-        assign.ar_bonds[ar_atom].sort(key = lambda x: (x, len(assign.ar_bonds[x])))
+        assign.ar_bonds[ar_atom].sort(key=lambda x: (x, len(assign.ar_bonds[x])))
         doubled[ar_atom] = False
         checked[ar_atom] = False
-        
+
     working_space = []
     while ar_bonds_atoms:
-         working_space.append(ar_bonds_atoms.pop())
-         while working_space:
-             work_atom = working_space.pop()
-             if checked[work_atom]:
-                 continue
-             checked[work_atom] = True
-             for neighbor in assign.ar_bonds[work_atom]:
-                 if not checked[neighbor]:
-                     working_space.append(neighbor)
-             for neighbor in assign.ar_bonds[work_atom][::-1]:
-                 if doubled[work_atom]:
-                     break
-                 if not doubled[neighbor] and not doubled[work_atom]:
-                     assign.bonds[neighbor][work_atom] = 2
-                     doubled[neighbor] = True
-                     doubled[work_atom] = True
+        working_space.append(ar_bonds_atoms.pop())
+        while working_space:
+            work_atom = working_space.pop()
+            if checked[work_atom]:
+                continue
+            checked[work_atom] = True
+            for neighbor in assign.ar_bonds[work_atom]:
+                if not checked[neighbor]:
+                    working_space.append(neighbor)
+            for neighbor in assign.ar_bonds[work_atom][::-1]:
+                if doubled[work_atom]:
+                    break
+                if not doubled[neighbor] and not doubled[work_atom]:
+                    assign.bonds[neighbor][work_atom] = 2
+                    doubled[neighbor] = True
+                    doubled[work_atom] = True
+
 
 def Get_Assignment_From_Mol2(filename):
     with open(filename) as f:
@@ -609,14 +617,12 @@ def Get_Assignment_From_Mol2(filename):
                     else:
                         assign.am_bonds[atom2].append(atom1)
                 else:
-                    raise NotImplementedError("No implemented method to process bond #%s type %s"%(words[0], words[3]))
-                    
+                    raise NotImplementedError(
+                        "No implemented method to process bond #%s type %s" % (words[0], words[3]))
+
     _deal_with_ar_bonds(assign)
     assign.Determine_Ring_And_Bond_Type()
-    return assign   
-    
-
-
+    return assign
 
 
 def Get_Assignment_From_SDF(filename):
@@ -640,9 +646,10 @@ def Get_Assignment_From_SDF(filename):
             atom2 = int(line[3:6]) - 1
             bond_order = int(line[6:9])
             assign.Add_Bond(atom1, atom2, bond_order)
-        
+
     assign.Determine_Ring_And_Bond_Type()
     return assign
+
 
 sys.modules["__main__"].__dict__["Get_Assignment_From_PubChem"] = Get_Assignment_From_PubChem
 sys.modules["__main__"].__dict__["Get_Assignment_From_PDB"] = Get_Assignment_From_PDB

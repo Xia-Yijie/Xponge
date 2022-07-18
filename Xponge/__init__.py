@@ -24,6 +24,7 @@ from itertools import product, permutations
 import time
 import sys
 
+
 ##########################################################################
 # Basic Classes
 ##########################################################################
@@ -44,7 +45,8 @@ class _GlobalSetting():
     PDBResidueNameMap = {"head": {}, "tail": {}, "save": {}}
     HISMap = {"DeltaH": "", "EpsilonH": "", "HIS": {}}
     nocenter = False
-    boxspace = 3 #space between the molecule and the box border
+    boxspace = 3  # space between the molecule and the box border
+
     def Add_PDB_Residue_Name_Mapping(self, place, pdb_name, real_name):
         assert place in ("head", "tail")
         self.PDBResidueNameMap[place][pdb_name] = real_name
@@ -90,12 +92,12 @@ class Type:
     types_different_name = {}
 
     @classmethod
-    def Add_Property(cls, parm_fmt, parm_default = None):
+    def Add_Property(cls, parm_fmt, parm_default=None):
         cls.parameters.update(parm_fmt)
         if parm_default is None:
             parm_default = {}
         for _type in cls.types.values():
-            _type.contents.update({key:parm_default.get(key, None) for key in parm_fmt.keys()})
+            _type.contents.update({key: parm_default.get(key, None) for key in parm_fmt.keys()})
 
     @classmethod
     def Set_Property_Unit(cls, prop, unit_type, base_unit):
@@ -244,7 +246,9 @@ class AtomType(Type):
     types = {}
     types_different_name = {}
 
+
 AtomType.New_From_String("name\nUNKNOWN")
+
 
 class ResidueType(Type):
     name = "Residue"
@@ -553,7 +557,7 @@ class Residue(Entity):
         if type(bonded_force_entity).name not in self.bonded_forces.keys():
             self.bonded_forces[type(bonded_force_entity).name] = []
         self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
-    
+
     def Add_Missing_Atoms(self):
         t = set([atom.name for atom in self.atoms])
         uncertified = set([atom.name for atom in self.type.atoms])
@@ -561,22 +565,21 @@ class Residue(Entity):
             if atom.name in t:
                 uncertified.remove(atom.name)
         while uncertified:
-          movedlist = []
-          for atom_name in uncertified:
-            temp_atom = getattr(self.type, atom_name)
-            for connected_atom in self.type.connectivity[temp_atom]:
-                if connected_atom.name in t:
-                    fact_connected_atom = self._name2atom[connected_atom.name]
-                    _x = temp_atom.x - connected_atom.x + fact_connected_atom.x
-                    _y = temp_atom.y - connected_atom.y + fact_connected_atom.y
-                    _z = temp_atom.z - connected_atom.z + fact_connected_atom.z
-                    t.add(atom_name)
-                    movedlist.append(atom_name)
-                    self.Add_Atom(atom_name, x = _x, y = _y, z = _z)
-                    break
-          for atom_name in movedlist:
-              uncertified.remove(atom_name)
-        
+            movedlist = []
+            for atom_name in uncertified:
+                temp_atom = getattr(self.type, atom_name)
+                for connected_atom in self.type.connectivity[temp_atom]:
+                    if connected_atom.name in t:
+                        fact_connected_atom = self._name2atom[connected_atom.name]
+                        _x = temp_atom.x - connected_atom.x + fact_connected_atom.x
+                        _y = temp_atom.y - connected_atom.y + fact_connected_atom.y
+                        _z = temp_atom.z - connected_atom.z + fact_connected_atom.z
+                        t.add(atom_name)
+                        movedlist.append(atom_name)
+                        self.Add_Atom(atom_name, x=_x, y=_y, z=_z)
+                        break
+            for atom_name in movedlist:
+                uncertified.remove(atom_name)
 
     def deepcopy(self, forcopy=None):
         new_residue = Residue(self.type)
@@ -671,7 +674,7 @@ class Molecule:
     def Add_Residue_Link(self, atom1, atom2):
         self.built = False
         self.residue_links.append(ResidueLink(atom1, atom2))
-    
+
     def Add_Missing_Atoms(self):
         for residue in self.residues:
             residue.Add_Missing_Atoms()

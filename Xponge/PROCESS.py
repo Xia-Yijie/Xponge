@@ -1,6 +1,7 @@
 from . import *
 import sys
 
+
 def _Box(molecule, new_molecule, molmin, molmax, solshape, distance, tolerance, solcrd):
     x0 = molmin[0] - solshape[0] - distance[0]
     while x0 < molmax[0] + distance[3] + solshape[0]:
@@ -8,9 +9,9 @@ def _Box(molecule, new_molecule, molmin, molmax, solshape, distance, tolerance, 
         while y0 < molmax[1] + distance[4] + solshape[1]:
             z0 = molmin[2] - solshape[2] - distance[2]
             while z0 < molmax[2] + distance[5] + solshape[2]:
-                if (x0 > molmin[0] - tolerance - solshape[0] and x0 < molmax[0] + tolerance + solshape[0] and
-                        y0 > molmin[1] - tolerance - solshape[1] and y0 < molmax[1] + tolerance + solshape[1] and
-                        z0 > molmin[2] - tolerance - solshape[2] and z0 < molmax[2] + tolerance + solshape[2]):
+                if (molmin[0] - tolerance - solshape[0] < x0 < molmax[0] + tolerance + solshape[0] and
+                        molmin[1] - tolerance - solshape[1] < y0 < molmax[1] + tolerance + solshape[1] and
+                        molmin[2] - tolerance - solshape[2] < z0 < molmax[2] + tolerance + solshape[2]):
                     z0 += solshape[2]
                     continue
                 for atom in new_molecule.atoms:
@@ -23,12 +24,13 @@ def _Box(molecule, new_molecule, molmin, molmax, solshape, distance, tolerance, 
             y0 += solshape[1]
         x0 += solshape[0]
 
-def Box(molecule, solvent, distance, tolerance = 3):
+
+def Box(molecule, solvent, distance, tolerance=3):
     if isinstance(distance, float) or isinstance(distance, int):
         distance = [distance] * 6
     elif not isinstance(distance, list):
         raise Exception("parameter distance should be a list, an int or a float")
-        
+
     if len(distance) == 3:
         distance = distance + distance
     elif len(distance) != 6:
@@ -44,7 +46,7 @@ def Box(molecule, solvent, distance, tolerance = 3):
             if value == molecule:
                 sys.modules['__main__'].__dict__[key] = new_molecule
         molecule = new_molecule
-        
+
     molcrd = IMPOSE._get_crd(molecule)
     molmin = np.min(molcrd, axis=0)
     molmax = np.max(molcrd, axis=0)
@@ -64,7 +66,6 @@ def Box(molecule, solvent, distance, tolerance = 3):
     solshape = solmax - solmin + tolerance
 
     _Box(molecule, new_molecule, molmin, molmax, solshape, distance, tolerance, solcrd)
-
 
 
 sys.modules['__main__'].__dict__["Process_Box"] = Box
@@ -116,11 +117,11 @@ def Replace(molecule, select, toreplace):
 sys.modules['__main__'].__dict__["Ion_Replace"] = Replace
 
 
-def Rotate(molecule, direction_long = None, direction_middle  = None, direction_short = None):
+def Rotate(molecule, direction_long=None, direction_middle=None, direction_short=None):
     if direction_long is None:
-        direction_long = [0,0,1]
+        direction_long = [0, 0, 1]
     if direction_middle is None:
-        direction_middle = [0, 1, 0]     
+        direction_middle = [0, 1, 0]
     if direction_short is None:
         direction_short = [1, 0, 0]
     molcrd = IMPOSE._get_crd(molecule)

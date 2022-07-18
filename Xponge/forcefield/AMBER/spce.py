@@ -3,11 +3,11 @@ import os
 import sys
 
 AtomType.New_From_String(
-"""
-name mass    charge[e]  LJtype
-HW   1.008    0.4238      HW
-OW   16      -0.8476      OW
-""")
+    """
+    name mass    charge[e]  LJtype
+    HW   1.008    0.4238      HW
+    OW   16      -0.8476      OW
+    """)
 
 BOND.BondType.New_From_String(r"""
 name   k[kcal/mol·A^-2]   b[A]
@@ -29,7 +29,8 @@ HW-HW   0                   0
 
 SPCE = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "spce.mol2"))
 
-atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(os.path.join(AMBER_DATA_DIR, "ions1lm_126_spce.frcmod"))
+atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(
+    os.path.join(AMBER_DATA_DIR, "ions1lm_126_spce.frcmod"))
 AtomType.New_From_String(atoms)
 BOND.BondType.New_From_String(bonds)
 ANGLE.AngleType.New_From_String(angles)
@@ -45,7 +46,8 @@ DIHEDRAL.ProperType.New_From_String(propers)
 DIHEDRAL.ImproperType.New_From_String(impropers)
 LJ.LJType.New_From_String(LJs)
 
-atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(os.path.join(AMBER_DATA_DIR, "ions234lm_126_spce.frcmod"))
+atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(
+    os.path.join(AMBER_DATA_DIR, "ions234lm_126_spce.frcmod"))
 AtomType.New_From_String(atoms)
 BOND.BondType.New_From_String(bonds)
 ANGLE.AngleType.New_From_String(angles)

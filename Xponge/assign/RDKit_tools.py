@@ -1,4 +1,4 @@
-def Assign2RDKitMol(assign, ignore_bond_type = False):
+def Assign2RDKitMol(assign, ignore_bond_type=False):
     from rdkit import Chem
     molA = Chem.RWMol()
     for atom in assign.atoms:
@@ -7,7 +7,7 @@ def Assign2RDKitMol(assign, ignore_bond_type = False):
         for aton, n in bonds.items():
             if aton < atom:
                 continue
-            if  ignore_bond_type or n == -1:
+            if ignore_bond_type or n == -1:
                 temp_bond = Chem.BondType.UNSPECIFIED
             elif n == 1:
                 temp_bond = Chem.BondType.SINGLE
@@ -26,7 +26,8 @@ def Assign2RDKitMol(assign, ignore_bond_type = False):
     Chem.SanitizeMol(mol)
     return mol
 
-def Insert_Atom_Type_To_RDKitMol(mol, res, assign, atom_type_dict = None):
+
+def Insert_Atom_Type_To_RDKitMol(mol, res, assign, atom_type_dict=None):
     i = 0
     if atom_type_dict is None:
         atom_type_dict = {}
@@ -37,6 +38,7 @@ def Insert_Atom_Type_To_RDKitMol(mol, res, assign, atom_type_dict = None):
         a.SetIsotope(atom_type_dict[atom_type])
         i += 1
 
+
 def Find_Equal_Atoms(assign):
     from rdkit import Chem
     mols = []
@@ -45,10 +47,10 @@ def Find_Equal_Atoms(assign):
         mols.append(Assign2RDKitMol(assign))
         mols[-1].GetAtoms()[i].SetIsotope(1)
         CanonSmiles.append(Chem.MolToSmiles(mols[-1]))
-    group = {i:i for i in range(len(assign.atoms))}
+    group = {i: i for i in range(len(assign.atoms))}
     for i in range(len(assign.atoms)):
         if group[i] == i:
-            for j in range(i+1, len(assign.atoms)):
+            for j in range(i + 1, len(assign.atoms)):
                 if CanonSmiles[j] == CanonSmiles[i]:
                     group[j] = i
     ret = []
@@ -59,7 +61,8 @@ def Find_Equal_Atoms(assign):
             realmap[i] = len(realmap)
         else:
             ret[realmap[group[i]]].append(i)
-    return list(filter(lambda x:len(x) > 1, ret))
+    return list(filter(lambda x: len(x) > 1, ret))
+
 
 def Get_Conformer_Coordinate(mol):
     import numpy as np
@@ -68,24 +71,29 @@ def Get_Conformer_Coordinate(mol):
         crd[i] = mol.GetConformer(0).GetAtomPosition(i)
     return crd
 
+
 def Get_Conformer_Coordinate_To_Residue(mol, res, assign):
     for i in range(mol.GetNumAtoms()):
         j = res._name2index[assign.names[i]]
         res.atoms[j].x, res.atoms[j].y, res.atoms[j].z = mol.GetConformer(0).GetAtomPosition(i)
 
+
 def Set_Conformer_Coordinate_From_Residue(mol, res, assign):
-    for i in range(mol.GetNumAtoms()):    
+    for i in range(mol.GetNumAtoms()):
         j = res._name2index[assign.names[i]]
         mol.GetConformer(0).SetAtomPosition(i, [res.atoms[j].x, res.atoms[j].y, res.atoms[j].z])
+
 
 def Set_Conformer_Coordinate(mol, crd):
     for i in range(mol.GetNumAtoms()):
         mol.GetConformer(0).SetAtomPosition(i, crd[i])
 
+
 def Apply_Transform(crd, matrix):
     import numpy as np
-    temp = np.dot(crd, matrix[:3, :3]) + matrix[:3,3]
+    temp = np.dot(crd, matrix[:3, :3]) + matrix[:3, 3]
     return temp[:, :3]
+
 
 def Get_Part_Align(molA, molB, partA, partB):
     from rdkit import Chem
@@ -105,6 +113,3 @@ def Get_Part_Align(molA, molB, partA, partB):
     rmsd, transformer = rdMolAlign.GetAlignmentTransform(molBn, molAn)
     crd = Apply_Transform(Get_Conformer_Coordinate(molB), transformer)
     Set_Conformer_Coordinate(molB, crd)
-
-
-
