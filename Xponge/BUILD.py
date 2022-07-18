@@ -6,6 +6,11 @@ import sys
 
 
 def _analyze_connectivity(cls):
+    """
+
+    :param cls:
+    :return:
+    """
     for atom0, c in cls.connectivity.items():
         index_dict = {}.fromkeys(c, atom0)
         for i in range(2, GlobalSetting.farthest_bonded_force + 1):
@@ -19,6 +24,12 @@ def _analyze_connectivity(cls):
 
 
 def _get_frc_all(frc, cls):
+    """
+
+    :param frc:
+    :param cls:
+    :return:
+    """
     top = frc.topology_like
     top_matrix = frc.topology_matrix
     frc_all = []
@@ -48,6 +59,12 @@ def _get_frc_all(frc, cls):
 
 
 def _get_frc_all_final(frc, frc_all):
+    """
+
+    :param frc:
+    :param frc_all:
+    :return:
+    """
     frc_all_final = []
     frc_keys = {}
     for frc_one in frc_all:
@@ -64,6 +81,13 @@ def _get_frc_all_final(frc, frc_all):
 
 
 def _find_the_force(frc, frc_all_final, cls):
+    """
+
+    :param frc:
+    :param frc_all_final:
+    :param cls:
+    :return:
+    """
     for frc_ones in frc_all_final:
         finded = {}
         # 先直接找
@@ -96,6 +120,11 @@ def _find_the_force(frc, frc_all_final, cls):
 
 
 def _build_bfrc(cls):
+    """
+
+    :param cls:
+    :return:
+    """
     _analyze_connectivity(cls)
     for frc in GlobalSetting.BondedForces:
         frc_all = _get_frc_all(frc, cls)
@@ -104,6 +133,11 @@ def _build_bfrc(cls):
 
 
 def _build_bfrc_from_type(cls):
+    """
+
+    :param cls:
+    :return:
+    """
     if not cls.type.built:
         _build_bfrc(cls.type)
 
@@ -134,6 +168,11 @@ def _build_bfrc_from_type(cls):
 
 
 def _modify_linked_atoms(cls):
+    """
+
+    :param cls:
+    :return:
+    """
     atom1 = cls.atom1
     atom2 = cls.atom2
 
@@ -171,6 +210,11 @@ def _modify_linked_atoms(cls):
 
 
 def _build_bfrc_link(cls):
+    """
+
+    :param cls:
+    :return:
+    """
     atom1_friends, atom2_friends = _modify_linked_atoms(cls)
     atom12_friends = atom1_friends | atom2_friends
     for frc in GlobalSetting.BondedForces:
@@ -209,6 +253,11 @@ def _build_bfrc_link(cls):
 
 
 def _build_molecule(cls):
+    """
+
+    :param cls:
+    :return:
+    """
     for res in cls.residues:
         if not res.type.built:
             Build_Bonded_Force(res.type)
@@ -457,7 +506,7 @@ def Save_Gro(molecule, filename):
             y = atom.y - mini[1] + GlobalSetting.boxspace
             z = atom.z - mini[2] + GlobalSetting.boxspace
         else:
-            x, y, z = atom.x.atom.y, atom.z
+            x, y, z = atom.x, atom.y, atom.z
 
         towrite += "%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n" % (
             molecule.residue_index[residue] + 1, residue.name, atom.name, i + 1, x / 10, y / 10, z / 10)
@@ -477,74 +526,3 @@ def Save_Gro(molecule, filename):
 
 
 sys.modules['__main__'].__dict__["Save_Gro"] = Save_Gro
-
-
-def Save_NPZ(molecule, filename=None):
-    import numpy as np
-    bondtypeindex = {}
-
-    def update_bonddict(dic_to, dic_from):
-        for key, value in dic_from.items():
-            if value is not None:
-                if key in dic_to.keys():
-                    dic_to[key].append(value)
-                else:
-                    dic_to[key] = [value]
-
-    for bondedforce in GlobalSetting.BondedForces:
-        bonddict = {}
-        count = -1
-        for bondtype in bondedforce.types.values():
-            update_bonddict(bonddict, bondtype.contents)
-            count += 1
-            bondtypeindex[bondtype] = count
-        max_len = {}
-        for key, value in bonddict.items():
-            max_len[key] = 1
-            for vi in value:
-                if isinstance(vi, list) and len(vi) > max_len[key]:
-                    max_len[key] = len(vi)
-        for key, value in bonddict.items():
-            for i, vi in enumerate(value):
-                if isinstance(vi, list) and len(vi) < max_len[key]:
-                    bonddict[key][i] = np.array(vi + [0] * (max_len[key] - len(vi)))
-        np.savez(bondedforce.name, **bonddict)
-
-    if type(molecule) == Molecule:
-        Build_Bonded_Force(molecule)
-
-        if not filename:
-            filename = molecule.name
-
-        molecule.atoms = []
-        molecule.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
-        for res in molecule.residues:
-            molecule.atoms.extend(res.atoms)
-            for frc in GlobalSetting.BondedForces:
-                molecule.bonded_forces[frc.name].extend(res.bonded_forces[frc.name])
-
-        for link in molecule.residue_links:
-            for frc in GlobalSetting.BondedForces:
-                molecule.bonded_forces[frc.name].extend(link.bonded_forces[frc.name])
-
-        molecule.atom_index = {molecule.atoms[i]: i for i in range(len(molecule.atoms))}
-
-        bonddict = {}
-        for bondname, bondtypes in molecule.bonded_forces.items():
-            bonddict[bondname] = []
-            for b in bondtypes:
-                bonddict[bondname].append([molecule.atom_index[a] for a in b.atoms])
-                bonddict[bondname][-1].append(bondtypeindex[b.type])
-        np.savez(filename, **bonddict)
-    elif type(molecule) == Residue:
-        mol = Molecule(name=molecule.name)
-        mol.Add_Residue(molecule)
-        Save_NPZ(mol, filename)
-    elif type(molecule) == ResidueType:
-        residue = Residue(molecule, name=molecule.name)
-        for atom in molecule.atoms:
-            residue.Add_Atom(atom)
-        Save_NPZ(residue, filename)
-
-
-sys.modules['__main__'].__dict__["Save_NPZ"] = Save_NPZ

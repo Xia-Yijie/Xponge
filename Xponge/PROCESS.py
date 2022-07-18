@@ -9,9 +9,9 @@ def _Box(molecule, new_molecule, molmin, molmax, solshape, distance, tolerance, 
         while y0 < molmax[1] + distance[4] + solshape[1]:
             z0 = molmin[2] - solshape[2] - distance[2]
             while z0 < molmax[2] + distance[5] + solshape[2]:
-                if (molmin[0] - tolerance - solshape[0] < x0 < molmax[0] + tolerance + solshape[0] and
-                        molmin[1] - tolerance - solshape[1] < y0 < molmax[1] + tolerance + solshape[1] and
-                        molmin[2] - tolerance - solshape[2] < z0 < molmax[2] + tolerance + solshape[2]):
+                if (x0 > molmin[0] - tolerance - solshape[0] and x0 < molmax[0] + tolerance + solshape[0] and
+                        y0 > molmin[1] - tolerance - solshape[1] and y0 < molmax[1] + tolerance + solshape[1] and
+                        z0 > molmin[2] - tolerance - solshape[2] and z0 < molmax[2] + tolerance + solshape[2]):
                     z0 += solshape[2]
                     continue
                 for atom in new_molecule.atoms:

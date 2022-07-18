@@ -12,7 +12,6 @@ DIHEDRAL.ProperType.New_From_String(propers)
 DIHEDRAL.ImproperType.New_From_String(impropers)
 LJ.LJType.New_From_String(LJs)
 
-# print(AtomType.types)
 GAFF = assign.Judge_Rule("GAFF")
 
 
