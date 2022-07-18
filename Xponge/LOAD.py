@@ -212,6 +212,32 @@ sys.modules['__main__'].__dict__["loadpdb"] = pdb
 ##########################################################################
 #AMBER Format
 ##########################################################################
+def _frcmod_cmap(line, cmap, temp_cmp, cmap_flag):
+    if line.startswith("%FLAG"):
+        if "CMAP_COUNT" in line:
+            if temp_cmp:
+                for res in temp_cmp["residues"]:
+                    cmap[res] = temp_cmp["info"]
+            temp_cmp = {"residues":[], "info": {"resolution":24, "count":int(line.split()[-1]), "parameters": []}}
+            cmap_flag = "CMAP_COUNT"
+        elif "CMAP_RESOLUTION" in line:
+            temp_cmp["info"]["resolution"] = int(line.split()[-1])
+            cmap_flag = "CMAP_RESOLUTION"
+        elif  "CMAP_RESLIST" in line:
+            cmap_flag = "CMAP_RESLIST"
+        elif "CMAP_TITLE" in line:
+            cmap_flag = "CMAP_TITLE"
+        elif "CMAP_PARAMETER" in line:
+            cmap_flag = "CMAP_PARAMETER"
+    elif cmap_flag == "CMAP_RESLIST":
+        temp_cmp["residues"].extend(line.split())
+    elif cmap_flag == "CMAP_PARAMETER":
+        temp_cmp["info"]["parameters"].extend([float(x) for x in line.split()])
+    return temp_cmp, cmap_flag
+
+def _frcmod_atoms_words(line, N):
+    return [ word.strip() for word in line[:N].split("-") ], line[N:].split()
+    
 def frcmod(filename, nbtype = "RE"):
     with open(filename) as f:
         f.readline()
@@ -224,7 +250,7 @@ def frcmod(filename, nbtype = "RE"):
         impropers = "name  k[kcal/mol]    phi0[degree]    periodicity\n"
         cmap = {}
         cmap_flag = None
-        temp_cmp = {}
+        temp_cmp = {"residues":[]}
         if nbtype == "SK":
             raise NotImplementedError
         elif nbtype == "AC":
@@ -241,62 +267,46 @@ def frcmod(filename, nbtype = "RE"):
             elif flag[:4] == "MASS":
                 atom_types[words[0]] = words[1]
             elif flag[:4] == "BOND":
-                atoms = [ word.strip() for word in line[:5].split("-") ]
-                words = line[5:].split()
+                atoms, words = _frcmod_atoms_words(line, 5)
                 bonds += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
             elif flag[:4] == "ANGL":
-                atoms = [ word.strip() for word in line[:8].split("-") ]
-                words = line[8:].split()
+                atoms, words = _frcmod_atoms_words(line, 8)
                 angles += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
             elif flag[:4] == "DIHE":
-                atoms = [ word.strip() for word in line[:11].split("-") ]
-                words = line[11:].split()
+                atoms, words = _frcmod_atoms_words(line, 11)
                 propers += "-".join(atoms) + "\t" + str(float(words[1]) / int(words[0])) + "\t" + words[2] + "\t" + str(abs(int(float(words[3])))) + "\t" + str(reset) + "\n"
                 if int(float(words[3])) < 0:
                     reset = 0
                 else:
                     reset = 1
             elif flag[:4] == "IMPR":
-                atoms = [ word.strip() for word in line[:11].split("-") ]
-                words = line[11:].split()
+                atoms, words = _frcmod_atoms_words(line, 11)
                 impropers += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\t" + str(int(float(words[2]))) + "\n"
             elif flag[:4] == "NONB":
                 words = line.split()
                 LJs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
             elif flag[:4] == "CMAP":
-                if line.startswith("%FLAG"):
-                    if "CMAP_COUNT" in line:
-                        if temp_cmp:
-                            for res in temp_cmp["residues"]:
-                                cmap[res] = temp_cmp["info"]
-                        temp_cmp = {"residues":[], "info": {"resolution":24, "count":int(line.split()[-1]), "parameters": []}}
-                        cmap_flag = "CMAP_COUNT"
-                    elif "CMAP_RESOLUTION" in line:
-                        temp_cmp["info"]["resolution"] = int(line.split()[-1])
-                        cmap_flag = "CMAP_RESOLUTION"
-                    elif  "CMAP_RESLIST" in line:
-                        cmap_flag = "CMAP_RESLIST"
-                    elif "CMAP_TITLE" in line:
-                        cmap_flag = "CMAP_TITLE"
-                    elif "CMAP_PARAMETER" in line:
-                        cmap_flag = "CMAP_PARAMETER"
-                elif cmap_flag == "CMAP_RESLIST":
-                    temp_cmp["residues"].extend(line.split())
-                elif cmap_flag == "CMAP_PARAMETER":
-                    temp_cmp["info"]["parameters"].extend([float(x) for x in line.split()])
+                temp_cmp, cmap_flag = _frcmod_cmap(line, cmap, temp_cmp, cmap_flag)
                     
-                    
-    if temp_cmp:
-        for res in temp_cmp["residues"]:
-            cmap[res] = temp_cmp["info"]
+    for res in temp_cmp["residues"]:
+        cmap[res] = temp_cmp["info"]
     atoms = "name  mass  LJtype\n"
     for atom, mass in atom_types.items():
         atoms += atom + "\t" + mass + "\t" + atom + "\n"
         
     return atoms, bonds, angles, propers, impropers, LJs, cmap
 
-sys.modules['__main__'].__dict__["loadfrcmod"] = frcmod    
+sys.modules['__main__'].__dict__["loadfrcmod"] = frcmod     
 
+def _parmdat_read_harmonic_bonds(f, bonds, N):
+    for line in f:
+        if not line.strip():
+            break
+        else:
+            atoms, words = _frcmod_atoms_words(line, N)
+            bonds += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
+    return bonds
+    
 def parmdat(filename):
     with open(filename) as f:
         f.readline()
@@ -313,24 +323,11 @@ def parmdat(filename):
         f.readline()
         #读键长
         bonds = "name  k[kcal/mol·A^-2]    b[A]\n"
-        for line in f:
-            if not line.strip():
-                break
-            else:
-                atoms = [ word.strip() for word in line[:5].split("-") ]
-                words = line[5:].split()
-
-                bonds += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
+        bonds = _parmdat_read_harmonic_bonds(f, bonds, 5)
                 
         #读键角
         angles = "name  k[kcal/mol·rad^-2]    b[degree]\n"
-        for line in f:
-            if not line.strip():
-                break
-            else:
-                atoms = [ word.strip() for word in line[:8].split("-") ]
-                words = line[8:].split()
-                angles += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
+        angles = _parmdat_read_harmonic_bonds(f, angles, 8)
 
         #读恰当二面角
         reset = 1
@@ -339,8 +336,7 @@ def parmdat(filename):
             if not line.strip():
                 break
             else:
-                atoms = [ word.strip() for word in line[:11].split("-") ]
-                words = line[11:].split()
+                atoms, words = _frcmod_atoms_words(line, 11)
                 propers += "-".join(atoms) + "\t" + str(float(words[1]) / int(words[0])) + "\t" + words[2] + "\t" + str(abs(int(float(words[3])))) + "\t" + str(reset) + "\n"
                 if int(float(words[3])) < 0:
                     reset = 0
@@ -352,8 +348,7 @@ def parmdat(filename):
             if not line.strip():
                 break
             else:
-                atoms = [ word.strip() for word in line[:11].split("-") ]
-                words = line[11:].split()
+                atoms, words = _frcmod_atoms_words(line, 11)
                 impropers += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\t" + str(int(float(words[2]))) + "\n"
         
         #跳过水的信息
@@ -736,7 +731,6 @@ sys.modules['__main__'].__dict__["loadrst7"] = rst7
 ##########################################################################
 #GROMACS Format
 ##########################################################################
-
 class GROMACS_TOPOLOGY_ITERATOR():
     def __init__(self, filename = None, macros = None):
         self.files = []
@@ -756,6 +750,48 @@ class GROMACS_TOPOLOGY_ITERATOR():
         f = open(filename)
         self.files.append(f)
         self.filenames.append(filename)
+        
+    def _line_preprocess(self, line):
+        line = line.strip()
+        comment = line.find(";")
+        if comment >= 0:
+            line = line[:comment]
+        while line and line[-1] == "\\":
+            line = line[:-1] + " " + next(self).strip()        
+        if not line:
+            line = next(self)
+        return line
+        
+    def _line_define(self, line):
+        words = line.split()
+        if words[0] == "#ifdef":
+            macro = words[1]
+            if self.macro_define_stat and self.macro_define_stat[-1] == False:
+                self.macro_define_stat.append(False)
+            elif macro in self.defined_macros.keys():
+                self.macro_define_stat.append(True)
+            else:
+                self.macro_define_stat.append(False)
+        elif words[0] == "#else":
+            if len(self.macro_define_stat) <= 1 or self.macro_define_stat[-2] != False:
+                self.macro_define_stat[-1] = not self.macro_define_stat[-1]
+        elif words[0] == "#endif":
+            self.macro_define_stat.pop()    
+        elif self.macro_define_stat and self.macro_define_stat[-1] == False:
+            next(self)
+        elif words[0] == "#define":
+            if len(words) > 2:
+                self.defined_macros[words[1]] = line[line.find(words[1]) + len(words[1]):].strip()
+            else:    
+                self.defined_macros[words[1]] = ""
+        elif words[0] == "#include":
+            self.Add_Iterator_File(words[1])
+        elif words[0] == "#undef":
+            self.defined_macros.pop(words[1])
+        elif words[0] == "#error":
+            raise Exception(line)
+        line = next(self)
+        
     def __iter__(self):
         self.flag = ""
         self.macro_define_stat = []
@@ -766,43 +802,10 @@ class GROMACS_TOPOLOGY_ITERATOR():
             line = f.readline()
             
             if line:
-                line = line.strip()
-                comment = line.find(";")
-                if comment >= 0:
-                    line = line[:comment]
-                while line and line[-1] == "\\":
-                    line = line[:-1] + " " + next(self).strip()        
-                if not line:
-                    line = next(self)
-                if line[0] == "#":         
-                    words = line.split()
-                    if words[0] == "#ifdef":
-                        macro = words[1]
-                        if self.macro_define_stat and self.macro_define_stat[-1] == False:
-                            self.macro_define_stat.append(False)
-                        elif macro in self.defined_macros.keys():
-                            self.macro_define_stat.append(True)
-                        else:
-                            self.macro_define_stat.append(False)
-                    elif words[0] == "#else":
-                        if len(self.macro_define_stat) <= 1 or self.macro_define_stat[-2] != False:
-                            self.macro_define_stat[-1] = not self.macro_define_stat[-1]
-                    elif words[0] == "#endif":
-                        self.macro_define_stat.pop()    
-                    elif self.macro_define_stat and self.macro_define_stat[-1] == False:
-                        next(self)
-                    elif words[0] == "#define":
-                        if len(words) > 2:
-                            self.defined_macros[words[1]] = line[line.find(words[1]) + len(words[1]):].strip()
-                        else:    
-                            self.defined_macros[words[1]] = ""
-                    elif words[0] == "#include":
-                        self.Add_Iterator_File(words[1])
-                    elif words[0] == "#undef":
-                        self.defined_macros.pop(words[1])
-                    elif words[0] == "#error":
-                        raise Exception(line)
-                    line = next(self)
+                line = self._line_preprocess(line)
+                print(line, self.filenames[-1])
+                if line[0] == "#":
+                    self._line_define(line)
                 elif self.macro_define_stat and self.macro_define_stat[-1] == False:
                     line = next(self)
                 elif "[" in line and "]" in line:
