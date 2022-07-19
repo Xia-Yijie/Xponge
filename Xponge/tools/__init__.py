@@ -22,8 +22,8 @@ def test(args):
 
     Save_Mol2(t, f"{args.o}.mol2")
     c = int(round(t.charge))
-    Process_Box(t, WAT, 10)
-    Ion_Replace(t, lambda res: res.type.name == "WAT", {CL: 30 + c, K: 30})
+    Add_Solvent_Box(t, WAT, 10)
+    Solvent_Replace(t, lambda res: res.type.name == "WAT", {CL: 30 + c, K: 30})
     t.residues.sort(key=lambda residue: {"CL": 2, "K": 1, "WAT": 3}.get(residue.type.name, 0))
     Save_PDB(t, f"{args.o}.pdb")
     Save_SPONGE_Input(t, f"{args.o}")

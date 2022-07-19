@@ -24,10 +24,14 @@ from itertools import product, permutations
 import time
 import sys
 
-from .load import load_ffitp, load_mol2, load_rst7, load_frcmod, load_pdb, load_parmdat
-from .build import save_mol2, save_pdb, save_sponge_input, save_gro
+from . import assign
+
 from .helper import GlobalSetting, Type, AtomType, ResidueType, Entity, Atom, Residue, ResidueLink, Molecule, AtomType, \
     set_global_alternative_names
+from .load import load_ffitp, load_mol2, load_rst7, load_frcmod, load_pdb, load_parmdat
+from .build import save_mol2, save_pdb, save_sponge_input, save_gro
+from .process import impose_bond, impose_angle, impose_dihedral, add_solvent_box, h_mass_repartition, solvent_replace, \
+    main_axis_rotate
 
 
 def initialize():
@@ -181,6 +185,3 @@ def Generate_New_Pairwise_Force_Type(Type_Name, properties):
     PairwiseForceType.Add_Property(properties)
 
     return PairwiseForceType
-
-
-from . import assign, IMPOSE, PROCESS

@@ -550,7 +550,7 @@ This **class** is used to read GROMACS topology
         else:
             self.defined_macros = {}
         if filename:
-            self.Add_Iterator_File(filename)
+            self.add_iterator_file(filename)
 
     def add_iterator_file(self, filename):
         """
