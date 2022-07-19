@@ -1,6 +1,7 @@
 import sys
 import time
 import numpy as np
+from functools import partial
 from collections import OrderedDict
 from itertools import product
 
@@ -692,20 +693,44 @@ class Molecule:
                 atom.copied.pop(forcopy)
         return new_molecule
 
+SPECIAL_STRINGS = {"Pdb": "PDB", "Sponge": "SPONGE"}
 
-def set_global_alternative_names(dict):
+def set_real_global_variable(name, value):
+    sys.modules["__main__"].__dict__[name] = value
+
+def set_alternative_name(object, func, set_method):
+    name = func.__name__
+    new_name = "_".join([i.capitalize() for i in name.split("_")])
+    second_new_name = "".join([i.capitalize() for i in name.split("_")])
+    third_new_name = second_new_name[0].lower() + second_new_name[1:]
+
+    set_method(object, new_name, func)
+    for t, newt in SPECIAL_STRINGS.items():
+        new_new_name = new_name.replace(t, newt)
+        if new_new_name != new_name:
+            set_method(object, new_new_name, func)
+            set_method(object, second_new_name.replace(t, newt), func)
+            set_method(object, third_new_name.replace(t, newt), func)
+
+set_attribute_alternative_name = partial(set_alternative_name, set_method = setattr)
+
+def _dict_set_method(obj, name, func):
+    obj[name] = func
+
+set_dict_value_alternative_name = partial(set_alternative_name, set_method = _dict_set_method)
+
+def set_global_alternative_names(dict, real_global=False):
     from types import FunctionType
     new_dict = {}
     for key, value in dict.items():
-        if isinstance(value, FunctionType):
-            name = value.__name__
-            new_name = "_".join([i.capitalize() for i in name.split("_")])
+        if not isinstance(value, FunctionType) or value.__name__.startswith("_"):
+            continue
 
-            new_dict[new_name] = value
-            sys.modules["__main__"].__dict__[new_name] = value
-            for t in ["Pdb", "Sponge"]:
-                new_new_name = new_name.replace(t, t.upper())
-                if new_new_name != new_name:
-                    new_dict[new_new_name] = value
-                    sys.modules["__main__"].__dict__[new_new_name] = value
+        if real_global:
+            def _global_set_method(obj, name, func):
+                obj[name] = func
+                set_real_global_variable(name, func)
+            set_alternative_name(new_dict, value, _global_set_method)
+        else:
+            set_dict_value_alternative_name(new_dict, value)
     dict.update(new_dict)

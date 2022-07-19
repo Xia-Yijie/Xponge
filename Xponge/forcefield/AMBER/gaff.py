@@ -3,7 +3,7 @@ import sys
 
 from ... import assign
 
-atoms, bonds, angles, propers, impropers, LJs = LOAD.parmdat(os.path.join(AMBER_DATA_DIR, "gaff.dat"))
+atoms, bonds, angles, propers, impropers, LJs = load_parmdat(os.path.join(AMBER_DATA_DIR, "gaff.dat"))
 
 AtomType.New_From_String(atoms)
 BOND.BondType.New_From_String(bonds)
@@ -783,7 +783,7 @@ def parmchk2_gaff(ifname, ofname, direct_load=True, keep=True):
     datapath = os.path.split(xlib.__file__)[0]
     xlib._parmchk2(ifname, "mol2", ofname, datapath, 0, 1, 1)
     if direct_load:
-        atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(ofname)
+        atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(ofname)
         BOND.BondType.New_From_String(bonds)
         ANGLE.AngleType.New_From_String(angles)
         DIHEDRAL.ProperType.New_From_String(propers)

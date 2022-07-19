@@ -24,58 +24,62 @@ from itertools import product, permutations
 import time
 import sys
 
+from .load import load_ffitp, load_mol2, load_rst7, load_frcmod, load_pdb, load_parmdat
 from .build import save_mol2, save_pdb, save_sponge_input, save_gro
 from .helper import GlobalSetting, Type, AtomType, ResidueType, Entity, Atom, Residue, ResidueLink, Molecule, AtomType, \
     set_global_alternative_names
 
-set_global_alternative_names(globals())
 
-AtomType.New_From_String("name\nUNKNOWN")
+def initialize():
+    set_global_alternative_names(globals(), True)
+    AtomType.New_From_String("name\nUNKNOWN")
+
+    @Molecule.Set_Save_SPONGE_Input("residue")
+    def write_residue(self):
+        towrite = "%d %d\n" % (len(self.atoms), len(self.residues))
+        towrite += "\n".join([str(len(res.atoms)) for res in self.residues])
+        return towrite
+
+    @Molecule.Set_Save_SPONGE_Input("coordinate")
+    def write_coordinate(self):
+        towrite = "%d\n" % (len(self.atoms))
+        boxlength = [0, 0, 0, self.box_angle[0], self.box_angle[1], self.box_angle[2]]
+        maxi = [-float("inf"), -float("inf"), -float("inf")]
+        mini = [float("inf"), float("inf"), float("inf")]
+        for atom in self.atoms:
+            if atom.x > maxi[0]:
+                maxi[0] = atom.x
+            if atom.y > maxi[1]:
+                maxi[1] = atom.y
+            if atom.z > maxi[2]:
+                maxi[2] = atom.z
+            if atom.x < mini[0]:
+                mini[0] = atom.x
+            if atom.y < mini[1]:
+                mini[1] = atom.y
+            if atom.z < mini[2]:
+                mini[2] = atom.z
+        if not GlobalSetting.nocenter and self.box_length is None:
+            towrite += "\n".join(
+                ["%f %f %f" % (atom.x - mini[0] + 3, atom.y - mini[1] + 3, atom.z - mini[2] + 3) for atom in
+                 self.atoms])
+        else:
+            towrite += "\n".join(["%f %f %f" % (atom.x, atom.y, atom.z) for atom in self.atoms])
+        if self.box_length is None:
+            boxlength[0] = maxi[0] - mini[0] + 6
+            boxlength[1] = maxi[1] - mini[1] + 6
+            boxlength[2] = maxi[2] - mini[2] + 6
+            self.box_length = [boxlength[0], boxlength[1], boxlength[2]]
+        else:
+            boxlength[0] = self.box_length[0]
+            boxlength[1] = self.box_length[1]
+            boxlength[2] = self.box_length[2]
+        towrite += "\n%f %f %f %f %f %f" % (
+            boxlength[0], boxlength[1], boxlength[2], boxlength[3], boxlength[4], boxlength[5])
+        return towrite
 
 
-@Molecule.Set_Save_SPONGE_Input("residue")
-def write_residue(self):
-    towrite = "%d %d\n" % (len(self.atoms), len(self.residues))
-    towrite += "\n".join([str(len(res.atoms)) for res in self.residues])
-    return towrite
-
-
-@Molecule.Set_Save_SPONGE_Input("coordinate")
-def write_coordinate(self):
-    towrite = "%d\n" % (len(self.atoms))
-    boxlength = [0, 0, 0, self.box_angle[0], self.box_angle[1], self.box_angle[2]]
-    maxi = [-float("inf"), -float("inf"), -float("inf")]
-    mini = [float("inf"), float("inf"), float("inf")]
-    for atom in self.atoms:
-        if atom.x > maxi[0]:
-            maxi[0] = atom.x
-        if atom.y > maxi[1]:
-            maxi[1] = atom.y
-        if atom.z > maxi[2]:
-            maxi[2] = atom.z
-        if atom.x < mini[0]:
-            mini[0] = atom.x
-        if atom.y < mini[1]:
-            mini[1] = atom.y
-        if atom.z < mini[2]:
-            mini[2] = atom.z
-    if not GlobalSetting.nocenter and self.box_length is None:
-        towrite += "\n".join(
-            ["%f %f %f" % (atom.x - mini[0] + 3, atom.y - mini[1] + 3, atom.z - mini[2] + 3) for atom in self.atoms])
-    else:
-        towrite += "\n".join(["%f %f %f" % (atom.x, atom.y, atom.z) for atom in self.atoms])
-    if self.box_length is None:
-        boxlength[0] = maxi[0] - mini[0] + 6
-        boxlength[1] = maxi[1] - mini[1] + 6
-        boxlength[2] = maxi[2] - mini[2] + 6
-        self.box_length = [boxlength[0], boxlength[1], boxlength[2]]
-    else:
-        boxlength[0] = self.box_length[0]
-        boxlength[1] = self.box_length[1]
-        boxlength[2] = self.box_length[2]
-    towrite += "\n%f %f %f %f %f %f" % (
-        boxlength[0], boxlength[1], boxlength[2], boxlength[3], boxlength[4], boxlength[5])
-    return towrite
+initialize()
 
 
 def Generate_New_Bonded_Force_Type(Type_Name, atoms, properties, Compulsory, Multiple=None):
@@ -179,4 +183,4 @@ def Generate_New_Pairwise_Force_Type(Type_Name, properties):
     return PairwiseForceType
 
 
-from . import assign, LOAD, IMPOSE, PROCESS
+from . import assign, IMPOSE, PROCESS

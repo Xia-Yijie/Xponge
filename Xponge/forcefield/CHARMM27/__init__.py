@@ -16,7 +16,7 @@ X-X-X-X     0 0      0    0
 """)
 EXCLUDE.Exclude(4)
 
-output = LOAD.ffitp(os.path.join(CHARMM27_DATA_DIR, "forcefield.itp"))
+output = load_ffitp(os.path.join(CHARMM27_DATA_DIR, "forcefield.itp"))
 
 AtomType.New_From_String(output["atomtypes"])
 BOND.BondType.New_From_String(output["bonds"])

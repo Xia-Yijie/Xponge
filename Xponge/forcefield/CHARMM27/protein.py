@@ -2,7 +2,7 @@ from . import *
 
 import sys
 
-CHARM27_PROTEIN = LOAD.mol2(os.path.join(CHARMM27_DATA_DIR, "protein.mol2"))
+CHARM27_PROTEIN = load_mol2(os.path.join(CHARMM27_DATA_DIR, "protein.mol2"))
 
 ResidueType.types.pop("HYP")
 ResidueType.types.pop("CHYP")

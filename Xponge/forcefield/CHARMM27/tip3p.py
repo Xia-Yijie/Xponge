@@ -27,9 +27,9 @@ OW-OW   0.152               1.7683
 HW-HW   0                   0
 """)
 
-TIP3P = LOAD.mol2(os.path.join(CHARMM27_DATA_DIR, "tip3p.mol2"))
+TIP3P = load_mol2(os.path.join(CHARMM27_DATA_DIR, "tip3p.mol2"))
 
-LOAD.mol2(os.path.join(CHARMM27_DATA_DIR, "atomic_ions.mol2"))
+load_mol2(os.path.join(CHARMM27_DATA_DIR, "atomic_ions.mol2"))
 
 print("""Reference for tip3p:
   William L. Jorgensen, Jayaraman Chandrasekhar, and Jeffry D. Madura

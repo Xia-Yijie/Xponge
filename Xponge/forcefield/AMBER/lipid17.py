@@ -1,7 +1,7 @@
 from . import *
 import sys
 
-atoms, bonds, angles, propers, impropers, LJs = LOAD.parmdat(os.path.join(AMBER_DATA_DIR, "lipid17.dat"))
+atoms, bonds, angles, propers, impropers, LJs = load_parmdat(os.path.join(AMBER_DATA_DIR, "lipid17.dat"))
 
 AtomType.New_From_String(atoms)
 BOND.BondType.New_From_String(bonds)
@@ -10,7 +10,7 @@ DIHEDRAL.ProperType.New_From_String(propers)
 DIHEDRAL.ImproperType.New_From_String(impropers)
 LJ.LJType.New_From_String(LJs)
 
-lipid17 = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "lipid17.mol2"))
+lipid17 = load_mol2(os.path.join(AMBER_DATA_DIR, "lipid17.mol2"))
 
 for res in "LAL PA MY OL ST AR DHA".split():
     ResidueType.types[res].head = "C12"

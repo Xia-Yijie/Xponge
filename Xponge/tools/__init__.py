@@ -339,7 +339,7 @@ def name2name(args):
         _to = Xponge.assign.Get_Assignment_From_Mol2(args.to_file)
     elif args.to_format == "gaff_mol2":
         import Xponge.forcefield.AMBER.gaff
-        _to = Xponge.LOAD.mol2(args.to_file).residues[0]
+        _to = Xponge.load_mol2(args.to_file).residues[0]
         _to = Xponge.assign.Get_Assignment_From_ResidueType(_to)
     elif args.to_format == "pdb":
         _to = Xponge.assign.Get_Assignment_From_PDB(args.to_file, determine_bond_order=False,
@@ -349,7 +349,7 @@ def name2name(args):
         _from = Xponge.assign.Get_Assignment_From_Mol2(args.from_file)
     elif args.from_format == "gaff_mol2":
         import Xponge.forcefield.AMBER.gaff
-        _from = Xponge.LOAD.mol2(args.from_file).residues[0]
+        _from = Xponge.load_mol2(args.from_file).residues[0]
         _from = Xponge.assign.Get_Assignment_From_ResidueType(_from)
     elif args.from_format == "pdb":
         _from = Xponge.assign.Get_Assignment_From_PDB(args.from_file, determine_bond_order=False,
@@ -614,20 +614,20 @@ def mol2rfe(args):
         args.do = [["build", "min", "prebalance", "balance", "analysis"]]
     args.do = args.do[0]
 
-    _from_res_type = Xponge.LOAD.mol2(args.r1).residues[0]
+    _from_res_type = Xponge.load_mol2(args.r1).residues[0]
     _from = Xponge.assign.Get_Assignment_From_ResidueType(_from_res_type)
     if not args.ff:
         gaff.parmchk2_gaff(args.r1, args.temp + "_TMP1.frcmod")
 
-    _to_res_type = Xponge.LOAD.mol2(args.r2).residues[0]
+    _to_res_type = Xponge.load_mol2(args.r2).residues[0]
     _to = Xponge.assign.Get_Assignment_From_ResidueType(_to_res_type)
     if not args.ff:
         gaff.parmchk2_gaff(args.r2, args.temp + "_TMP2.frcmod")
 
     for mol2file in args.r0:
-        Xponge.LOAD.mol2(mol2file)
+        Xponge.load_mol2(mol2file)
 
-    rmol = Xponge.LOAD.pdb(args.pdb)
+    rmol = Xponge.load_pdb(args.pdb)
 
     merged_from, merged_to = FEP.Merge_Dual_Topology(rmol, rmol.residues[args.ri], _to_res_type, _from, _to, args.tmcs)
 
@@ -681,7 +681,7 @@ def mol2hfe(args):
         rmol = Xponge.Molecule(args.temp)
         rmol.Add_Residue(restype)
     elif args.residuetype:
-        rmol = Xponge.LOAD.mol2(args.residuetype)
+        rmol = Xponge.load_mol2(args.residuetype)
         Xponge.forcefield.AMBER.gaff.parmchk2_gaff(args.residuetype, "%s.frcmod" % args.temp)
 
     Xponge.PROCESS.Box(rmol, Xponge.ResidueType.types["WAT"], 20)

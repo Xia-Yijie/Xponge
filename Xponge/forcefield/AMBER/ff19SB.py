@@ -2,7 +2,7 @@ from . import *
 
 import sys
 
-atoms, bonds, angles, propers, impropers, LJs = LOAD.parmdat(os.path.join(AMBER_DATA_DIR, "parm19.dat"))
+atoms, bonds, angles, propers, impropers, LJs = load_parmdat(os.path.join(AMBER_DATA_DIR, "parm19.dat"))
 
 AtomType.New_From_String(atoms)
 BOND.BondType.New_From_String(bonds)
@@ -11,7 +11,7 @@ DIHEDRAL.ProperType.New_From_String(propers)
 DIHEDRAL.ImproperType.New_From_String(impropers)
 LJ.LJType.New_From_String(LJs)
 
-atoms, bonds, angles, propers, impropers, LJs, cmap = LOAD.frcmod(os.path.join(AMBER_DATA_DIR, "ff19SB.frcmod"))
+atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(os.path.join(AMBER_DATA_DIR, "ff19SB.frcmod"))
 
 AtomType.New_From_String(atoms)
 BOND.BondType.New_From_String(bonds)
@@ -29,7 +29,7 @@ name
 C-N-XC-C-N
 """)
 
-ff19SB = LOAD.mol2(os.path.join(AMBER_DATA_DIR, "ff19SB.mol2"))
+ff19SB = load_mol2(os.path.join(AMBER_DATA_DIR, "ff19SB.mol2"))
 ResidueType.types["HIS"] = ResidueType.types["HIE"]
 ResidueType.types["NHIS"] = ResidueType.types["NHIE"]
 ResidueType.types["CHIS"] = ResidueType.types["CHIE"]

@@ -1,6 +1,8 @@
-from . import *
+"""
+This **module** is used to load and read
+"""
 import os
-import sys
+from .helper import Molecule, Residue, ResidueType, AtomType, set_attribute_alternative_name, GlobalSetting
 
 
 ##########################################################################
@@ -8,6 +10,18 @@ import sys
 ##########################################################################
 def _mol2_atom(line, current_residue_index, current_residue, ignore_atom_type, temp, current_molecule,
                atom_residue_map):
+    """
+
+    :param line:
+    :param current_residue_index:
+    :param current_residue:
+    :param ignore_atom_type:
+    :param temp:
+    :param current_molecule:
+    :param atom_residue_map:
+    :return:
+    """
+    import sys
     words = line.split()
     if current_residue_index is None or int(words[6]) != current_residue_index:
         current_residue_index = int(words[6])
@@ -35,6 +49,13 @@ def _mol2_atom(line, current_residue_index, current_residue, ignore_atom_type, t
 
 
 def _mol2_bond(line, current_molecule, atom_residue_map):
+    """
+
+    :param line:
+    :param current_molecule:
+    :param atom_residue_map:
+    :return:
+    """
     words = line.split()
     if atom_residue_map[words[1]][1] == atom_residue_map[words[2]][1]:
         if atom_residue_map[words[1]][3]:
@@ -57,7 +78,13 @@ def _mol2_bond(line, current_molecule, atom_residue_map):
                     atom_residue_map[words[2]][1].type.tail = atom_residue_map[words[2]][0]
 
 
-def mol2(filename, ignore_atom_type=False):
+def load_mol2(filename, ignore_atom_type=False):
+    """
+
+    :param filename:
+    :param ignore_atom_type:
+    :return:
+    """
     with open(filename) as f:
         # 存储读的时候的临时信息，key是编号
         # value是list：原子名(0)、residue(1)、residue编号(2)、是否是新的residue type(3)、该原子(4)、residue type的最新原子(5)
@@ -91,24 +118,38 @@ def mol2(filename, ignore_atom_type=False):
     return current_molecule
 
 
-sys.modules['__main__'].__dict__["loadmol2"] = mol2
+def _pdb_ssbond(chain, residue_type_map, ssbonds, molecule):
+    """
+
+    :param chain:
+    :param residue_type_map:
+    :param ssbonds:
+    :param molecule:
+    :return:
+    """
+    for ssbond in ssbonds:
+        res_a_index = chain[ssbond[15]][int(ssbond[17:21])]
+        residue_type_map[res_a_index] = "CYX"
+        res_b_index = chain[ssbond[29]][int(ssbond[31:35])]
+        residue_type_map[res_b_index] = "CYX"
+        if res_a_index > res_b_index:
+            res_a_index, res_b_index = (res_b_index, res_a_index)
+        res_a = molecule.residues[res_a_index]
+        res_b = molecule.residues[res_b_index]
+        molecule.Add_Residue_Link(res_a.name2atom(res_a.type.connect_atoms["ssbond"]),
+                                  res_b.name2atom(res_b.type.connect_atoms["ssbond"]))
 
 
-def _pdb_SSBONDS(chain, residue_type_map, SSBOND, molecule):
-    for ssbond in SSBOND:
-        resA = chain[ssbond[15]][int(ssbond[17:21])]
-        residue_type_map[resA] = "CYX"
-        resB = chain[ssbond[29]][int(ssbond[31:35])]
-        residue_type_map[resB] = "CYX"
-        if resA > resB:
-            resA, resB = (resB, resA)
-        ResA = molecule.residues[resA]
-        ResB = molecule.residues[resB]
-        molecule.Add_Residue_Link(ResA._name2atom[ResA.type.connect_atoms["ssbond"]],
-                                  ResB._name2atom[ResB.type.connect_atoms["ssbond"]])
+def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore_hydrogen):
+    """
 
-
-def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignoreH):
+    :param filename:
+    :param molecule:
+    :param position_need:
+    :param residue_type_map:
+    :param ignore_hydrogen:
+    :return:
+    """
     current_residue_count = -1
     current_residue_index = None
     current_residue = None
@@ -130,14 +171,14 @@ def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore
                     if current_residue:
                         molecule.Add_Residue(current_residue)
                         if current_residue_index is not None and current_residue.type.tail and ResidueType.types[
-                            residue_type_map[current_residue_count]].head:
+                                residue_type_map[current_residue_count]].head:
                             links.append(len(molecule.residues))
                     current_residue = Residue(ResidueType.types[residue_type_map[current_residue_count]])
                     current_residue_index = resindex
                     current_resname = resname
                 if extra not in (" ", position_need):
                     continue
-                if ignoreH and atomname.startswith("H"):
+                if ignore_hydrogen and atomname.startswith("H"):
                     continue
                 current_residue.Add_Atom(atomname, x=x, y=y, z=z)
             elif line.startswith("TER"):
@@ -147,40 +188,55 @@ def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore
     if current_residue:
         molecule.Add_Residue(current_residue)
     for count in links:
-        ResA = molecule.residues[count]
-        ResB = molecule.residues[count - 1]
-        molecule.Add_Residue_Link(ResA._name2atom[ResA.type.head], ResB._name2atom[ResB.type.tail])
+        res_a = molecule.residues[count]
+        res_b = molecule.residues[count - 1]
+        molecule.Add_Residue_Link(res_a.name2atom(res_a.type.head), res_b.name2atom(res_b.type.tail))
 
 
-def _pdb_judge_histone(judge_HIS, residue_type_map, current_HIS):
-    if judge_HIS and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
-        if current_HIS["DeltaH"]:
-            if current_HIS["EpsilonH"]:
+def _pdb_judge_histone(judge_histone, residue_type_map, current_histone_information):
+    """
+
+    :param judge_histone:
+    :param residue_type_map:
+    :param current_histone_information:
+    :return:
+    """
+    if judge_histone and residue_type_map and residue_type_map[-1] in GlobalSetting.HISMap["HIS"].keys():
+        if current_histone_information["DeltaH"]:
+            if current_histone_information["EpsilonH"]:
                 residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIP"]
             else:
                 residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HID"]
         else:
             residue_type_map[-1] = GlobalSetting.HISMap["HIS"][residue_type_map[-1]]["HIE"]
-        current_HIS = {"DeltaH": False, "EpsilonH": False}
+        current_histone_information = {"DeltaH": False, "EpsilonH": False}
 
 
-def pdb(filename, judge_HIS=True, position_need="A", ignoreH=False):
+def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=False):
+    """
+
+    :param filename:
+    :param judge_histone:
+    :param position_need:
+    :param ignore_hydrogen:
+    :return:
+    """
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
     chain = {}
-    SSBOND = []
+    ssbonds = []
     residue_type_map = []
     current_residue_count = -1
     current_residue_index = None
     current_resname = None
-    current_HIS = {"DeltaH": False, "EpsilonH": False}
+    current_histone_information = {"DeltaH": False, "EpsilonH": False}
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
                 resindex = int(line[22:26])
                 resname = line[17:20].strip()
                 atomname = line[12:16].strip()
-                if current_residue_index == None:
-                    _pdb_judge_histone(judge_HIS, residue_type_map, current_HIS)
+                if current_residue_index is None:
+                    _pdb_judge_histone(judge_histone, residue_type_map, current_histone_information)
                     current_residue_count += 1
                     current_resname = resname
                     residue_type_map.append(resname)
@@ -189,7 +245,7 @@ def pdb(filename, judge_HIS=True, position_need="A", ignoreH=False):
                     if resname in GlobalSetting.PDBResidueNameMap["head"].keys():
                         resname = GlobalSetting.PDBResidueNameMap["head"][resname]
                 elif current_residue_index != resindex or current_resname != resname:
-                    _pdb_judge_histone(judge_HIS, residue_type_map, current_HIS)
+                    _pdb_judge_histone(judge_histone, residue_type_map, current_histone_information)
                     current_residue_count += 1
                     current_resname = resname
                     current_residue_index = resindex
@@ -197,38 +253,43 @@ def pdb(filename, judge_HIS=True, position_need="A", ignoreH=False):
 
                     residue_type_map.append(resname)
 
-                if judge_HIS and resname in GlobalSetting.HISMap["HIS"].keys():
+                if judge_histone and resname in GlobalSetting.HISMap["HIS"].keys():
                     if atomname == GlobalSetting.HISMap["DeltaH"]:
-                        current_HIS["DeltaH"] = True
+                        current_histone_information["DeltaH"] = True
                     elif atomname == GlobalSetting.HISMap["EpsilonH"]:
-                        current_HIS["EpsilonH"] = True
+                        current_histone_information["EpsilonH"] = True
             elif line.startswith("TER"):
                 current_residue_index = None
                 current_resname = None
                 if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
                     residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
-                _pdb_judge_histone(judge_HIS, residue_type_map, current_HIS)
+                _pdb_judge_histone(judge_histone, residue_type_map, current_histone_information)
 
             elif line.startswith("SSBOND"):
-                SSBOND.append(line)
+                ssbonds.append(line)
 
     current_residue_index = None
     if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
         residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
 
-    _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignoreH)
-    _pdb_SSBONDS(chain, residue_type_map, SSBOND, molecule)
+    _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore_hydrogen)
+    _pdb_ssbond(chain, residue_type_map, ssbonds, molecule)
 
     return molecule
-
-
-sys.modules['__main__'].__dict__["loadpdb"] = pdb
 
 
 ##########################################################################
 # AMBER Format
 ##########################################################################
 def _frcmod_cmap(line, cmap, temp_cmp, cmap_flag):
+    """
+
+    :param line:
+    :param cmap:
+    :param temp_cmp:
+    :param cmap_flag:
+    :return:
+    """
     if line.startswith("%FLAG"):
         if "CMAP_COUNT" in line:
             if temp_cmp:
@@ -252,11 +313,23 @@ def _frcmod_cmap(line, cmap, temp_cmp, cmap_flag):
     return temp_cmp, cmap_flag
 
 
-def _frcmod_atoms_words(line, N):
-    return [word.strip() for word in line[:N].split("-")], line[N:].split()
+def _frcmod_atoms_words(line, n):
+    """
+
+    :param line:
+    :param n:
+    :return:
+    """
+    return [word.strip() for word in line[:n].split("-")], line[n:].split()
 
 
-def frcmod(filename, nbtype="RE"):
+def load_frcmod(filename, nbtype="RE"):
+    """
+
+    :param filename:
+    :param nbtype:
+    :return:
+    """
     with open(filename) as f:
         f.readline()
         flag = None
@@ -271,10 +344,10 @@ def frcmod(filename, nbtype="RE"):
         temp_cmp = {"residues": []}
         if nbtype == "SK":
             raise NotImplementedError
-        elif nbtype == "AC":
-            LJs = "name A[kcal/mol·A^-12]   B[kcal/mol·A^-6]\n"
+        if nbtype == "AC":
+            ljs = "name A[kcal/mol·A^-12]   B[kcal/mol·A^-6]\n"
         elif nbtype == "RE":
-            LJs = "name rmin[A]   epsilon[kcal/mol]\n"
+            ljs = "name rmin[A]   epsilon[kcal/mol]\n"
 
         for line in f:
             if not line.strip():
@@ -304,7 +377,7 @@ def frcmod(filename, nbtype="RE"):
                     int(float(words[2]))) + "\n"
             elif flag[:4] == "NONB":
                 words = line.split()
-                LJs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
+                ljs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
             elif flag[:4] == "CMAP":
                 temp_cmp, cmap_flag = _frcmod_cmap(line, cmap, temp_cmp, cmap_flag)
 
@@ -314,35 +387,44 @@ def frcmod(filename, nbtype="RE"):
     for atom, mass in atom_types.items():
         atoms += atom + "\t" + mass + "\t" + atom + "\n"
 
-    return atoms, bonds, angles, propers, impropers, LJs, cmap
+    return atoms, bonds, angles, propers, impropers, ljs, cmap
 
 
-sys.modules['__main__'].__dict__["loadfrcmod"] = frcmod
+def _parmdat_read_harmonic_bonds(f, bonds, n):
+    """
 
-
-def _parmdat_read_harmonic_bonds(f, bonds, N):
+    :param f:
+    :param bonds:
+    :param n:
+    :return:
+    """
     for line in f:
         if not line.strip():
             break
         else:
-            atoms, words = _frcmod_atoms_words(line, N)
+            atoms, words = _frcmod_atoms_words(line, n)
             bonds += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
     return bonds
 
 
-def parmdat(filename):
+def load_parmdat(filename):
+    """
+
+    :param filename:
+    :return:
+    """
     with open(filename) as f:
         f.readline()
         # 读原子
         atom_types = {}  # 元素符号和质量
-        LJ_types = {}  # 元素符号和LJ类型
+        lj_types = {}  # 元素符号和LJ类型
         for line in f:
             if not line.strip():
                 break
             else:
                 words = line.split()
                 atom_types[words[0]] = words[1]
-                LJ_types[words[0]] = words[0]
+                lj_types[words[0]] = words[0]
         f.readline()
         # 读键长
         bonds = "name  k[kcal/mol·A^-2]    b[A]\n"
@@ -388,40 +470,44 @@ def parmdat(filename):
                 atoms = line.split()
                 atom0 = atoms.pop(0)
                 for atom in atoms:
-                    LJ_types[atom] = atom0
+                    lj_types[atom] = atom0
 
         # 读LJ信息
         word = f.readline().split()[1]
         if word == "SK":
             raise NotImplementedError
-        elif word == "AC":
-            LJs = "name A[kcal/mol·A^-12]   B[kcal/mol·A^-6]\n"
+        if word == "AC":
+            ljs = "name A[kcal/mol·A^-12]   B[kcal/mol·A^-6]\n"
         elif word == "RE":
-            LJs = "name rmin[A]   epsilon[kcal/mol]\n"
+            ljs = "name rmin[A]   epsilon[kcal/mol]\n"
 
         for line in f:
             if not line.strip():
                 break
             else:
                 words = line.split()
-                LJs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
+                ljs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
 
     atoms = "name  mass  LJtype\n"
     for atom, mass in atom_types.items():
-        atoms += atom + "\t" + mass + "\t" + LJ_types[atom] + "\n"
+        atoms += atom + "\t" + mass + "\t" + lj_types[atom] + "\n"
 
-    return atoms, bonds, angles, propers, impropers, LJs
-
-
-sys.modules['__main__'].__dict__["loadparmdat"] = parmdat
+    return atoms, bonds, angles, propers, impropers, ljs
 
 
-def rst7(filename, mol=None):
+def load_rst7(filename, mol=None):
+    """
+
+    :param filename:
+    :param mol:
+    :return:
+    """
     crds = []
     with open(filename) as f:
         f.readline()
         words = f.readline().split()
         atom_numbers = int(words[0])
+        line = ""
         for line in f:
             words = line.split()
             while words and len(crds) < atom_numbers * 3:
@@ -430,8 +516,8 @@ def rst7(filename, mol=None):
     crds = np.array(crds).reshape((-1, 3))
     mol.box_length = box[:3]
     count = -1
-    for ri, residue in enumerate(mol.residues):
-        for ai, atom in enumerate(residue.atoms):
+    for residue in mol.residues:
+        for atom in residue.atoms:
             count += 1
             atom.x = crds[count][0]
             atom.y = crds[count][1]
@@ -440,16 +526,25 @@ def rst7(filename, mol=None):
     return crds, box
 
 
-sys.modules['__main__'].__dict__["loadrst7"] = rst7
-
-
 ##########################################################################
 # GROMACS Format
 ##########################################################################
-class GROMACS_TOPOLOGY_ITERATOR():
+class GromacsTopologyIterator():
+    """
+This **class** is used to read GROMACS topology
+    """
+
     def __init__(self, filename=None, macros=None):
+        """
+
+        :param filename:
+        :param macros:
+        """
+        set_attribute_alternative_name(self, self.add_iterator_file)
+
         self.files = []
         self.filenames = []
+
         if macros:
             self.defined_macros = macros
         else:
@@ -457,7 +552,12 @@ class GROMACS_TOPOLOGY_ITERATOR():
         if filename:
             self.Add_Iterator_File(filename)
 
-    def Add_Iterator_File(self, filename):
+    def add_iterator_file(self, filename):
+        """
+
+        :param filename:
+        :return:
+        """
         if self.files:
             filename = os.path.abspath(os.path.join(os.path.dirname(self.filenames[-1]), filename.replace('"', '')))
         else:
@@ -468,6 +568,11 @@ class GROMACS_TOPOLOGY_ITERATOR():
         self.filenames.append(filename)
 
     def _line_preprocess(self, line):
+        """
+
+        :param line:
+        :return:
+        """
         line = line.strip()
         comment = line.find(";")
         if comment >= 0:
@@ -479,21 +584,26 @@ class GROMACS_TOPOLOGY_ITERATOR():
         return line
 
     def _line_define(self, line):
+        """
+
+        :param line:
+        :return:
+        """
         words = line.split()
         if words[0] == "#ifdef":
             macro = words[1]
-            if self.macro_define_stat and self.macro_define_stat[-1] == False:
+            if self.macro_define_stat and not self.macro_define_stat[-1]:
                 self.macro_define_stat.append(False)
             elif macro in self.defined_macros.keys():
                 self.macro_define_stat.append(True)
             else:
                 self.macro_define_stat.append(False)
         elif words[0] == "#else":
-            if len(self.macro_define_stat) <= 1 or self.macro_define_stat[-2] != False:
+            if len(self.macro_define_stat) <= 1 or self.macro_define_stat[-2]:
                 self.macro_define_stat[-1] = not self.macro_define_stat[-1]
         elif words[0] == "#endif":
             self.macro_define_stat.pop()
-        elif self.macro_define_stat and self.macro_define_stat[-1] == False:
+        elif self.macro_define_stat and not self.macro_define_stat[-1]:
             next(self)
         elif words[0] == "#define":
             if len(words) > 2:
@@ -501,7 +611,7 @@ class GROMACS_TOPOLOGY_ITERATOR():
             else:
                 self.defined_macros[words[1]] = ""
         elif words[0] == "#include":
-            self.Add_Iterator_File(words[1])
+            self.add_iterator_file(words[1])
         elif words[0] == "#undef":
             self.defined_macros.pop(words[1])
         elif words[0] == "#error":
@@ -522,7 +632,7 @@ class GROMACS_TOPOLOGY_ITERATOR():
                 line = self._line_preprocess(line)
                 if line[0] == "#":
                     line = self._line_define(line)
-                elif self.macro_define_stat and self.macro_define_stat[-1] == False:
+                elif self.macro_define_stat and not self.macro_define_stat[-1]:
                     line = next(self)
                 elif "[" in line and "]" in line:
                     self.flag = line[1:-1].strip()
@@ -530,15 +640,21 @@ class GROMACS_TOPOLOGY_ITERATOR():
                 for macro, tobecome in self.defined_macros.items():
                     line = line.replace(macro, tobecome)
                 return line
-            else:
-                f.close()
-                self.files.pop()
-                self.filenames.pop()
-                continue
+
+            f.close()
+            self.files.pop()
+            self.filenames.pop()
+
         raise StopIteration
 
 
 def _ffitp_dihedrals(line, output):
+    """
+
+    :param line:
+    :param output:
+    :return:
+    """
     words = line.split()
     func = words[4]
     if func == "1":
@@ -557,8 +673,14 @@ def _ffitp_dihedrals(line, output):
         raise NotImplementedError
 
 
-def ffitp(filename, macros=None):
-    iterator = GROMACS_TOPOLOGY_ITERATOR(filename, macros)
+def load_ffitp(filename, macros=None):
+    """
+
+    :param filename:
+    :param macros:
+    :return:
+    """
+    iterator = GromacsTopologyIterator(filename, macros)
     output = {}
     output["nb14"] = "name  kLJ  kee\n"
     output["atomtypes"] = "name mass charge[e] LJtype\n"
@@ -580,10 +702,10 @@ def ffitp(filename, macros=None):
             else:
                 output["LJ"] = "name sigma[nm] epsilon[kJ/mol] \n"
                 output["nb14_extra"] = "name sigma[nm] epsilon[kJ/mol] kee\n"
-            fudgeLJ = float(words[3])
-            fudgeQQ = float(words[4])
+            fudge_lj = float(words[3])
+            fudge_qq = float(words[4])
             if words[2] == "yes":
-                output["nb14"] += "X-X {fudgeLJ} {fudgeQQ}\n".format(fudgeLJ=fudgeLJ, fudgeQQ=fudgeQQ)
+                output["nb14"] += "X-X {fudgeLJ} {fudgeQQ}\n".format(fudgeLJ=fudge_lj, fudgeQQ=fudge_qq)
 
         elif iterator.flag == "atomtypes":
             words = line.split()
@@ -593,12 +715,12 @@ def ffitp(filename, macros=None):
         elif iterator.flag == "pairtypes":
             words = line.split()
             if len(words) <= 3:
-                output["nb14"] += "{atom1}-{atom2} {kLJ} {kee}\n".format(atom1=words[0], atom2=words[1], kLJ=fudgeLJ,
-                                                                         kee=fudgeQQ)
+                output["nb14"] += "{atom1}-{atom2} {kLJ} {kee}\n".format(atom1=words[0], atom2=words[1], kLJ=fudge_lj,
+                                                                         kee=fudge_qq)
             elif words[2] == "1":
                 output["nb14_extra"] += "{atom1}-{atom2} {V} {W} {kee}\n".format(atom1=words[0], atom2=words[1],
                                                                                  V=float(words[3]), W=float(words[4]),
-                                                                                 kee=fudgeQQ)
+                                                                                 kee=fudge_qq)
                 output["nb14"] += "{atom1}-{atom2} 0 0\n".format(atom1=words[0], atom2=words[1])
             elif words[2] == "2":
                 raise NotImplementedError
@@ -635,6 +757,3 @@ def ffitp(filename, macros=None):
             output["LJ"] += "{type1}-{type2} {V} {W}\n".format(type1=words[0], type2=words[1], V=float(words[3]),
                                                                W=float(words[4]))
     return output
-
-
-sys.modules['__main__'].__dict__["loadffitp"] = ffitp
