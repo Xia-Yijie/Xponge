@@ -641,6 +641,7 @@ class Molecule:
     def Set_Save_SPONGE_Input(cls, keyname):
         def wrapper(func):
             cls.save_functions[keyname] = func
+            return func
 
         return wrapper
 
