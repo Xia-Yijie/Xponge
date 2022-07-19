@@ -1,10 +1,11 @@
 """
-This **module** is the basic setting of atom-specific cmap
+This **module** is the basic setting for the force field format of atom-specific cmap
 """
 from ... import Generate_New_Bonded_Force_Type
 from ...helper import Molecule
 
-CMap = Generate_New_Bonded_Force_Type("atom_specific_cmap", "1-2-3-4-5", {"resolution": int, "parameters": list}, False)
+CMapType = Generate_New_Bonded_Force_Type("atom_specific_cmap", "1-2-3-4-5", {"resolution": int, "parameters": list},
+                                          False)
 
 
 @Molecule.Set_Save_SPONGE_Input("cmap")
@@ -47,5 +48,5 @@ This **function** is used to write SPONGE input file
         towrite += "\n".join(bonds)
 
         return towrite
-    else:
-        return None
+
+    return None

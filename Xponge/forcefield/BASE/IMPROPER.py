@@ -1,4 +1,9 @@
-from ... import *
+"""
+This **module** is the basic setting for the force field format of periodic proper and improper dihedral
+"""
+from itertools import permutations
+from ... import Generate_New_Bonded_Force_Type
+from ...helper import Molecule
 
 ImproperType = Generate_New_Bonded_Force_Type("harmonic_improper", "1-3-2-3", {"k": float, "phi0": float}, False)
 
@@ -12,7 +17,13 @@ ImproperType.Set_Property_Unit("phi0", "angle", "rad")
 
 
 @ImproperType.Set_Same_Force_Function
-def Improper_Same_Force(cls, atom_list):
+def improper_same_force(_, atom_list):
+    """
+This **function** is used to return the same force type for an atom list
+    :param _:
+    :param atom_list:
+    :return:
+    """
     temp = []
     if type(atom_list) == str:
         atom_list_temp = [atom.strip() for atom in atom_list.split("-")]
@@ -33,6 +44,11 @@ def Improper_Same_Force(cls, atom_list):
 
 @Molecule.Set_Save_SPONGE_Input("improper_dihedral")
 def write_dihedral(self):
+    """
+This **function** is used to write SPONGE input file
+    :param self:
+    :return:
+    """
     dihedrals = []
 
     for dihedral in self.bonded_forces.get("harmonic_improper", []):
@@ -44,9 +60,10 @@ def write_dihedral(self):
                                                     self.atom_index[dihedral.atoms[temp_order[3]]], dihedral.k,
                                                     dihedral.phi0))
 
-    if (dihedrals):
+    if dihedrals:
         towrite = "%d\n" % len(dihedrals)
         dihedrals.sort(key=lambda x: list(map(float, x.split())))
         towrite += "\n".join(dihedrals)
 
         return towrite
+    return None

@@ -1,7 +1,15 @@
+"""
+This **module** is the basic setting for the force field non bonded exclusion
+"""
+from functools import partial
 from ... import Molecule
+from ...helper import set_attribute_alternative_name
 
 
 class Exclude:
+    """
+This **class** is used to set non bonded exclusion generally
+    """
     current = None
 
     def __init__(self, *args, **kwargs):
@@ -12,16 +20,17 @@ class Exclude:
             n = kwargs["n"]
         self.n = n
         Exclude.current = self
+        set_attribute_alternative_name(self, self.get_excluded_atoms)
 
-        @Molecule.Set_Save_SPONGE_Input("exclude")
         def write_exclude(mol):
             exclude_numbers = 0
             excludes = []
             for atom in mol.atoms:
                 temp = atom.extra_excluded_atoms.copy()
                 atom_self_index = mol.atom_index[atom]
+                filter_func = partial(lambda x, y: x > y, y=atom_self_index)
                 excludes.append(
-                    list(map(lambda x: mol.atom_index[x], filter(lambda x: mol.atom_index[x] > atom_self_index, temp))))
+                    list(map(lambda x: mol.atom_index[x], filter(filter_func, temp))))
                 exclude_numbers += len(excludes[-1])
                 for i in range(2, n + 1):
                     for aton in atom.linked_atoms.get(i, []):
@@ -42,7 +51,14 @@ class Exclude:
 
             return towrite
 
-    def Get_Excluded_Atoms(self, molecule):
+        Molecule.Set_Save_SPONGE_Input("exclude")(write_exclude)
+
+    def get_excluded_atoms(self, molecule):
+        """
+
+        :param molecule:
+        :return:
+        """
         temp_dict = {}
         for atom in molecule.atoms:
             temp_dict[atom] = atom.extra_excluded_atoms.copy()

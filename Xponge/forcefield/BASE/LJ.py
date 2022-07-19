@@ -1,4 +1,9 @@
-from ... import *
+"""
+This **module** is the basic setting for the force field property of charge
+"""
+import numpy as np
+from ... import Generate_New_Pairwise_Force_Type
+from ...helper import Molecule, AtomType, GlobalSetting
 
 AtomType.Add_Property({"LJtype": str})
 
@@ -13,7 +18,12 @@ LJType.Set_Property_Unit("B", "energy·distance^12", "kcal/mol·A^12")
 
 
 @GlobalSetting.Add_Unit_Transfer_Function(LJType)
-def LJ_Unit_Transfer(self):
+def lj_unit_transfer(self):
+    """
+This **function** is used to transfer the units of lj
+    :param self:
+    :return:
+    """
     if self.A != None and self.B != None:
         if self.B == 0 or self.A == 0:
             self.sigma = 0
@@ -29,27 +39,49 @@ def LJ_Unit_Transfer(self):
 
 
 def Lorentz_Berthelot_For_A(epsilon1, rmin1, epsilon2, rmin2):
+    """
+This **function** is used to calculate the A coefficient for Lorentz_Berthelot mix rule
+    :param epsilon1:
+    :param rmin1:
+    :param epsilon2:
+    :param rmin2:
+    :return:
+    """
     return np.sqrt(epsilon1 * epsilon2) * ((rmin1 + rmin2) ** 12)
 
 
 def Lorents_Berthelot_For_B(epsilon1, rmin1, epsilon2, rmin2):
+    """
+This **function** is used to calculate the A coefficient for Lorentz_Berthelot mix rule
+    :param epsilon1:
+    :param rmin1:
+    :param epsilon2:
+    :param rmin2:
+    :return:
+    """
     return np.sqrt(epsilon1 * epsilon2) * 2 * ((rmin1 + rmin2) ** 6)
 
 
-def find_AB_LJ(LJtypes, stat=True):
+def _find_ab_lj(ljtypes, stat=True):
+    """
+
+    :param ljtypes:
+    :param stat:
+    :return:
+    """
     As = []
     Bs = []
 
-    for i in range(len(LJtypes)):
-        LJ_i = LJType.types[LJtypes[i] + "-" + LJtypes[i]]
+    for i in range(len(ljtypes)):
+        LJ_i = LJType.types[ljtypes[i] + "-" + ljtypes[i]]
         if stat:
-            j_max = len(LJtypes)
+            j_max = len(ljtypes)
         else:
             j_max = i + 1
         for j in range(j_max):
-            LJ_j = LJType.types[LJtypes[j] + "-" + LJtypes[j]]
+            LJ_j = LJType.types[ljtypes[j] + "-" + ljtypes[j]]
             finded = False
-            findnames = [LJtypes[i] + "-" + LJtypes[j], LJtypes[j] + "-" + LJtypes[i]]
+            findnames = [ljtypes[i] + "-" + ljtypes[j], ljtypes[j] + "-" + ljtypes[i]]
             for findname in findnames:
                 if findname in LJType.types.keys():
                     finded = True
@@ -63,13 +95,20 @@ def find_AB_LJ(LJtypes, stat=True):
     return As, Bs
 
 
-def get_checks(LJtypes, As, Bs):
+def _get_checks(ljtypes, As, Bs):
+    """
+
+    :param ljtypes:
+    :param As:
+    :param Bs:
+    :return:
+    """
     checks = {}
     count = 0
-    for i in range(len(LJtypes)):
+    for i in range(len(ljtypes)):
         check_string_A = ""
         check_string_B = ""
-        for j in range(len(LJtypes)):
+        for j in range(len(ljtypes)):
             check_string_A += "%16.7e" % As[count] + " "
             check_string_B += "%16.7e" % Bs[count] + " "
             count += 1
@@ -78,63 +117,80 @@ def get_checks(LJtypes, As, Bs):
     return checks
 
 
-def judge_same_type(LJtypes, checks):
-    same_type = {i: i for i in range(len(LJtypes))}
-    for i in range(len(LJtypes) - 1, -1, -1):
-        for j in range(i + 1, len(LJtypes)):
+def _judge_same_type(ljtypes, checks):
+    """
+
+    :param ljtypes:
+    :param checks:
+    :return:
+    """
+    same_type = {i: i for i in range(len(ljtypes))}
+    for i in range(len(ljtypes) - 1, -1, -1):
+        for j in range(i + 1, len(ljtypes)):
             if checks[i] == checks[j]:
                 same_type[j] = i
     return same_type
 
 
-def get_real_LJ(LJtypes, same_type):
-    real_LJtypes = []
+def _get_real_lj(ljtypes, same_type):
+    """
+
+    :param ljtypes:
+    :param same_type:
+    :return:
+    """
+    real_ljtypes = []
     tosub = 0
-    for i in range(len(LJtypes)):
+    for i in range(len(ljtypes)):
         if same_type[i] == i:
-            real_LJtypes.append(LJtypes[i])
+            real_ljtypes.append(ljtypes[i])
             same_type[i] -= tosub
         else:
             same_type[i] = same_type[same_type[i]]
             tosub += 1
-    return real_LJtypes
+    return real_ljtypes
 
 
 def write_LJ(self):
-    LJtypes = []
-    LJtypemap = {}
+    """
+This **function** is used to write SPONGE input file
+    :param self:
+    :return:
+    """
+    ljtypes = []
+    ljtypemap = {}
     for atom in self.atoms:
-        if atom.LJtype not in LJtypemap.keys():
-            LJtypemap[atom.LJtype] = len(LJtypes)
-            LJtypes.append(atom.LJtype)
+        if atom.LJtype not in ljtypemap.keys():
+            ljtypemap[atom.LJtype] = len(ljtypes)
+            ljtypes.append(atom.LJtype)
 
-    As, Bs = find_AB_LJ(LJtypes)
+    coefficients_a, coefficients_b = _find_ab_lj(ljtypes)
 
-    checks = get_checks(LJtypes, As, Bs)
+    checks = _get_checks(ljtypes, coefficients_a, coefficients_b)
 
-    same_type = judge_same_type(LJtypes, checks)
+    same_type = _judge_same_type(ljtypes, checks)
 
-    real_LJtypes = get_real_LJ(LJtypes, same_type)
+    real_ljtypes = _get_real_lj(ljtypes, same_type)
 
-    real_As, real_Bs = find_AB_LJ(real_LJtypes, False)
+    real_as, real_bs = _find_ab_lj(real_ljtypes, False)
 
-    towrite = "%d %d\n\n" % (len(self.atoms), len(real_LJtypes))
+    towrite = "%d %d\n\n" % (len(self.atoms), len(real_ljtypes))
     count = 0
-    for i in range(len(real_LJtypes)):
+    for i in range(len(real_ljtypes)):
         for j in range(i + 1):
-            towrite += "%16.7e" % real_As[count] + " "
+            towrite += "%16.7e" % real_as[count] + " "
             count += 1
         towrite += "\n"
     towrite += "\n"
 
     count = 0
-    for i in range(len(real_LJtypes)):
+    for i in range(len(real_ljtypes)):
         for j in range(i + 1):
-            towrite += "%16.7e" % real_Bs[count] + " "
+            towrite += "%16.7e" % real_bs[count] + " "
             count += 1
         towrite += "\n"
     towrite += "\n"
-    towrite += "\n".join(["%d" % (same_type[LJtypemap[atom.LJtype]]) for atom in self.atoms])
+    towrite += "\n".join(["%d" % (same_type[ljtypemap[atom.LJtype]]) for atom in self.atoms])
     return towrite
 
 
