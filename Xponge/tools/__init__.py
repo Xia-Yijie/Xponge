@@ -4,7 +4,7 @@ from Xponge import *
 __main__ = sys.modules["__main__"]
 
 
-def test(args):
+def basic_test(args):
     import Xponge
     import Xponge.forcefield.AMBER.ff14SB
     import Xponge.forcefield.AMBER.tip3p
@@ -27,6 +27,33 @@ def test(args):
     t.residues.sort(key=lambda residue: {"CL": 2, "K": 1, "WAT": 3}.get(residue.type.name, 0))
     Save_PDB(t, f"{args.o}.pdb")
     Save_SPONGE_Input(t, f"{args.o}")
+
+
+def assign_test(args):
+    import Xponge
+    import Xponge.forcefield.AMBER.gaff as gaff
+
+    globals().update(__main__.__dict__)
+    t = assign.Assign()
+    t.add_atom("O", 0,0,0)
+    t.add_atom("H", 1,0,0)
+    t.add_atom("H", 0,1,0)
+    t.add_bond(0,1,1)
+    t.add_bond(0,2,1)
+    t.determine_ring_and_bond_type()
+    t.determine_atom_type("GAFF")
+
+
+
+def test(args):
+    if not args.do:
+        args.do = [["base"]]
+    args.do = args.do[0]
+    if "base" in args.do:
+        basic_test(args)
+
+    if "assign" in args.do:
+        assign_test(args)
 
 
 def dat2nc(args):

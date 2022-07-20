@@ -12,25 +12,25 @@ DIHEDRAL.ProperType.New_From_String(propers)
 DIHEDRAL.ImproperType.New_From_String(impropers)
 LJ.LJType.New_From_String(LJs)
 
-GAFF = assign.Judge_Rule("GAFF")
+GAFF = assign.AssignRule("GAFF")
 
 
-@GAFF.Add_Judge_Rule("cx")
+@GAFF.Add_Rule("cx")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C4") and "RG3" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("cy")
+@GAFF.Add_Rule("cy")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C4") and "RG4" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("c3")
+@GAFF.Add_Rule("c3")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C4")
 
 
-@GAFF.Add_Judge_Rule("c")
+@GAFF.Add_Rule("c")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "C3")
     if tofind:
@@ -42,7 +42,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("cz")
+@GAFF.Add_Rule("cz")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "C3")
     if tofind:
@@ -53,7 +53,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("cq")
+@GAFF.Add_Rule("cq")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "C3") and "AR1" in Assign.atom_marker[i] and Assign.atom_marker[i].get("RG6") == 1
     for bonded_atom in Assign.bonds[i].keys():
@@ -72,7 +72,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("cp")
+@GAFF.Add_Rule("cp")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "C3") and "AR1" in Assign.atom_marker[i] and Assign.atom_marker[i].get("RG6") == 1
     for bonded_atom in Assign.bonds[i].keys():
@@ -84,7 +84,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("ca")
+@GAFF.Add_Rule("ca")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C3") and "AR1" in Assign.atom_marker[i]
 
@@ -101,7 +101,7 @@ def _single_double_name(i, Assign, name1, name2):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("cd")
+@GAFF.Add_Rule("cd")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and (
                 "AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
@@ -110,13 +110,13 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("cc")
+@GAFF.Add_Rule("cc")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and (
                 "AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
 
 
-@GAFF.Add_Judge_Rule("cf")
+@GAFF.Add_Rule("cf")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
     if tofind:
@@ -134,7 +134,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("ce")
+@GAFF.Add_Rule("ce")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "C3") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
     if tofind:
@@ -150,22 +150,22 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("cu")
+@GAFF.Add_Rule("cu")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C3") and "RG3" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("cv")
+@GAFF.Add_Rule("cv")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C3") and "RG4" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("c2")
+@GAFF.Add_Rule("c2")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C3")
 
 
-@GAFF.Add_Judge_Rule("cg")
+@GAFF.Add_Rule("cg")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "C2") and "sb" in Assign.atom_marker[i] and "tb" in Assign.atom_marker[i]
     if tofind:
@@ -179,32 +179,32 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("c1")
+@GAFF.Add_Rule("c1")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "C2") or Assign.Atom_Judge(i, "C1")
 
 
-@GAFF.Add_Judge_Rule("hn")
+@GAFF.Add_Rule("hn")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and Assign.atoms[list(Assign.bonds[i].keys())[0]] == "N"
 
 
-@GAFF.Add_Judge_Rule("ho")
+@GAFF.Add_Rule("ho")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and Assign.atoms[list(Assign.bonds[i].keys())[0]] == "O"
 
 
-@GAFF.Add_Judge_Rule("hs")
+@GAFF.Add_Rule("hs")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and Assign.atoms[list(Assign.bonds[i].keys())[0]] == "S"
 
 
-@GAFF.Add_Judge_Rule("hp")
+@GAFF.Add_Rule("hp")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and Assign.atoms[list(Assign.bonds[i].keys())[0]] == "P"
 
 
-@GAFF.Add_Judge_Rule("hx")
+@GAFF.Add_Rule("hx")
 def temp(i, Assign):
     tofind = False
     for bonded_atom in Assign.bonds[i].keys():
@@ -216,7 +216,7 @@ def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and tofind
 
 
-@GAFF.Add_Judge_Rule("hw")
+@GAFF.Add_Rule("hw")
 def temp(i, Assign):
     tofind = False
     for bonded_atom in Assign.bonds[i].keys():
@@ -228,7 +228,7 @@ def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and tofind
 
 
-@GAFF.Add_Judge_Rule("h3")
+@GAFF.Add_Rule("h3")
 def temp(i, Assign):
     tofind = 0
     for bonded_atom in Assign.bonds[i].keys():
@@ -240,7 +240,7 @@ def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and tofind == 3
 
 
-@GAFF.Add_Judge_Rule("h2")
+@GAFF.Add_Rule("h2")
 def temp(i, Assign):
     tofind = 0
     for bonded_atom in Assign.bonds[i].keys():
@@ -251,7 +251,7 @@ def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and tofind == 2
 
 
-@GAFF.Add_Judge_Rule("h1")
+@GAFF.Add_Rule("h1")
 def temp(i, Assign):
     tofind = 0
     for bonded_atom in Assign.bonds[i].keys():
@@ -262,12 +262,12 @@ def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and tofind == 1
 
 
-@GAFF.Add_Judge_Rule("hc")
+@GAFF.Add_Rule("hc")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and Assign.Atom_Judge(list(Assign.bonds[i].keys())[0], "C4")
 
 
-@GAFF.Add_Judge_Rule("h5")
+@GAFF.Add_Rule("h5")
 def temp(i, Assign):
     tofind = 0
     for bonded_atom in Assign.bonds[i].keys():
@@ -278,7 +278,7 @@ def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and tofind == 2
 
 
-@GAFF.Add_Judge_Rule("h4")
+@GAFF.Add_Rule("h4")
 def temp(i, Assign):
     tofind = 0
     for bonded_atom in Assign.bonds[i].keys():
@@ -289,37 +289,37 @@ def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1") and tofind == 1
 
 
-@GAFF.Add_Judge_Rule("ha")
+@GAFF.Add_Rule("ha")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "H1")
 
 
-@GAFF.Add_Judge_Rule("f")
+@GAFF.Add_Rule("f")
 def temp(i, Assign):
     return Assign.atoms[i] == "F"
 
 
-@GAFF.Add_Judge_Rule("cl")
+@GAFF.Add_Rule("cl")
 def temp(i, Assign):
     return Assign.atoms[i] == "Cl"
 
 
-@GAFF.Add_Judge_Rule("br")
+@GAFF.Add_Rule("br")
 def temp(i, Assign):
     return Assign.atoms[i] == "Br"
 
 
-@GAFF.Add_Judge_Rule("i")
+@GAFF.Add_Rule("i")
 def temp(i, Assign):
     return Assign.atoms[i] == "I"
 
 
-@GAFF.Add_Judge_Rule("o")
+@GAFF.Add_Rule("o")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "O1")
 
 
-@GAFF.Add_Judge_Rule("oh")
+@GAFF.Add_Rule("oh")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "O2") or Assign.Atom_Judge(i, "O3"):
@@ -330,22 +330,22 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("op")
+@GAFF.Add_Rule("op")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "O2") and "RG3" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("oq")
+@GAFF.Add_Rule("oq")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "O2") and "RG4" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("os")
+@GAFF.Add_Rule("os")
 def temp(i, Assign):
     return Assign.atoms[i] == "O"
 
 
-@GAFF.Add_Judge_Rule("ni")
+@GAFF.Add_Rule("ni")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "N3") and "RG3" in Assign.atom_marker[i].keys():
@@ -360,7 +360,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("nj")
+@GAFF.Add_Rule("nj")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "N3") and "RG4" in Assign.atom_marker[i].keys():
@@ -375,7 +375,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("n")
+@GAFF.Add_Rule("n")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "N3"):
@@ -390,22 +390,22 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("nk")
+@GAFF.Add_Rule("nk")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N4") and "RG3" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("nl")
+@GAFF.Add_Rule("nl")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N4") and "RG4" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("n4")
+@GAFF.Add_Rule("n4")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N4")
 
 
-@GAFF.Add_Judge_Rule("no")
+@GAFF.Add_Rule("no")
 def temp(i, Assign):
     tofind = 0
     if Assign.Atom_Judge(i, "N3"):
@@ -415,14 +415,14 @@ def temp(i, Assign):
     return tofind == 2
 
 
-@GAFF.Add_Judge_Rule("na")
+@GAFF.Add_Rule("na")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N3") and (
                 "AR1" in Assign.atom_marker[i].keys() or "AR2" in Assign.atom_marker[i].keys() or "AR3" in
                 Assign.atom_marker[i].keys())
 
 
-@GAFF.Add_Judge_Rule("nm")
+@GAFF.Add_Rule("nm")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "N3") and "RG3" in Assign.atom_marker[i].keys():
@@ -442,7 +442,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("nn")
+@GAFF.Add_Rule("nn")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "N3") and "RG4" in Assign.atom_marker[i].keys():
@@ -459,7 +459,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("nh")
+@GAFF.Add_Rule("nh")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "N3"):
@@ -476,27 +476,27 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("np")
+@GAFF.Add_Rule("np")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N3") and "RG3" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("nq")
+@GAFF.Add_Rule("nq")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N3") and "RG4" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("n3")
+@GAFF.Add_Rule("n3")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N3")
 
 
-@GAFF.Add_Judge_Rule("nb")
+@GAFF.Add_Rule("nb")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N2") and "AR1" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("nd")
+@GAFF.Add_Rule("nd")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and (
                 "AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
@@ -520,7 +520,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("nc")
+@GAFF.Add_Rule("nc")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and (
                 "AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
@@ -542,7 +542,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("nf")
+@GAFF.Add_Rule("nf")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
     if tofind:
@@ -558,7 +558,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("ne")
+@GAFF.Add_Rule("ne")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "N2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
     if tofind:
@@ -572,29 +572,29 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("n1")
+@GAFF.Add_Rule("n1")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N1") or (Assign.Atom_Judge(i, "N2") and (
                 ("sb" in Assign.atom_marker[i] and "tb" in Assign.atom_marker[i]) or (
                     Assign.atom_marker[i].get("db") == 2)))
 
 
-@GAFF.Add_Judge_Rule("n2")
+@GAFF.Add_Rule("n2")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "N2")
 
 
-@GAFF.Add_Judge_Rule("s")
+@GAFF.Add_Rule("s")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "S1")
 
 
-@GAFF.Add_Judge_Rule("s2")
+@GAFF.Add_Rule("s2")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "S2") and ("DB" in Assign.atom_marker[i] or "TB" in Assign.atom_marker[i])
 
 
-@GAFF.Add_Judge_Rule("sh")
+@GAFF.Add_Rule("sh")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "S2"):
@@ -605,22 +605,22 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("sp")
+@GAFF.Add_Rule("sp")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "S2") and "RG3" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("sq")
+@GAFF.Add_Rule("sq")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "S2") and "RG4" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("ss")
+@GAFF.Add_Rule("ss")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "S2")
 
 
-@GAFF.Add_Judge_Rule("sx")
+@GAFF.Add_Rule("sx")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "S3") and "db" in Assign.atom_marker[i].keys()
     if tofind:
@@ -634,12 +634,12 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("s4")
+@GAFF.Add_Rule("s4")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "S3")
 
 
-@GAFF.Add_Judge_Rule("sy")
+@GAFF.Add_Rule("sy")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "S4") and "db" in Assign.atom_marker[i].keys()
     if tofind:
@@ -653,12 +653,12 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("s6")
+@GAFF.Add_Rule("s6")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "S4") or Assign.Atom_Judge(i, "S5") or Assign.Atom_Judge(i, "S6")
 
 
-@GAFF.Add_Judge_Rule("pd")
+@GAFF.Add_Rule("pd")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "P2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and (
                 "AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
@@ -675,12 +675,12 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("pb")
+@GAFF.Add_Rule("pb")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "P2") and "AR1" in Assign.atom_marker[i].keys()
 
 
-@GAFF.Add_Judge_Rule("pc")
+@GAFF.Add_Rule("pc")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "P2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i] and (
                 "AR2" in Assign.atom_marker[i] or "AR3" in Assign.atom_marker[i])
@@ -695,7 +695,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("pf")
+@GAFF.Add_Rule("pf")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "P2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
     if tofind:
@@ -711,7 +711,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("pe")
+@GAFF.Add_Rule("pe")
 def temp(i, Assign):
     tofind = Assign.Atom_Judge(i, "P2") and "sb" in Assign.atom_marker[i] and "db" in Assign.atom_marker[i]
     if tofind:
@@ -725,12 +725,12 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("p2")
+@GAFF.Add_Rule("p2")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "P1") or Assign.Atom_Judge(i, "P2")
 
 
-@GAFF.Add_Judge_Rule("px")
+@GAFF.Add_Rule("px")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "P3") and "db" in Assign.atom_marker[i].keys():
@@ -743,7 +743,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("p4")
+@GAFF.Add_Rule("p4")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "P3") and "db" in Assign.atom_marker[i].keys():
@@ -754,12 +754,12 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("p3")
+@GAFF.Add_Rule("p3")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "P3")
 
 
-@GAFF.Add_Judge_Rule("py")
+@GAFF.Add_Rule("py")
 def temp(i, Assign):
     tofind = False
     if Assign.Atom_Judge(i, "P4") and "db" in Assign.atom_marker[i].keys():
@@ -772,7 +772,7 @@ def temp(i, Assign):
     return tofind
 
 
-@GAFF.Add_Judge_Rule("p5")
+@GAFF.Add_Rule("p5")
 def temp(i, Assign):
     return Assign.Atom_Judge(i, "P4") or Assign.Atom_Judge(i, "P5") or Assign.Atom_Judge(i, "P6")
 

@@ -1,20 +1,38 @@
-from .. import *
-import pubchempy as pcp
+"""
+This **package** is used to assign the properties for atoms, residues and molecules
+"""
+# from .. import *
+# import pubchempy as pcp
+# from itertools import groupby
+# import sys
+from collections import OrderedDict
 from itertools import groupby
-import sys
+import numpy as np
+from ..helper import set_attribute_alternative_names, AtomType, guess_element_from_mass
 
 
-class Judge_Rule:
+class AssignRule:
+    """
+This **class** is to be the rule to determine the atom type for one atom
+    """
     all = {}
 
     def __init__(self, name):
         self.name = name
-        Judge_Rule.all[name] = self
+        AssignRule.all[name] = self
         self.rules = OrderedDict()
+        set_attribute_alternative_names(self)
 
-    def Add_Judge_Rule(self, atomtype):
+    def add_rule(self, atomtype):
+        """
+This **function** is used as an **decorator** to add the atom type - judge function
+        :param atomtype:
+        :return:
+        """
         if isinstance(atomtype, str):
             atomtype = AtomType.types[atomtype]
+        elif not isinstance(atomtype, AtomType):
+            raise TypeError("atomtype should be a string or AtomType")
 
         def wrapper(rule_function):
             self.rules[atomtype] = rule_function
@@ -23,15 +41,31 @@ class Judge_Rule:
 
 
 class _RING():
+    """
+This **class** is used to help with the ring assignment.
+    """
+
     @staticmethod
-    def Add_Rings_Basic_Marker(assign, rings):
+    def add_rings_basic_marker(assign, rings):
+        """
+
+        :param assign:
+        :param rings:
+        :return:
+        """
         for ring in rings:
             for atom in ring.atoms:
                 assign.Add_Atom_Marker(atom, "RG")
                 assign.Add_Atom_Marker(atom, "RG%d" % len(ring.atoms))
 
     @staticmethod
-    def Check_Rings_Type(assign, rings):
+    def check_rings_type(assign, rings):
+        """
+
+        :param assign:
+        :param rings:
+        :return:
+        """
         for ring in rings:
             ring.check_pure_aromatic(assign)
             ring.check_pure_aliphatic_and_planar(assign)
@@ -50,7 +84,12 @@ class _RING():
                         assign.Add_Atom_Marker(atom, "AR4")
 
     @staticmethod
-    def Get_Rings(assign):
+    def get_rings(assign):
+        """
+
+        :param assign:
+        :return:
+        """
         current_path = []
         current_path_sons = {}
         current_work = []
@@ -97,7 +136,7 @@ class _RING():
         return hash(self.tohash)
 
     def __eq__(self, other):
-        return type(other) == _RING and self.tohash == other.tohash
+        return isinstance(other, _RING) and self.tohash == other.tohash
 
     def __init__(self, atom_list):
         min_index = np.argmin(atom_list)
@@ -109,10 +148,19 @@ class _RING():
         self.tohash = "-".join(["%d" % atom for atom in self.atoms])
 
     def get_3_neighbors(self):
-        for i in range(len(self.atoms)):
-            yield self.atoms[i - 2], self.atoms[i - 1], self.atoms[i]
+        """
+
+        :return:
+        """
+        for i, atom in enumerate(self.atoms):
+            yield self.atoms[i - 2], self.atoms[i - 1], atom
 
     def check_pure_aromatic(self, assign):
+        """
+
+        :param assign:
+        :return:
+        """
         if len(self.atoms) == 6:
             self.is_pure_aromatic_ring = True
             for atom in self.atoms:
@@ -131,12 +179,17 @@ class _RING():
                     if bond_order == 2 and "RG" not in assign.atom_marker[bonded_atom].keys():
                         self.is_pure_aromatic_ring = False
                         break
-                if self.is_pure_aromatic_ring == False:
+                if not self.is_pure_aromatic_ring:
                     break
         else:
             self.is_pure_aromatic_ring = False
 
     def check_pure_aliphatic_and_planar(self, assign):
+        """
+
+        :param assign:
+        :return:
+        """
         self.is_pure_aliphatic_ring = True
         self.is_planar_ring = True
         for atom in self.atoms:
@@ -153,6 +206,11 @@ class _RING():
                 self.is_planar_ring = False
 
     def check_out_plane_double_bond(self, assign):
+        """
+
+        :param assign:
+        :return:
+        """
         self.out_plane_double_bond = False
         for atom in self.atoms:
             for bonded_atom, order in assign.bonds[atom].items():
@@ -161,6 +219,9 @@ class _RING():
 
 
 class Assign():
+    """
+This **class** is used to assign properties for atoms, which is called an "assignment"
+    """
     XX = set("CNOPS")
     XA = set("OS")
     XB = set("NP")
@@ -182,13 +243,24 @@ class Assign():
         self.ar_bonds = {}
         self.am_bonds = {}
         self.bond_marker = {}
+        set_attribute_alternative_names(self)
 
-    def Add_Index_To_Name(self):
+    def add_index_to_name(self):
+        """
+
+        :return:
+        """
         for i in range(self.atom_numbers):
             self.names[i] += str(i)
 
-    def Atom_Judge(self, atom, string):
-        assert isinstance(string, list) or isinstance(string, str)
+    def atom_judge(self, atom, string):
+        """
+
+        :param atom:
+        :param string:
+        :return:
+        """
+        assert isinstance(string, (list, str))
         if isinstance(string, str):
             todo = [string]
         else:
@@ -201,7 +273,17 @@ class Assign():
                 break
         return judge
 
-    def Add_Atom(self, element, x, y, z, name="", charge=0.0):
+    def add_atom(self, element, x, y, z, name="", charge=0.0):
+        """
+
+        :param element:
+        :param x:
+        :param y:
+        :param z:
+        :param name:
+        :param charge:
+        :return:
+        """
         if "." in element:
             element, element_detail = element.split(".")
             element_detail = "." + element_detail
@@ -224,19 +306,40 @@ class Assign():
         else:
             self.charge = np.hstack((self.charge, np.array([charge])))
 
-    def Add_Atom_Marker(self, atom, marker):
+    def add_atom_marker(self, atom, marker):
+        """
+
+        :param atom:
+        :param marker:
+        :return:
+        """
         if marker in self.atom_marker[atom].keys():
             self.atom_marker[atom][marker] += 1
         else:
             self.atom_marker[atom][marker] = 1
 
-    def Add_Bond(self, atom1, atom2, order=-1):
+    def add_bond(self, atom1, atom2, order=-1):
+        """
+
+        :param atom1:
+        :param atom2:
+        :param order:
+        :return:
+        """
         self.bonds[atom1][atom2] = order
         self.bond_marker[atom1][atom2] = set([])
         self.bonds[atom2][atom1] = order
         self.bond_marker[atom2][atom1] = set([])
 
-    def Add_Bond_Marker(self, atom1, atom2, marker, only1=False):
+    def add_bond_marker(self, atom1, atom2, marker, only1=False):
+        """
+
+        :param atom1:
+        :param atom2:
+        :param marker:
+        :param only1:
+        :return:
+        """
         self.bond_marker[atom1][atom2].add(marker)
         if marker in self.atom_marker[atom1]:
             self.atom_marker[atom1][marker] += 1
@@ -249,27 +352,39 @@ class Assign():
             else:
                 self.atom_marker[atom2][marker] = 1
 
-    def Determine_Equal_Atoms(self):
+    def determine_equal_atoms(self):
+        """
+
+        :return:
+        """
         from .RDKit_tools import Find_Equal_Atoms
         return Find_Equal_Atoms(self)
 
-    def Determine_Bond_Order(self):
+    def determine_bond_order(self):
+        """
+
+        :return:
+        """
         raise NotImplementedError
 
-    def Determine_Ring_And_Bond_Type(self):
-        have_found_rings = _RING.Get_Rings(self)
-        _RING.Add_Rings_Basic_Marker(self, have_found_rings)
-        _RING.Check_Rings_Type(self, have_found_rings)
+    def determine_ring_and_bond_type(self):
+        """
+
+        :return:
+        """
+        have_found_rings = _RING.get_rings(self)
+        _RING.add_rings_basic_marker(self, have_found_rings)
+        _RING.check_rings_type(self, have_found_rings)
 
         for atom in range(len(self.atoms)):
-            DLO = 0
-            NOTO = 0
+            dlo = 0
+            noto = 0
             for atom2, order in self.bonds[atom].items():
                 if self.Atom_Judge(atom2, "O1"):
-                    DLO += 1
+                    dlo += 1
                 else:
-                    NOTO += 1
-            if DLO >= 1 and NOTO <= 1:
+                    noto += 1
+            if dlo >= 1 >= noto:
                 for atom2, order in self.bonds[atom].items():
                     if self.Atom_Judge(atom2, "O1"):
                         self.Add_Bond_Marker(atom, atom2, "DLB")
@@ -288,9 +403,14 @@ class Assign():
                 else:
                     self.Add_Bond_Marker(atom, atom2, "tb", True)
 
-    def Determine_Atom_Type(self, rule):
+    def determine_atom_type(self, rule):
+        """
+
+        :param rule:
+        :return:
+        """
         if isinstance(rule, str):
-            rule = Judge_Rule.all[rule]
+            rule = AssignRule.all[rule]
 
         for i in range(len(self.atoms)):
             find_type = False
@@ -302,7 +422,13 @@ class Assign():
 
             assert find_type, "No atom type found for assignment %s of atom #%d" % (self.name, i)
 
-    def To_ResidueType(self, name, charge=None):
+    def to_residuetype(self, name, charge=None):
+        """
+
+        :param name:
+        :param charge:
+        :return:
+        """
         temp = ResidueType(name=name)
         if not charge:
             if self.charge is None:
@@ -311,7 +437,7 @@ class Assign():
                 charge = self.charge
         count = {}
         for i in range(self.atom_numbers):
-            assert self.atom_types[i] != None
+            assert self.atom_types[i] is not None
             if self.names[i]:
                 atom_name = self.names[i]
             elif self.atoms[i] in count.keys():
@@ -331,7 +457,13 @@ class Assign():
         sys.modules["__main__"].__dict__[name] = temp
         return temp
 
-    def Calculate_Charge(self, method, **parameters):
+    def calculate_charge(self, method, **parameters):
+        """
+
+        :param method:
+        :param parameters:
+        :return:
+        """
         if method == "RESP":
             from . import RESP
             self.charge = RESP.RESP_Fit(self, basis=parameters.get("basis", "6-31g*"), opt=parameters.get("opt", False),
@@ -344,7 +476,12 @@ class Assign():
                                         only_ESP=parameters.get("only_ESP", False),
                                         radius=parameters.get("radius", None))
 
-    def Save_As_PDB(self, filename):
+    def save_as_pdb(self, filename):
+        """
+
+        :param filename:
+        :return:
+        """
         towrite = towrite = "REMARK   Generated By Xponge (Assignment)\n"
         count = {}
         for i in range(self.atom_numbers):
@@ -369,18 +506,22 @@ class Assign():
             bonded_atoms = list(self.bonds[i].keys())
             bonded_atoms.sort()
             bonded_atoms = [bonded_atoms[i:i + 4] for i in range(0, len(bonded_atoms), 4)]
-            if len(bonded_atoms) > 0:
+            if bonded_atoms:
                 for atoms in bonded_atoms:
                     towrite += "CONECT %4d" % (i + 1)
                     for atom in atoms:
                         towrite += " %4d" % (atom + 1)
                     towrite += "\n"
 
-        f = open(filename, "w")
-        f.write(towrite)
-        f.close()
+        with open(filename, "w") as f:
+            f.write(towrite)
 
-    def Save_As_Mol2(self, filename):
+    def save_as_mol2(self, filename):
+        """
+
+        :param filename:
+        :return:
+        """
         bonds = []
         for i in range(self.atom_numbers):
             for j, order in self.bonds[i].items():
@@ -405,7 +546,7 @@ class Assign():
                 atom_name = self.atoms[i]
                 self.names[i] = atom_name
         towrite = "@<TRIPOS>MOLECULE\n%s\n %d %d 1 0 1\nSMALL\nUSER_CHARGES\n" % (
-        self.name, self.atom_numbers, len(bonds))
+            self.name, self.atom_numbers, len(bonds))
         towrite += "@<TRIPOS>ATOM\n"
         for i, atom in enumerate(self.atoms):
             towrite += "%6d %4s %8.4f %8.4f %8.4f   %-8s %5d %8s %10.6f\n" % (
@@ -418,62 +559,22 @@ class Assign():
         towrite += "@<TRIPOS>SUBSTRUCTURE\n"
         towrite += "%5d %8s %6d ****               0 ****  **** \n" % (1, self.name, 1)
 
-        f = open(filename, "w")
-        f.write(towrite)
-        f.close()
+        with open(filename, "w") as f:
+            f.write(towrite)
 
 
-def Guess_Element_From_Mass(mass):
-    elements = ["X", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne",
-                "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc",
-                "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge",
-                "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc",
-                "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe",
-                "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb",
-                "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os",
-                "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr",
-                "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf",
-                "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt",
-                "Ds", "Rg"]
-    masses = [0.00000, 1.00794, 4.00260, 6.941, 9.012182, 10.811,
-              12.0107, 14.0067, 15.9994, 18.9984032, 20.1797,
-              22.989770, 24.3050, 26.981538, 28.0855, 30.973761,
-              32.065, 35.453, 39.948, 39.0983, 40.078, 44.955910,
-              47.867, 50.9415, 51.9961, 54.938049, 55.845, 58.9332,
-              58.6934, 63.546, 65.409, 69.723, 72.64, 74.92160,
-              78.96, 79.904, 83.798, 85.4678, 87.62, 88.90585,
-              91.224, 92.90638, 95.94, 98.0, 101.07, 102.90550,
-              106.42, 107.8682, 112.411, 114.818, 118.710, 121.760,
-              127.60, 126.90447, 131.293, 132.90545, 137.327,
-              138.9055, 140.116, 140.90765, 144.24, 145.0, 150.36,
-              151.964, 157.25, 158.92534, 162.500, 164.93032,
-              167.259, 168.93421, 173.04, 174.967, 178.49, 180.9479,
-              183.84, 186.207, 190.23, 192.217, 195.078, 196.96655,
-              200.59, 204.3833, 207.2, 208.98038, 209.0, 210.0, 222.0,
-              223.0, 226.0, 227.0, 232.0381, 231.03588, 238.02891,
-              237.0, 244.0, 243.0, 247.0, 247.0, 251.0, 252.0, 257.0,
-              258.0, 259.0, 262.0, 261.0, 262.0, 266.0, 264.0, 269.0,
-              268.0, 271.0, 272.0]
-    if mass > 0.0 and mass < 3.8:
-        index = 1;
-    elif mass > 207.85 and mass < 208.99:
-        index = 83;
-    elif mass > 56.50 and mass < 58.8133:
-        index = 27;
-    else:
-        index = 0;
-        for j in range(0, 111):
-            if abs(mass - masses[j]) < 0.65:
-                index = j
-                break
-    return elements[index]
+def get_assignment_from_pubchem(parameter, keyword):
+    """
 
-
-def Get_Assignment_From_PubChem(parameter, keyword):
+    :param parameter:
+    :param keyword:
+    :return:
+    """
+    import pubchempy as pcp
     cs = pcp.get_compounds(parameter, keyword, record_type='3d')
-    if len(cs) == 0:
+    if not cs:
         raise pcp.NotFoundError
-    elif len(cs) == 1:
+    if len(cs) == 1:
         assign = Assign()
         c = cs[0]
         for atom in c.atoms:
@@ -482,11 +583,17 @@ def Get_Assignment_From_PubChem(parameter, keyword):
             assign.Add_Bond(bond.aid1 - 1, bond.aid2 - 1, bond.order)
         assign.Determine_Ring_And_Bond_Type()
         return assign
-    else:
-        raise NotImplementedError
+    raise NotImplementedError
 
 
-def Get_Assignment_From_PDB(filename, determine_bond_order=True, only_residue=""):
+def get_assignment_from_pdb(filename, determine_bond_order=True, only_residue=""):
+    """
+
+    :param filename:
+    :param determine_bond_order:
+    :param only_residue:
+    :return:
+    """
     assign = Assign()
     index_atom_map = {}
     with open(filename) as f:
@@ -512,7 +619,7 @@ def Get_Assignment_From_PDB(filename, determine_bond_order=True, only_residue=""
                     try:
                         temp = line[bonded_atom_i:bonded_atom_i + 5]
                         bonded_atom = int(temp)
-                    except:
+                    except ValueError:
                         break
                     if bonded_atom in index_atom_map.keys():
                         assign.Add_Bond(index_atom_map[atom], index_atom_map[int(bonded_atom)])
@@ -522,20 +629,30 @@ def Get_Assignment_From_PDB(filename, determine_bond_order=True, only_residue=""
     return assign
 
 
-def Get_Assignment_From_ResidueType(restype):
+def get_assignment_from_residuetype(restype):
+    """
+
+    :param restype:
+    :return:
+    """
     assign = Assign()
     for atom in restype.atoms:
         assign.Add_Atom(Guess_Element_From_Mass(atom.mass), atom.x, atom.y, atom.z, atom.name)
     for atom in restype.atoms:
-        i = restype._atom2index[atom]
+        i = restype.atom2index(atom)
         for atomb in restype.connectivity[atom]:
-            j = restype._atom2index[atomb]
+            j = restype.atom2index(atomb)
             if i < j:
                 assign.Add_Bond(i, j)
     return assign
 
 
 def _deal_with_ar_bonds(assign):
+    """
+
+    :param assign:
+    :return:
+    """
     ar_bonds_atoms = list(assign.ar_bonds.keys())
     ar_bonds_atoms.sort(key=lambda x: (x, len(assign.ar_bonds[x])))
     doubled = {}
@@ -565,7 +682,12 @@ def _deal_with_ar_bonds(assign):
                     doubled[work_atom] = True
 
 
-def Get_Assignment_From_Mol2(filename):
+def get_assignment_from_mol2(filename):
+    """
+
+    :param filename:
+    :return:
+    """
     with open(filename) as f:
         flag = None
         subflag = None
@@ -623,35 +745,3 @@ def Get_Assignment_From_Mol2(filename):
     _deal_with_ar_bonds(assign)
     assign.Determine_Ring_And_Bond_Type()
     return assign
-
-
-def Get_Assignment_From_SDF(filename):
-    with open(filename) as f:
-        assign = Assign(f.readline().strip())
-        f.readline()
-        f.readline()
-        line = f.readline()
-        atom_numbers = int(line[:3].strip())
-        bond_numbers = int(line[3:6].strip())
-        for i in range(atom_numbers):
-            line = f.readline()
-            element = line[31:33].strip()
-            x = float(line[:10])
-            y = float(line[10:20])
-            z = float(line[20:30])
-            assign.Add_Atom(element, x, y, z)
-        for i in range(bond_numbers):
-            line = f.readline()
-            atom1 = int(line[:3]) - 1
-            atom2 = int(line[3:6]) - 1
-            bond_order = int(line[6:9])
-            assign.Add_Bond(atom1, atom2, bond_order)
-
-    assign.Determine_Ring_And_Bond_Type()
-    return assign
-
-
-sys.modules["__main__"].__dict__["Get_Assignment_From_PubChem"] = Get_Assignment_From_PubChem
-sys.modules["__main__"].__dict__["Get_Assignment_From_PDB"] = Get_Assignment_From_PDB
-sys.modules["__main__"].__dict__["Get_Assignment_From_Mol2"] = Get_Assignment_From_Mol2
-sys.modules["__main__"].__dict__["Get_Assignment_From_ResidueType"] = Get_Assignment_From_ResidueType
