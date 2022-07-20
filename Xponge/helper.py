@@ -8,6 +8,8 @@ from itertools import product
 
 
 class _GlobalSetting():
+    #打印信息的详细程度
+    verbose = 0
     # 最远的成键距离，用于拓扑分析时最远分析多远
     farthest_bonded_force = 0
     # 所有的成键类型力的Type
@@ -1139,6 +1141,18 @@ def get_rotate_matrix(r0, angle):
                      [r0[0] * r0[2] * cost_one - r0[1] * sint, r0[1] * r0[2] * cost_one + r0[0] * sint,
                       r0[2] * r0[2] * cost_one + cost]]).transpose()
 
+def get_fibonacci_grid(N, origin, radius):
+    n = np.arange(1, N + 1)
+    factorn = (np.sqrt(5) - 1) * np.pi * n
+    out = np.zeros((N, 3))
+    out[:, 2] = (2 * n - 1) / N - 1
+    sqrtz = np.sqrt(1 - out[:, 2] * out[:, 2])
+    out[:, 0] = sqrtz * np.cos(factorn)
+    out[:, 1] = sqrtz * np.sin(factorn)
+    out *= radius
+    out += origin
+    return out
+
 def guess_element_from_mass(mass):
     """
 
@@ -1190,7 +1204,7 @@ def guess_element_from_mass(mass):
     return elements[index]
 
 SPECIAL_STRINGS = {"Pdb": "PDB", "Sponge": "SPONGE", "Nb14": "NB14", "Nb14extra": "NB14EXTRA", "Lj": "LJ",
-                   "Residuetype": "ResidueType", "Pubchem": "PubChem"}
+                   "Residuetype": "ResidueType", "Pubchem": "PubChem", "Resp":"RESP"}
 
 
 def set_real_global_variable(name, value):
@@ -1248,3 +1262,13 @@ def set_global_alternative_names(dict, real_global=False):
         else:
             set_dict_value_alternative_name(new_dict, value)
     dict.update(new_dict)
+
+def xprint(*args, **kwargs):
+    if "verbose" in kwargs:
+        verbose = kwargs.pop("verbose")
+    else:
+        verbose = 0
+    if GlobalSetting.verbose >= verbose:
+        print(*args, **kwargs)
+
+set_dict_value_alternative_name(globals(), xprint)

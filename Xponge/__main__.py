@@ -5,8 +5,8 @@ def _mytest(subparsers):
     mytest = subparsers.add_parser("test", help="test the basic function of Xponge")
     mytest.add_argument("-o", metavar="test", default="test", help="the prefix for the output files")
     mytest.add_argument("-do", metavar="todo", nargs="*", action="append",
-                        default = None, help="the things need to test, should be one or more of 'base', 'assign'",
-                        choices=["base", "assign"])
+                        default = None, help="the things need to test, should be one or more of 'base', 'assign', 'charmm27'",
+                        choices=["base", "assign", "charmm27"])
     mytest.set_defaults(func=tools.test)
 
 
