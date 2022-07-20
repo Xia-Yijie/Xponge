@@ -13,28 +13,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
-
+"""
+Xponge, a lightweight and easy-customizing python package for pre- and post- process of molecular modelling
+"""
 __version__ = "stable-1.2.5"
 __author__ = "Yijie Xia"
 
-from collections import OrderedDict, deque
 import os
-import numpy as np
-from itertools import product, permutations
 import time
 import sys
+from collections import OrderedDict, deque
+from itertools import product, permutations
+
+import numpy as np
 
 from . import assign
-
-from .helper import GlobalSetting, Type, AtomType, ResidueType, Entity, Atom, Residue, ResidueLink, Molecule, AtomType, \
-    set_global_alternative_names
+from .helper import GlobalSetting, Type, ResidueType, Entity, Atom, Residue, ResidueLink, Molecule, AtomType, \
+    set_global_alternative_names, generate_new_pairwise_force_type, generate_new_bonded_force_type
 from .load import load_ffitp, load_mol2, load_rst7, load_frcmod, load_pdb, load_parmdat
 from .build import save_mol2, save_pdb, save_sponge_input, save_gro
 from .process import impose_bond, impose_angle, impose_dihedral, add_solvent_box, h_mass_repartition, solvent_replace, \
     main_axis_rotate
 
 
-def initialize():
+def _initialize():
+    """
+
+    :return:
+    """
     set_global_alternative_names(globals(), True)
     AtomType.New_From_String("name\nUNKNOWN")
 
@@ -83,105 +89,4 @@ def initialize():
         return towrite
 
 
-initialize()
-
-
-def Generate_New_Bonded_Force_Type(Type_Name, atoms, properties, Compulsory, Multiple=None):
-    class BondedForceEntity(Entity):
-        name = Type_Name
-        count = 0
-
-        def __init__(self, atoms, entity_type, name=None):
-            super().__init__(entity_type, name)
-            self.atoms = atoms
-
-        def deepcopy(self, forcopy):
-            _atoms = [atom.copied[forcopy] for atom in self.atoms]
-            newone = type(self)(_atoms, self.type, self.name)
-            newone.contents = {**self.contents}
-            return newone
-
-    temp = [int(i) for i in atoms.split("-")]
-
-    class BondedForceType(Type):
-        name = Type_Name
-        topology_like = temp
-        compulsory = Compulsory
-        multiple = Multiple
-        atom_numbers = len(atoms.split("-"))
-        topology_matrix = [[temp[i] - j if i > j else 1 for i in range(len(atoms.split("-")))] for j in
-                           range(len(atoms.split("-")))]
-        parameters = {
-            "name": str,
-        }
-        entity = BondedForceEntity
-        types = {}
-        types_different_name = {}
-
-        @classmethod
-        def Same_Force(cls, atom_list):
-            if type(atom_list) == str:
-                atom_list_temp = [atom.strip() for atom in atom_list.split("-")]
-                _temp = [atom_list, "-".join(atom_list_temp[::-1])]
-            else:
-                _temp = [atom_list, atom_list[::-1]]
-            return _temp
-
-        @classmethod
-        def Set_Same_Force_Function(cls, func):
-            cls.Same_Force = classmethod(func)
-
-        def __init__(self, **kwargs):
-            super().__init__(**kwargs)
-
-            for name in type(self).Same_Force(self.name):
-                type(self).types_different_name[name] = self
-
-            if type(self).multiple:
-                for key in self.multiple:
-                    self.contents[key + "s"] = [self.contents[key]]
-                    self.contents[key] = None
-                self.contents["multiple_numbers"] = 1
-
-        def Update(self, **kwargs):
-            reset = 1
-            if "reset" in kwargs.keys():
-                reset = int(kwargs.pop("reset"))
-            if reset:
-                for key in self.contents.keys():
-                    if key != "name":
-                        self.contents[key] = None
-                if type(self).multiple:
-                    for key in self.multiple:
-                        self.contents[key + "s"] = []
-                    self.contents["multiple_numbers"] = 0
-            super().Update(**kwargs)
-            if type(self).multiple:
-                for key in type(self).multiple:
-                    self.contents[key + "s"].append(self.contents[key])
-                    self.contents[key] = None
-                self.multiple_numbers += 1
-
-    BondedForceType.Add_Property(properties)
-    BondedForceType.New_From_String("""name
-    UNKNOWNS""")
-    global GlobalSetting
-    GlobalSetting.BondedForces.append(BondedForceType)
-    GlobalSetting.BondedForcesMap[BondedForceType.name] = BondedForceType
-    for i in atoms.split("-"):
-        if int(i) > GlobalSetting.farthest_bonded_force:
-            GlobalSetting.farthest_bonded_force = int(i)
-    return BondedForceType
-
-
-def Generate_New_Pairwise_Force_Type(Type_Name, properties):
-    class PairwiseForceType(Type):
-        name = Type_Name
-        parameters = {
-            "name": str,
-        }
-        types = {}
-
-    PairwiseForceType.Add_Property(properties)
-
-    return PairwiseForceType
+_initialize()
