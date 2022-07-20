@@ -1,11 +1,18 @@
-from ... import *
-from . import BOND
+"""
+This **module** is the basic setting for the force field format of soft bond
+"""
+from ...helper import Molecule
 
 BOND.BondType.Add_Property({"from_AorB": int})
 
 
 @Molecule.Set_Save_SPONGE_Input("bond_soft")
 def write_bond(self):
+    """
+This **function** is used to write SPONGE input file
+    :param self:
+    :return:
+    """
     bonds = []
     for bond in self.bonded_forces.get("bond_soft", []):
         order = list(range(2))
@@ -18,9 +25,10 @@ def write_bond(self):
                                              , self.atom_index[bond.atoms[temp_order[1]]], bond.k, bond.b,
                                              bond.from_AorB))
 
-    if (bonds):
+    if bonds:
         towrite = "%d\n" % len(bonds)
         bonds.sort(key=lambda x: list(map(int, x.split()[:2])))
         towrite += "\n".join(bonds)
 
         return towrite
+    return None

@@ -164,7 +164,7 @@ def add_solvent_box(molecule, solvent, distance, tolerance=3):
         new_molecule.Add_Residue(res_a)
     else:
         new_molecule = solvent.deepcopy()
-    solcrd = molecule.get_atom_coordinates()
+    solcrd = new_molecule.get_atom_coordinates()
     solmin = np.min(solcrd, axis=0)
     solmax = np.max(solcrd, axis=0)
     solshape = solmax - solmin + tolerance

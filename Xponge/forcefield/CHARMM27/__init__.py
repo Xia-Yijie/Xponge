@@ -1,12 +1,12 @@
 from ... import *
-from ..BASE import CHARGE, MASS, LJ, BOND, UREY_BRADLEY, DIHEDRAL, NB14, NB14_EXTRA, UREY_BRADLEY, IMPROPER, \
-    VIRTUAL_ATOM, ACMAP, EXCLUDE
+from ..BASE import CHARGE, MASS, LJ, BOND, UBANGLE, DIHEDRAL, NB14, NB14EXTRA, UBANGLE, IMPROPER, \
+    VATOM, ACMAP, EXCLUDE
 import os
 
 CHARMM27_DATA_DIR = os.path.dirname(__file__)
 
 LJ.LJType.combining_method_A = LJ.Lorentz_Berthelot_For_A
-LJ.LJType.combining_method_B = LJ.Lorents_Berthelot_For_B
+LJ.LJType.combining_method_B = LJ.Lorentz_Berthelot_For_B
 
 GlobalSetting.Set_Invisible_Bonded_Forces(["improper"])
 
@@ -22,8 +22,8 @@ AtomType.New_From_String(output["atomtypes"])
 BOND.BondType.New_From_String(output["bonds"])
 DIHEDRAL.ProperType.New_From_String(output["dihedrals"])
 LJ.LJType.New_From_String(output["LJ"])
-UREY_BRADLEY.UreyBradleyType.New_From_String(output["Urey-Bradley"])
+UBANGLE.UreyBradleyType.New_From_String(output["Urey-Bradley"])
 IMPROPER.ImproperType.New_From_String(output["impropers"])
-NB14_EXTRA.NB14Type.New_From_String(output["nb14_extra"])
+NB14EXTRA.NB14Type.New_From_String(output["nb14_extra"])
 NB14.NB14Type.New_From_String(output["nb14"])
 ACMAP.CMapType.New_From_Dict(output["cmaps"])

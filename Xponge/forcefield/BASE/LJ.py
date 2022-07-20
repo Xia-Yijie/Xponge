@@ -3,7 +3,7 @@ This **module** is the basic setting for the force field property of charge
 """
 import numpy as np
 from ... import Generate_New_Pairwise_Force_Type
-from ...helper import Molecule, AtomType, GlobalSetting
+from ...helper import Molecule, AtomType, GlobalSetting, set_dict_value_alternative_name
 
 AtomType.Add_Property({"LJtype": str})
 
@@ -24,7 +24,7 @@ This **function** is used to transfer the units of lj
     :param self:
     :return:
     """
-    if self.A != None and self.B != None:
+    if self.A is not None and self.B is not None:
         if self.B == 0 or self.A == 0:
             self.sigma = 0
             self.epsilon = 0
@@ -33,12 +33,12 @@ This **function** is used to transfer the units of lj
             self.epsilon = 0.25 * self.B * self.sigma ** (-6)
         self.A = None
         self.B = None
-    if self.sigma != None:
+    if self.sigma is not None:
         self.rmin = self.sigma * (4 ** (1 / 12) / 2)
         self.sigma = None
 
 
-def Lorentz_Berthelot_For_A(epsilon1, rmin1, epsilon2, rmin2):
+def lorentz_berthelot_for_a(epsilon1, rmin1, epsilon2, rmin2):
     """
 This **function** is used to calculate the A coefficient for Lorentz_Berthelot mix rule
     :param epsilon1:
@@ -50,7 +50,10 @@ This **function** is used to calculate the A coefficient for Lorentz_Berthelot m
     return np.sqrt(epsilon1 * epsilon2) * ((rmin1 + rmin2) ** 12)
 
 
-def Lorents_Berthelot_For_B(epsilon1, rmin1, epsilon2, rmin2):
+set_dict_value_alternative_name(globals(), lorentz_berthelot_for_a)
+
+
+def lorentz_berthelot_for_b(epsilon1, rmin1, epsilon2, rmin2):
     """
 This **function** is used to calculate the A coefficient for Lorentz_Berthelot mix rule
     :param epsilon1:
@@ -62,6 +65,9 @@ This **function** is used to calculate the A coefficient for Lorentz_Berthelot m
     return np.sqrt(epsilon1 * epsilon2) * 2 * ((rmin1 + rmin2) ** 6)
 
 
+set_dict_value_alternative_name(globals(), lorentz_berthelot_for_b)
+
+
 def _find_ab_lj(ljtypes, stat=True):
     """
 
@@ -69,51 +75,53 @@ def _find_ab_lj(ljtypes, stat=True):
     :param stat:
     :return:
     """
-    As = []
-    Bs = []
+    coefficients_a = []
+    coefficients_b = []
 
     for i in range(len(ljtypes)):
-        LJ_i = LJType.types[ljtypes[i] + "-" + ljtypes[i]]
+        lj_i = LJType.types[ljtypes[i] + "-" + ljtypes[i]]
         if stat:
             j_max = len(ljtypes)
         else:
             j_max = i + 1
         for j in range(j_max):
-            LJ_j = LJType.types[ljtypes[j] + "-" + ljtypes[j]]
+            lj_j = LJType.types[ljtypes[j] + "-" + ljtypes[j]]
             finded = False
             findnames = [ljtypes[i] + "-" + ljtypes[j], ljtypes[j] + "-" + ljtypes[i]]
             for findname in findnames:
                 if findname in LJType.types.keys():
                     finded = True
-                    LJ_ij = LJType.types[findname]
-                    As.append(LJType.combining_method_A(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
-                    Bs.append(LJType.combining_method_B(LJ_ij.epsilon, LJ_ij.rmin, LJ_ij.epsilon, LJ_ij.rmin))
+                    lj_ij = LJType.types[findname]
+                    coefficients_a.append(
+                        LJType.combining_method_A(lj_ij.epsilon, lj_ij.rmin, lj_ij.epsilon, lj_ij.rmin))
+                    coefficients_b.append(
+                        LJType.combining_method_B(lj_ij.epsilon, lj_ij.rmin, lj_ij.epsilon, lj_ij.rmin))
                     break
             if not finded:
-                As.append(LJType.combining_method_A(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-                Bs.append(LJType.combining_method_B(LJ_i.epsilon, LJ_i.rmin, LJ_j.epsilon, LJ_j.rmin))
-    return As, Bs
+                coefficients_a.append(LJType.combining_method_A(lj_i.epsilon, lj_i.rmin, lj_j.epsilon, lj_j.rmin))
+                coefficients_b.append(LJType.combining_method_B(lj_i.epsilon, lj_i.rmin, lj_j.epsilon, lj_j.rmin))
+    return coefficients_a, coefficients_b
 
 
-def _get_checks(ljtypes, As, Bs):
+def _get_checks(ljtypes, coefficients_a, coefficients_b):
     """
 
     :param ljtypes:
-    :param As:
-    :param Bs:
+    :param coefficients_a:
+    :param coefficients_b:
     :return:
     """
     checks = {}
     count = 0
     for i in range(len(ljtypes)):
-        check_string_A = ""
-        check_string_B = ""
-        for j in range(len(ljtypes)):
-            check_string_A += "%16.7e" % As[count] + " "
-            check_string_B += "%16.7e" % Bs[count] + " "
+        check_string_a = ""
+        check_string_b = ""
+        for _ in range(len(ljtypes)):
+            check_string_a += "%16.7e" % coefficients_a[count] + " "
+            check_string_b += "%16.7e" % coefficients_b[count] + " "
             count += 1
 
-        checks[i] = check_string_A + check_string_B
+        checks[i] = check_string_a + check_string_b
     return checks
 
 
@@ -151,7 +159,7 @@ def _get_real_lj(ljtypes, same_type):
     return real_ljtypes
 
 
-def write_LJ(self):
+def write_lj(self):
     """
 This **function** is used to write SPONGE input file
     :param self:
@@ -177,7 +185,7 @@ This **function** is used to write SPONGE input file
     towrite = "%d %d\n\n" % (len(self.atoms), len(real_ljtypes))
     count = 0
     for i in range(len(real_ljtypes)):
-        for j in range(i + 1):
+        for _ in range(i + 1):
             towrite += "%16.7e" % real_as[count] + " "
             count += 1
         towrite += "\n"
@@ -185,7 +193,7 @@ This **function** is used to write SPONGE input file
 
     count = 0
     for i in range(len(real_ljtypes)):
-        for j in range(i + 1):
+        for _ in range(i + 1):
             towrite += "%16.7e" % real_bs[count] + " "
             count += 1
         towrite += "\n"
@@ -194,4 +202,4 @@ This **function** is used to write SPONGE input file
     return towrite
 
 
-Molecule.Set_Save_SPONGE_Input("LJ")(write_LJ)
+Molecule.Set_Save_SPONGE_Input("LJ")(write_lj)

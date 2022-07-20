@@ -48,5 +48,4 @@ This **function** is used to write SPONGE input file
         towrite += "\n".join(bonds)
 
         return towrite
-
     return None

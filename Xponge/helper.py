@@ -637,6 +637,7 @@ class Molecule:
                 index_next.update(index_temp)
             index_dict = index_next
         return head, tail
+
     @classmethod
     def Set_Save_SPONGE_Input(cls, keyname):
         def wrapper(func):
@@ -736,7 +737,6 @@ class Molecule:
         self.atom_index = {self.atoms[i]: i for i in range(len(self.atoms))}
         return np.array([[atom.x, atom.y, atom.z] for atom in self.atoms])
 
-
     def divide_into_two_parts(self, atom1, atom2):
         if atom1.residue != atom2.residue:
             atom1_friends, atom2_friends = self._set_friends_in_different_residue(self, atom1, atom2)
@@ -756,9 +756,9 @@ class Molecule:
             typeatom2 = _restype_atom(atom2)
 
             head, tail = self._get_head_and_tail(head, tail, self, typeatom1, typeatom2, restype, 1, atom1_friends,
-                                            _resatom)
+                                                 _resatom)
             head, tail = self._get_head_and_tail(head, tail, self, typeatom2, typeatom1, restype, 2, atom2_friends,
-                                            _resatom)
+                                                 _resatom)
 
             if atom1.name == restype.head:
                 head = 1
@@ -790,6 +790,7 @@ class Molecule:
             atom2_friends.add(self.atom_index[atom2])
             atom2_friends = np.array(list(atom2_friends))
         return atom1_friends, atom2_friends
+
 
 def _link_residue_process_coordinate(molecule, atom1, atom2):
     resA = atom1.residue
@@ -1124,6 +1125,7 @@ del ResidueType_Or
 del Molecule_Or
 del iMolecule_Or
 
+
 def get_rotate_matrix(r0, angle):
     cost = np.cos(angle)
     cost_one = 1 - cost
@@ -1136,7 +1138,8 @@ def get_rotate_matrix(r0, angle):
                      [r0[0] * r0[2] * cost_one - r0[1] * sint, r0[1] * r0[2] * cost_one + r0[0] * sint,
                       r0[2] * r0[2] * cost_one + cost]]).transpose()
 
-SPECIAL_STRINGS = {"Pdb": "PDB", "Sponge": "SPONGE"}
+
+SPECIAL_STRINGS = {"Pdb": "PDB", "Sponge": "SPONGE", "Nb14": "NB14", "Nb14extra": "NB14EXTRA", "Lj":"LJ"}
 
 
 def set_real_global_variable(name, value):
@@ -1150,12 +1153,15 @@ def set_alternative_name(object, func, set_method):
     third_new_name = second_new_name[0].lower() + second_new_name[1:]
 
     set_method(object, new_name, func)
+    new_new_name = new_name
     for t, newt in SPECIAL_STRINGS.items():
-        new_new_name = new_name.replace(t, newt)
-        if new_new_name != new_name:
-            set_method(object, new_new_name, func)
-            set_method(object, second_new_name.replace(t, newt), func)
-            set_method(object, third_new_name.replace(t, newt), func)
+        new_new_name = new_new_name.replace(t, newt)
+        second_new_name = second_new_name.replace(t, newt)
+        third_new_name = third_new_name.replace(t, newt)
+    if new_new_name != new_name:
+        set_method(object, new_new_name, func)
+        set_method(object, second_new_name.replace(t, newt), func)
+        set_method(object, third_new_name.replace(t, newt), func)
 
 
 set_attribute_alternative_name = partial(set_alternative_name, set_method=setattr)

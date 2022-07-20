@@ -25,7 +25,7 @@ This **function** is used to return the same force type for an atom list
     :return:
     """
     temp = []
-    if type(atom_list) == str:
+    if isinstance(atom_list, str):
         atom_list_temp = [atom.strip() for atom in atom_list.split("-")]
         center_atom = atom_list_temp.pop(2)
         for atom_permutation in permutations(atom_list_temp):

@@ -15,7 +15,7 @@ OW-HW  553                0.9572
 HW-HW  553                1.5136
 """)
 
-UREY_BRADLEY.UreyBradleyType.New_From_String(r"""
+UBANGLE.UreyBradleyType.New_From_String(r"""
 name      k   kUB  
 HW-OW-HW  0   0
 OW-HW-HW  0   0

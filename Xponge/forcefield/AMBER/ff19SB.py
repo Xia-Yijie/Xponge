@@ -22,9 +22,9 @@ LJ.LJType.New_From_String(LJs)
 
 from ..BASE import RCMAP
 
-RCMAP.CMAP.Residue_Map.update(cmap)
+RCMAP.CMapType.Residue_Map.update(cmap)
 
-RCMAP.CMAP.New_From_String(r"""
+RCMAP.CMapType.New_From_String(r"""
 name
 C-N-XC-C-N
 """)

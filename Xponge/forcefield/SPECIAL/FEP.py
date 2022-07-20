@@ -1,7 +1,7 @@
 from ... import *
 from ..BASE import CHARGE, MASS, LJ
-from ..BASE import NB14, NB14_EXTRA, EXCLUDE
-from ..BASE import BOND, SOFT_BOND
+from ..BASE import NB14, NB14EXTRA, EXCLUDE
+from ..BASE import BOND, SBOND
 
 LJType = LJ.LJType
 
@@ -221,7 +221,7 @@ FEP_Bonded_Force_Merge_Rule["improper"] = {"lambda_name": "dihedral", "merge_fun
 
 
 def Save_Hard_Core_LJ():
-    Molecule.Set_Save_SPONGE_Input("LJ")(LJ.write_LJ)
+    Molecule.Set_Save_SPONGE_Input("LJ")(LJ.write_lj)
     Molecule.Del_Save_SPONGE_Input("LJ_soft_core")
     Molecule.Del_Save_SPONGE_Input("subsys_division")
 

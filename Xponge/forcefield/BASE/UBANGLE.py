@@ -1,4 +1,8 @@
-from ... import *
+"""
+This **module** is the basic setting for the force field format of Urey Bradley angle
+"""
+from ... import Generate_New_Bonded_Force_Type
+from ...helper import Molecule
 
 UreyBradleyType = Generate_New_Bonded_Force_Type("Urey_Bradley", "1-2-3",
                                                  {"k": float, "b": float, "kUB": float, "r13": float}, True)
@@ -11,6 +15,11 @@ UreyBradleyType.Set_Property_Unit("r13", "distance", "A")
 
 @Molecule.Set_Save_SPONGE_Input("urey_bradley")
 def write_angle(self):
+    """
+This **function** is used to write SPONGE input file
+    :param self:
+    :return:
+    """
     angles = []
     for angle in self.bonded_forces.get("Urey_Bradley", []):
         order = list(range(3))
@@ -24,8 +33,9 @@ def write_angle(self):
                                                     self.atom_index[angle.atoms[temp_order[2]]], angle.k, angle.b,
                                                     angle.kUB, angle.r13))
 
-    if (angles):
+    if angles:
         towrite = "%d\n" % len(angles)
         angles.sort(key=lambda x: list(map(int, x.split()[:3])))
         towrite += "\n".join(angles)
         return towrite
+    return None
