@@ -10,9 +10,9 @@ from itertools import product
 
 import numpy as np
 
-from .name import set_real_global_variable, set_alternative_name, set_attribute_alternative_name, \
-    set_classmethod_alternative_names, set_attribute_alternative_names, set_dict_value_alternative_name, \
-    set_global_alternative_names
+from .namespace import set_real_global_variable, set_alternative_name, \
+    set_attribute_alternative_name, set_classmethod_alternative_names, set_attribute_alternative_names, \
+    set_dict_value_alternative_name, set_global_alternative_names, source
 
 from .math import get_rotate_matrix, get_fibonacci_grid, guess_element_from_mass
 
@@ -355,7 +355,7 @@ class ResidueType(Type):
 This **class** is a subclass of Type, for residue types
     """
     name = "Residue"
-    parameters = {"name": str,}
+    parameters = {"name": str, }
     types = {}
     types_different_name = {}
 
@@ -1160,7 +1160,7 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
             delta_angle = parameter - angle0
             crd[atom_b_friends] = np.dot(crd[atom_b_friends] - crd[molecule.atom_index[atoms[1]]],
                                          get_rotate_matrix(np.cross(r_ao, r_ob), delta_angle)) + crd[
-                                             molecule.atom_index[atoms[1]]]
+                                      molecule.atom_index[atoms[1]]]
         elif len(atoms) == 3:
             r_oo = crd[molecule.atom_index[atoms[0]]] - crd[molecule.atom_index[atoms[1]]]
             r_oa = crd[molecule.atom_index[atoms[1]]] - crd[molecule.atom_index[atoms[2]]]
@@ -1194,7 +1194,7 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
             delta_angle = parameter - angle0
             crd[atom_b_friends] = np.dot(crd[atom_b_friends] - crd[molecule.atom_index[atoms[1]]],
                                          get_rotate_matrix(np.cross(r_ao, r_ob), delta_angle)) + crd[
-                                             molecule.atom_index[atoms[1]]]
+                                      molecule.atom_index[atoms[1]]]
         elif len(atoms) == 3:
             r_oo = crd[molecule.atom_index[atoms[0]]] - crd[molecule.atom_index[atoms[1]]]
             r_oa = crd[molecule.atom_index[atoms[1]]] - crd[molecule.atom_index[atoms[2]]]

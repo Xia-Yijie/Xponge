@@ -279,7 +279,7 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
 
 
 ##########################################################################
-# AMBER Format
+# amber Format
 ##########################################################################
 def _frcmod_cmap(line, cmap, temp_cmp, cmap_flag):
     """

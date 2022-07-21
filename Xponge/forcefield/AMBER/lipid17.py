@@ -1,16 +1,12 @@
-from . import *
-import sys
+"""
+This **module** set the basic configuration for lipid17
+"""
+from ...helper import source, Xprint
 
-atoms, bonds, angles, propers, impropers, LJs = load_parmdat(os.path.join(AMBER_DATA_DIR, "lipid17.dat"))
-
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
-
-lipid17 = load_mol2(os.path.join(AMBER_DATA_DIR, "lipid17.mol2"))
+source("....")
+amber = source("...AMBER")
+amber.load_parameters_from_parmdat("lipid17.dat")
+load_mol2(os.path.join(AMBER_DATA_DIR, "lipid17.mol2"))
 
 for res in "LAL PA MY OL ST AR DHA".split():
     ResidueType.types[res].head = "C12"
@@ -38,9 +34,9 @@ for res in "PC PE PS PGR PH-".split():
     ResidueType.types[res].tail_link_conditions.append({"atoms": ["O21", "C21"], "parameter": 120 / 180 * np.pi})
     ResidueType.types[res].tail_link_conditions.append({"atoms": ["O22", "O21", "C21"], "parameter": np.pi})
 
-print("""Reference for lipid17:
+Xprint("""Reference for lipid17:
   Gould, I.R., Skjevik A.A., Dickson, C.J., Madej, B.D., Walker, R.C.
-    Lipid17: A Comprehensive AMBER Force Field for the Simulation of Zwitterionic and Anionic Lipids
+    Lipid17: A Comprehensive amber Force Field for the Simulation of Zwitterionic and Anionic Lipids
     2018, in prep.
     
   Dickson, C.J., Madej, B.D., Skjevik, A.A., Betz, R.M., Teigen, K., Gould, I.R., Walker, R.C. 

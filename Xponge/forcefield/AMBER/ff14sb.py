@@ -1,41 +1,23 @@
-from . import *
+"""
+This **module** set the basic configuration for ff14sb
+"""
+from ...helper import source, set_real_global_variable, Xprint
 
-import sys
+source("....")
+amber = source("...AMBER")
 
-atoms, bonds, angles, propers, impropers, LJs = load_parmdat(os.path.join(AMBER_DATA_DIR, "parm19.dat"))
+amber.load_parameters_from_parmdat("parm10.dat")
+amber.load_parameters_from_frcmod("ff14SB.frcmod")
 
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
+load_mol2(os.path.join(AMBER_DATA_DIR, "ff14SB.mol2"))
 
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(os.path.join(AMBER_DATA_DIR, "ff19SB.frcmod"))
-
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
-
-from ..BASE import RCMAP
-
-RCMAP.CMapType.Residue_Map.update(cmap)
-
-RCMAP.CMapType.New_From_String(r"""
-name
-C-N-XC-C-N
-""")
-
-ff19SB = load_mol2(os.path.join(AMBER_DATA_DIR, "ff19SB.mol2"))
 ResidueType.types["HIS"] = ResidueType.types["HIE"]
 ResidueType.types["NHIS"] = ResidueType.types["NHIE"]
 ResidueType.types["CHIS"] = ResidueType.types["CHIE"]
-sys.modules['__main__'].__dict__["HIS"] = ResidueType.types["HIS"]
-sys.modules['__main__'].__dict__["NHIS"] = ResidueType.types["NHIS"]
-sys.modules['__main__'].__dict__["CHIS"] = ResidueType.types["CHIS"]
+
+set_real_global_variable("HIS", ResidueType.types["HIS"])
+set_real_global_variable("NHIS", ResidueType.types["NHIS"])
+set_real_global_variable("CHIS", ResidueType.types["CHIS"])
 
 residues = "ALA ARG ASN ASP CYS CYX GLN GLU GLY HID HIE HIP ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL HIS".split()
 
@@ -80,9 +62,11 @@ GlobalSetting.HISMap["HIS"].update({"HIS": {"HID": "HID", "HIE": "HIE", "HIP": "
 
 ResidueType.types["CYX"].connect_atoms["ssbond"] = "SG"
 
-print("""Reference for ff19SB:
-  Chuan Tian, Koushik Kasavajhala, Kellon A. A. Belfon, Lauren Raguette, He Huang, Angela N. Migues, John Bickel, Yuzhang Wang, Jorge Pincay, Qin Wu, and Carlos Simmerling
-    ff19SB: Amino-Acid-Specific Protein Backbone Parameters Trained against Quantum Mechanics Energy Surfaces in Solution
-    The Journal of Chemical Physics 2020 16 (1), 528-552, 
-    DOI: 10.1021/acs.jctc.9b00591
-""")
+reference = """Reference for ff14SB:
+  James A. Maier, Carmenza Martinez, Koushik Kasavajhala, Lauren Wickstrom, Kevin E. Hauser, and Carlos Simmerling
+    ff14SB: Improving the accuracy of protein side chain and backbone parameters from ff99SB
+    Journal of Chemical Theory and Computation 2015 11 (8), 3696-3713
+    DOI: 10.1021/acs.jctc.5b00255
+"""
+
+Xprint(reference)

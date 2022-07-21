@@ -1,6 +1,10 @@
-from . import *
-import os
-import sys
+"""
+This **module** set the basic configuration for ff14sb
+"""
+from ...helper import source, Xprint, set_real_global_variable
+
+source("....")
+amber = source("...AMBER")
 
 AtomType.New_From_String(
     """
@@ -34,37 +38,19 @@ name   atom0    atom1   atom2   k1         k2
 EP     -3       -2      -1      0.1477206  0.1477206
 """)
 
-TIP3P = load_mol2(os.path.join(AMBER_DATA_DIR, "opc.mol2"))
+OPC = load_mol2(os.path.join(AMBER_DATA_DIR, "opc.mol2"))
 
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(
-    os.path.join(AMBER_DATA_DIR, "ions1lm_126_tip4pew.frcmod"))
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
-
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(os.path.join(AMBER_DATA_DIR, "ionsjc_tip4pew.frcmod"))
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
-
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(
-    os.path.join(AMBER_DATA_DIR, "ions234lm_126_tip4pew.frcmod"))
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
+amber.load_parameters_from_frcmod("ions1lm_126_tip4pew.frcmod")
+amber.load_parameters_from_frcmod("ionsjc_tip4pew.frcmod")
+amber.load_parameters_from_frcmod("ions234lm_126_tip4pew.frcmod")
 
 load_mol2(os.path.join(AMBER_DATA_DIR, "atomic_ions.mol2"))
 
-print("""Reference for opc:
+set_real_global_variable("WAT", OPC)
+
+load_mol2(os.path.join(AMBER_DATA_DIR, "atomic_ions.mol2"))
+
+Xprint("""Reference for opc:
 1. Water:
   Saeed Izadi, Ramu Anandakrishnan, and Alexey V. Onufriev
     Building Water Models: A Different Approach
@@ -95,5 +81,3 @@ print("""Reference for opc:
     The Journal of Physical Chemistry B 2015 119 (3), 883-895
     DOI: 10.1021/jp505875v  
 """)
-
-sys.modules['__main__'].__dict__["WAT"] = TIP3P

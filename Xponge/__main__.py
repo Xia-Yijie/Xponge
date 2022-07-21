@@ -185,7 +185,7 @@ def _mol2opt(subparsers):
     :param subparsers:
     :return:
     """
-    mol2opt = subparsers.add_parser("mol2opt", help='optimize a mol2 file by using minimization-mode SPONGE and GAFF')
+    mol2opt = subparsers.add_parser("mol2opt", help='optimize a mol2 file by using minimization-mode SPONGE and gaff')
     mol2opt.add_argument("-sponge", default="SPONGE", help="SPONGE program command")
     mol2opt.add_argument("-i", required=True, help="the input mol2 file")
     mol2opt.add_argument("-temp", default="TMP", help="the temporary file name prefix")
@@ -235,7 +235,7 @@ def _mol2rfe(subparsers):
                                     help='calculate the relative free energy of a small molecule using SPONGE')
     mol2rfe.add_argument("-do", metavar="todo", nargs="*", action="append", help="""the things need to do,
  should be one or more of 'build', 'min', 'prebalance', 'balance', 'analysis'""",
-                    choices=["build", "min", "prebalance", "balance", "analysis"])
+                         choices=["build", "min", "prebalance", "balance", "analysis"])
 
     mol2rfe.add_argument("-pdb", required=True, help="the initial conformation given by the pdb file")
     mol2rfe.add_argument("-r2", "-residuetype2", required=True,

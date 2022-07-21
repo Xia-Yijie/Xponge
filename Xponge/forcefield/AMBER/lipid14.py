@@ -1,16 +1,13 @@
-from . import *
-import sys
+"""
+This **module** set the basic configuration for lipid14
+"""
+from ...helper import source, Xprint
 
-atoms, bonds, angles, propers, impropers, LJs = load_parmdat(os.path.join(AMBER_DATA_DIR, "lipid14.dat"))
+source("....")
+amber = source("...AMBER")
 
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
-
-lipid14 = load_mol2(os.path.join(AMBER_DATA_DIR, "lipid14.mol2"))
+amber.load_parameters_from_parmdat("lipid14.dat")
+load_mol2(os.path.join(AMBER_DATA_DIR, "lipid14.mol2"))
 
 for res in "LA PA MY OL".split():
     ResidueType.types[res].head = "C12"
@@ -38,7 +35,7 @@ for res in "PC PE".split():
     ResidueType.types[res].tail_link_conditions.append({"atoms": ["O21", "C21"], "parameter": 120 / 180 * np.pi})
     ResidueType.types[res].tail_link_conditions.append({"atoms": ["O22", "O21", "C21"], "parameter": np.pi})
 
-print("""Reference for lipid14:
+Xprint("""Reference for lipid14:
   Dickson, C.J., Madej, B.D., Skjevik, A.A., Betz, R.M., Teigen, K., Gould, I.R., Walker, R.C. 
     Lipid14: The Amber Lipid Force Field.
     Journal of Chemical Theory and Computation 2014 10(2), 865-879,

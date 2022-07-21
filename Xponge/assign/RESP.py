@@ -378,7 +378,7 @@ def resp_fit(assign, basis="6-31g*", opt=False, charge=None, spin=0, extra_equiv
 
 set_dict_value_alternative_name(globals(), resp_fit)
 
-Xprint("""Reference for RESP.py:
+reference = """Reference for RESP.py:
 1. pyscf
   Q. Sun, T. C. Berkelbach, N. S. Blunt, G. H. Booth, S. Guo, Z. Li, J. Liu, J. McClain, S. Sharma, S. Wouters, and G. K.-L. Chan
     PySCF: the Python-based simulations of chemistry framework
@@ -397,4 +397,6 @@ Xprint("""Reference for RESP.py:
     Journal of Physical Chemistry 1993 97(40) 10269-10280
     DOI: 10.1021/j100142a004
     
-""")
+"""
+
+Xprint(reference)

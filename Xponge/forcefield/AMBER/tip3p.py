@@ -1,6 +1,10 @@
-from . import *
-import os
-import sys
+"""
+This **module** set the basic configuration for ff14sb
+"""
+from ...helper import source, Xprint, set_real_global_variable
+
+source("....")
+amber = source("...AMBER")
 
 AtomType.New_From_String(
     """
@@ -29,35 +33,15 @@ HW-HW   0                   0
 
 TIP3P = load_mol2(os.path.join(AMBER_DATA_DIR, "tip3p.mol2"))
 
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(
-    os.path.join(AMBER_DATA_DIR, "ions1lm_126_tip3p.frcmod"))
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
-
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(os.path.join(AMBER_DATA_DIR, "ionsjc_tip3p.frcmod"))
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
-
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(
-    os.path.join(AMBER_DATA_DIR, "ions234lm_126_tip3p.frcmod"))
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
+amber.load_parameters_from_frcmod("ions1lm_126_tip3p.frcmod")
+amber.load_parameters_from_frcmod("ionsjc_tip3p.frcmod")
+amber.load_parameters_from_frcmod("ions234lm_126_tip3p.frcmod")
 
 load_mol2(os.path.join(AMBER_DATA_DIR, "atomic_ions.mol2"))
 
-print("""Reference for tip3p:
+set_real_global_variable("WAT", TIP3P)
+
+reference = """Reference for tip3p:
 1. Water:
   William L. Jorgensen, Jayaraman Chandrasekhar, and Jeffry D. Madura
     Comparison of simple potential functions for simulating liquid water
@@ -87,6 +71,6 @@ print("""Reference for tip3p:
     Parameterization of Highly Charged Metal Ions Using the 12-6-4 LJ-Type Nonbonded Model in Explicit Water
     The Journal of Physical Chemistry B 2015 119 (3), 883-895
     DOI: 10.1021/jp505875v  
-""")
+"""
 
-sys.modules['__main__'].__dict__["WAT"] = TIP3P
+Xprint(reference)

@@ -1,9 +1,26 @@
 """
-This **module** is used to provide help functions and classes
+This **module** is used to provide help functions and classes about namespace
 """
 import sys
+from inspect import currentframe
+from importlib import import_module
 from types import MethodType, FunctionType
 from functools import partial
+
+
+def source(module):
+    """
+This **function** import the module and merge all the global variables into the caller module globals()
+    :param module:
+    :return:
+    """
+    global_ = currentframe().f_back.f_globals
+    module_ = import_module(module, package=global_["__name__"])
+    for key, value in module_.__dict__.items():
+        if not key.startswith("_"):
+            global_[key] = value
+    return module_
+
 
 # for the special alternative name
 SPECIAL_STRINGS = {"Pdb": "PDB", "Sponge": "SPONGE", "Nb14": "NB14", "Nb14extra": "NB14EXTRA", "Lj": "LJ",
@@ -29,6 +46,7 @@ This **function** is used to set the alternative name for a function and an obje
     :return:
     """
     name = func.__name__
+    set_method(obj, name, func)
     new_name = "_".join([i.capitalize() for i in name.split("_")])
     second_new_name = "".join([i.capitalize() for i in name.split("_")])
     third_new_name = second_new_name[0].lower() + second_new_name[1:]

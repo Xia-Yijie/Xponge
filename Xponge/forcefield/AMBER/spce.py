@@ -1,6 +1,10 @@
-from . import *
-import os
-import sys
+"""
+This **module** set the basic configuration for ff14sb
+"""
+from ...helper import source, Xprint, set_real_global_variable
+
+source("....")
+amber = source("...AMBER")
 
 AtomType.New_From_String(
     """
@@ -29,35 +33,15 @@ HW-HW   0                   0
 
 SPCE = load_mol2(os.path.join(AMBER_DATA_DIR, "spce.mol2"))
 
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(
-    os.path.join(AMBER_DATA_DIR, "ions1lm_126_spce.frcmod"))
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
-
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(os.path.join(AMBER_DATA_DIR, "ionsjc_spce.frcmod"))
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
-
-atoms, bonds, angles, propers, impropers, LJs, cmap = load_frcmod(
-    os.path.join(AMBER_DATA_DIR, "ions234lm_126_spce.frcmod"))
-AtomType.New_From_String(atoms)
-BOND.BondType.New_From_String(bonds)
-ANGLE.AngleType.New_From_String(angles)
-DIHEDRAL.ProperType.New_From_String(propers)
-DIHEDRAL.ImproperType.New_From_String(impropers)
-LJ.LJType.New_From_String(LJs)
+amber.load_parameters_from_frcmod("ions1lm_126_spce.frcmod")
+amber.load_parameters_from_frcmod("ionsjc_spce.frcmod")
+amber.load_parameters_from_frcmod("ions234lm_126_spce.frcmod")
 
 load_mol2(os.path.join(AMBER_DATA_DIR, "atomic_ions.mol2"))
 
-print("""Reference for spce:
+set_real_global_variable("WAT", SPCE)
+
+Xprint("""Reference for spce:
 1. Water:
   H. J. C. Berendsen, J. R. Grigera, and T. P. Straatsma
     The missing term in effective pair potentials
@@ -88,5 +72,3 @@ print("""Reference for spce:
     The Journal of Physical Chemistry B 2015 119 (3), 883-895
     DOI: 10.1021/jp505875v  
 """)
-
-sys.modules['__main__'].__dict__["WAT"] = SPCE

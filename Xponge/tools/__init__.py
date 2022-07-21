@@ -6,7 +6,7 @@ __main__ = sys.modules["__main__"]
 
 def basic_test(args):
     import Xponge
-    import Xponge.forcefield.AMBER.ff14SB
+    import Xponge.forcefield.AMBER.ff14sb
     import Xponge.forcefield.AMBER.tip3p
 
     globals().update(__main__.__dict__)
@@ -41,7 +41,7 @@ def assign_test(args):
     t.add_bond(0, 1, 1)
     t.add_bond(0, 2, 1)
     t.determine_ring_and_bond_type()
-    t.determine_atom_type("GAFF")
+    t.determine_atom_type("gaff")
     equal_atoms = t.Determine_Equal_Atoms()
     t.calculate_charge("resp", opt=True, extra_equivalence=equal_atoms)
     Save_PDB(t, f"{args.o}.pdb")
@@ -93,7 +93,7 @@ def dat2nc(args):
     data.application = "SPONGE"
     data.program = "SPONGE"
     data.programVersion = "1.2"
-    data.Conventions = "AMBER"
+    data.Conventions = "amber"
     data.ConventionVersion = "1.0"
 
     data.createVariable("time", "f", ("frame"))
@@ -437,7 +437,7 @@ def mol2opt(args):
 
     t = Xponge.assign.Get_Assignment_From_Mol2(args.i)
     t.Save_As_Mol2("%s.mol2" % args.temp)
-    t.Determine_Atom_Type("GAFF")
+    t.Determine_Atom_Type("gaff")
     temp = t.To_ResidueType(args.temp)
     Xponge.BUILD.Save_Mol2(temp)
     Xponge.forcefield.AMBER.gaff.parmchk2_gaff("%s.mol2" % args.temp, "%s.frcmod" % args.temp)
@@ -647,7 +647,7 @@ def mol2rfe(args):
 
     if not args.ff:
         import Xponge.forcefield.AMBER.gaff as gaff
-        import Xponge.forcefield.AMBER.ff14SB
+        import Xponge.forcefield.AMBER.ff14sb
         import Xponge.forcefield.AMBER.tip3p
     else:
         idic, ipy = os.path.split(args.ff)
@@ -701,7 +701,7 @@ def mol2hfe(args):
     import numpy as np
     if args.assignment:
         t = Xponge.assign.Get_Assignment_From_Mol2(args.assignment)
-        t.Determine_Atom_Type("GAFF")
+        t.Determine_Atom_Type("gaff")
         q = t.Calculate_Charge("RESP", opt=True)
         restype = t.To_ResidueType(args.temp, q)
         Xponge.BUILD.Save_Mol2(restype)
@@ -710,7 +710,7 @@ def mol2hfe(args):
         rmol.Add_Residue(restype)
     elif args.name:
         t = Xponge.assign.Get_Assignment_From_PubChem(args.name, "name")
-        t.Determine_Atom_Type("GAFF")
+        t.Determine_Atom_Type("gaff")
         q = t.Calculate_Charge("RESP", opt=True)
         restype = t.To_ResidueType(args.temp, q)
         Xponge.BUILD.Save_Mol2(restype)
@@ -719,7 +719,7 @@ def mol2hfe(args):
         rmol.Add_Residue(restype)
     elif args.smiles:
         t = Xponge.assign.Get_Assignment_From_PubChem(args.smiles, "smiles")
-        t.Determine_Atom_Type("GAFF")
+        t.Determine_Atom_Type("gaff")
         q = t.Calculate_Charge("RESP", opt=True)
         restype = t.To_ResidueType(args.temp, q)
         Xponge.BUILD.Save_Mol2(restype)

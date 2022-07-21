@@ -7,7 +7,7 @@ except ModuleNotFoundError as exc:
     raise ModuleNotFoundError(
         "'rdkit' package needed. Maybe you need 'conda install -c rdkit rdkit'") from exc
 
-from .name import set_global_alternative_names
+from .namespace import set_global_alternative_names
 
 
 def assign_to_rdmol(assign, ignore_bond_type=False):
