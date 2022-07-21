@@ -1,15 +1,21 @@
-try:
-    import MDAnalysis as mda
-except:
-    raise Exception("'MDAnalysis' package needed. Maybe you need 'pip install MDANalysis'")
-
-from MDAnalysis.coordinates import base
-from MDAnalysis.lib import util
+"""
+This **module** gives functions and classes to use MDAnalysis to analyze the trajectories
+"""
 import os.path
 import numpy as np
 
+try:
+    from MDAnalysis.coordinates import base
+    from MDAnalysis.lib import util
+except ModuleNotFoundError as exc:
+    raise ModuleNotFoundError(
+        "'MDAnalysis' package needed. Maybe you need 'pip install MDANalysis'") from exc
 
-class SPONGE_Trajectory_Reader(base.ReaderBase):
+
+class SpongeTrajectoryReader(base.ReaderBase):
+    """
+This **class** is the interface to MDAnalysis
+    """
     def __init__(self, dat_file_name, box, n_atoms, **kwargs):
         super().__init__(dat_file_name, **kwargs)
         if isinstance(box, str):
@@ -27,6 +33,11 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
         self._read_next_timestep()
 
     def _read_frame(self, frame):
+        """
+
+        :param frame:
+        :return:
+        """
         if self.trajfile is None:
             self.open_trajectory()
         if self.boxfile is not None:
@@ -36,13 +47,17 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
         return self._read_next_timestep()
 
     def _read_next_timestep(self):
+        """
+
+        :return:
+        """
         ts = self.ts
         if self.trajfile is None:
             self.open_trajectory()
         t = self.trajfile.read(12 * self.n_atoms)
         if not t:
             raise EOFError
-        ts._pos = np.frombuffer(t, dtype=np.float32).reshape(self.n_atoms, 3)
+        setattr(ts, "_pos", np.frombuffer(t, dtype=np.float32).reshape(self.n_atoms, 3))
 
         if self.box is not None:
             ts.dimensions = self.box
@@ -60,6 +75,10 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
         return self._n_atoms
 
     def close(self):
+        """
+
+        :return:
+        """
         if self.trajfile is not None:
             self.trajfile.close()
             self.trajfile = None
@@ -72,6 +91,10 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
         self.open_trajectory()
 
     def open_trajectory(self):
+        """
+
+        :return:
+        """
         self.trajfile = util.anyopen(self.filename, "rb")
         if self.box is None:
             self.boxfile = util.anyopen(self.boxname)
@@ -80,6 +103,10 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
         return self.trajfile, self.boxfile
 
     def _get_box_offset(self):
+        """
+
+        :return:
+        """
         self._offsets = [0]
         with util.openany(self.boxname) as f:
             line = f.readline()
@@ -90,9 +117,17 @@ class SPONGE_Trajectory_Reader(base.ReaderBase):
 
 
 def Universe(topname, trajname, box, **kwargs):
+    """
+This **function** gives an interface to MDAnalysis.Universe
+    :param topname:
+    :param trajname:
+    :param box:
+    :param kwargs:
+    :return:
+    """
     import warnings
     warnings.filterwarnings("ignore", message='No coordinate reader found for')
     u = mda.Universe(topname)
     warnings.filterwarnings("default", message='No coordinate reader found for')
-    u._trajectory = SPONGE_Trajectory_Reader(trajname, box, len(u.atoms), **kwargs)
+    setattr(u, "_trajectory", SPONGE_Trajectory_Reader(trajname, box, len(u.atoms), **kwargs))
     return u

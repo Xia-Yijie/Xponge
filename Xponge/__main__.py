@@ -74,8 +74,8 @@ def _maskgen(subparsers):
     :param subparsers:
     :return:
     """
-    maskgen = subparsers.add_parser("maskgen",
-        help="use VMD to generate a file to record the atom indexes of the corresponding mask")
+    maskgen = subparsers.add_parser("maskgen", help="""use VMD to generate a file to record the atom
+ indexes of the corresponding mask""")
     maskgen.add_argument("-p", required=True, help="the topology file")
     maskgen.add_argument("-c", help="the coordinate file")
     maskgen.add_argument("-o", required=True, help="the output file")
@@ -93,16 +93,16 @@ def _exgen(subparsers):
                                   help='process bond-like, angle-like, dihedral-like files to get the atoms to exclude')
     exgen.add_argument('-n', type=int, required=True, help='the atom numbers')
     exgen.add_argument('-o', required=True, help='output exclude file name')
-    exgen.add_argument('-b', '--bond', default=[], nargs='+',
-        help='bond-like input files: skip the first line , and there are 2 atoms in the head of following lines')
-    exgen.add_argument('-a', '--angle', default=[], nargs='+',
-       help='angle-like input files: skip the first line , and there are 3 atoms in the head of following lines')
-    exgen.add_argument('-d', '--dihedral', default=[], nargs='+',
-       help='dihedral-like input files: skip the first line , and there are 4 atoms in the head of following lines')
-    exgen.add_argument('-v', '--virtual', default=[], nargs='+',
-       help='virtual-atom-like input files: the first number indicates the virtual type')
-    exgen.add_argument('-e', '--exclude', default=[], nargs='+',
-       help='exclude-like input files: add the information of another exclude file')
+    exgen.add_argument('-b', '--bond', default=[], nargs='+', help='''bond-like input files: skip the first line,
+ and there are 2 atoms in the head of following lines''')
+    exgen.add_argument('-a', '--angle', default=[], nargs='+', help='''angle-like input files: skip the first line,
+ and there are 3 atoms in the head of following lines''')
+    exgen.add_argument('-d', '--dihedral', default=[], nargs='+', help='''dihedral-like input files:
+ skip the first line, and there are 4 atoms in the head of following lines''')
+    exgen.add_argument('-v', '--virtual', default=[], nargs='+', help='''virtual-atom-like input files:
+ the first number indicates the virtual type''')
+    exgen.add_argument('-e', '--exclude', default=[], nargs='+', help='''exclude-like input files:
+ add the information of another exclude file''')
     exgen.set_defaults(func=tools.exgen)
 
 
@@ -233,9 +233,9 @@ def _mol2rfe(subparsers):
     """
     mol2rfe = subparsers.add_parser("mol2rfe",
                                     help='calculate the relative free energy of a small molecule using SPONGE')
-    mol2rfe.add_argument("-do", metavar="todo", nargs="*", action="append",
-        help="the things need to do, should be one or more of 'build', 'min', 'prebalance', 'balance', 'analysis'",
-        choices=["build", "min", "prebalance", "balance", "analysis"])
+    mol2rfe.add_argument("-do", metavar="todo", nargs="*", action="append", help="""the things need to do,
+ should be one or more of 'build', 'min', 'prebalance', 'balance', 'analysis'""",
+                    choices=["build", "min", "prebalance", "balance", "analysis"])
 
     mol2rfe.add_argument("-pdb", required=True, help="the initial conformation given by the pdb file")
     mol2rfe.add_argument("-r2", "-residuetype2", required=True,
@@ -307,7 +307,6 @@ def main():
 
     :return:
     """
-
 
     parser = argparse.ArgumentParser(prog="Xponge")
     subparsers = parser.add_subparsers(help="subcommands",

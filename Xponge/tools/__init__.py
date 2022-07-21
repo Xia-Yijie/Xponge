@@ -32,8 +32,8 @@ def basic_test(args):
 def assign_test(args):
     import Xponge
     import Xponge.forcefield.AMBER.gaff as gaff
-
     globals().update(__main__.__dict__)
+
     t = assign.Assign()
     t.add_atom("O", 0, 0, 0)
     t.add_atom("H", 1, 0, 0)
@@ -42,13 +42,15 @@ def assign_test(args):
     t.add_bond(0, 2, 1)
     t.determine_ring_and_bond_type()
     t.determine_atom_type("GAFF")
-    t.calculate_charge("resp", opt = True)
+    equal_atoms = t.Determine_Equal_Atoms()
+    t.calculate_charge("resp", opt=True, extra_equivalence=equal_atoms)
     Save_PDB(t, f"{args.o}.pdb")
     Save_Mol2(t, f"{args.o}.mol2")
     WAT = t.to_residuetype("WAT")
     Save_PDB(WAT, f"{args.o}_Residue.pdb")
     Save_Mol2(WAT, f"{args.o}_Residue.pdb")
     Save_SPONGE_Input(WAT, f"{args.o}")
+
 
 def charmm27_test(args):
     import Xponge
@@ -57,6 +59,7 @@ def charmm27_test(args):
 
     t = ACE + ALA * 10 + NME
     Save_SPONGE_Input(t, f"{args.o}")
+
 
 def test(args):
     if not args.do:

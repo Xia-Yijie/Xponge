@@ -1,7 +1,7 @@
 from ... import *
-from ..BASE import CHARGE, MASS, LJ
-from ..BASE import NB14, NB14EXTRA, EXCLUDE
-from ..BASE import BOND, SBOND
+from ..BASE import LJ
+from ..BASE import EXCLUDE
+from ..BASE import BOND
 
 LJType = LJ.LJType
 
@@ -455,18 +455,15 @@ def Merge_Dual_Topology(mol, ResidueA, ResidueB, AssignA, AssignB, tmcs=60):
     BUILD.Build_Bonded_Force(mol)
     BUILD.Build_Bonded_Force(ResidueB)
 
-    from ...assign.RDKit_tools import Assign2RDKitMol, Get_Part_Align, \
-        Set_Conformer_Coordinate_From_Residue, Get_Conformer_Coordinate_To_Residue, \
-        Get_Conformer_Coordinate, Insert_Atom_Type_To_RDKitMol
-    from rdkit import Chem
+    from helper.rdkit import assign_to_rdmol, insert_atom_type_to_rdmol
     from rdkit.Chem import rdFMCS as MCS
 
-    RDmolA = Assign2RDKitMol(AssignA, True)
-    RDmolB = Assign2RDKitMol(AssignB, True)
+    RDmolA = assign_to_rdmol(AssignA, True)
+    RDmolB = assign_to_rdmol(AssignB, True)
 
     atom_type_dict = {}
-    Insert_Atom_Type_To_RDKitMol(RDmolA, ResidueA, AssignA, atom_type_dict)
-    Insert_Atom_Type_To_RDKitMol(RDmolB, ResidueB, AssignB, atom_type_dict)
+    insert_atom_type_to_rdmol(RDmolA, ResidueA, AssignA, atom_type_dict)
+    insert_atom_type_to_rdmol(RDmolB, ResidueB, AssignB, atom_type_dict)
     print("FINDING MAXIMUM COMMON SUBSTRUCTURE")
 
     result = MCS.FindMCS([RDmolA, RDmolB], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True,

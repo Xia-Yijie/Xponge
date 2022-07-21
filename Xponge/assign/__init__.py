@@ -5,7 +5,7 @@ import sys
 from collections import OrderedDict
 from itertools import groupby
 import numpy as np
-from ..helper import set_attribute_alternative_names, AtomType, guess_element_from_mass, ResidueType
+from ..helper import set_attribute_alternative_names, AtomType, ResidueType
 
 
 class AssignRule:
@@ -354,7 +354,7 @@ This **class** is used to assign properties for atoms, which is called an "assig
 
         :return:
         """
-        from .RDKit_tools import Find_Equal_Atoms
+        from ..helper.rdkit import Find_Equal_Atoms
         return Find_Equal_Atoms(self)
 
     def determine_bond_order(self):
