@@ -1,22 +1,37 @@
+"""
+This **module** defines the terminal commands
+"""
+import argparse
 from . import tools
 
 
 def _mytest(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     mytest = subparsers.add_parser("test", help="test the basic function of Xponge")
     mytest.add_argument("-o", metavar="test", default="test", help="the prefix for the output files")
     mytest.add_argument("-do", metavar="todo", nargs="*", action="append",
-                        default = None, help="the things need to test, should be one or more of 'base', 'assign', 'charmm27'",
-                        choices=["base", "assign", "charmm27"])
+                        default=None, choices=["base", "assign", "charmm27"],
+                        help="the things need to test, should be one or more of 'base', 'assign', 'charmm27'")
     mytest.set_defaults(func=tools.test)
 
 
 def _dat2nc(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     dat2nc = subparsers.add_parser("dat2nc", help="convert a traj file from .dat to .nc")
 
     dat2nc.add_argument("-n", required=True, type=int, help="the number of atoms in the traj file",
                         metavar="atom_numbers")
     dat2nc.add_argument("-frame", type=int,
-                        help="the number of frames you want convert. If not set, a value will be guessed from the file size.",
+                        help="the number of frames you want convert. If not set, \
+                            a value will be guessed from the file size.",
                         metavar="frame_numbers")
     dat2nc.add_argument("-x", required=True, help="the name of the .dat traj file.", metavar="dat_traj_file")
     group = dat2nc.add_mutually_exclusive_group(required=True)
@@ -30,6 +45,11 @@ def _dat2nc(subparsers):
 
 
 def _gro2crd(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     gro2crd = subparsers.add_parser("gro2crd", help="convert a coordinate file from gromacs to SPONGE")
     gro2crd.add_argument("-i", required=True, help="the name of the .gro file.")
     gro2crd.add_argument("-o", required=True, help="the name of the SPONGE coordinate file.")
@@ -37,6 +57,11 @@ def _gro2crd(subparsers):
 
 
 def _nc2rst7(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     nc2rst7 = subparsers.add_parser("nc2rst7", help="convert a rst7 file from .nc to .rst7")
     nc2rst7.add_argument("-rst7", required=True, help="the name of the .rst7 restart file.")
     nc2rst7.add_argument("-nc", required=True, help="the name of the .nc restart file.")
@@ -44,8 +69,13 @@ def _nc2rst7(subparsers):
 
 
 def _maskgen(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     maskgen = subparsers.add_parser("maskgen",
-                                    help="use VMD to generate a file to record the atom indexes of the corresponding mask")
+        help="use VMD to generate a file to record the atom indexes of the corresponding mask")
     maskgen.add_argument("-p", required=True, help="the topology file")
     maskgen.add_argument("-c", help="the coordinate file")
     maskgen.add_argument("-o", required=True, help="the output file")
@@ -54,24 +84,34 @@ def _maskgen(subparsers):
 
 
 def _exgen(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     exgen = subparsers.add_parser("exgen",
                                   help='process bond-like, angle-like, dihedral-like files to get the atoms to exclude')
     exgen.add_argument('-n', type=int, required=True, help='the atom numbers')
     exgen.add_argument('-o', required=True, help='output exclude file name')
     exgen.add_argument('-b', '--bond', default=[], nargs='+',
-                       help='bond-like input files: skip the first line , and there are 2 atoms in the head of following lines')
+        help='bond-like input files: skip the first line , and there are 2 atoms in the head of following lines')
     exgen.add_argument('-a', '--angle', default=[], nargs='+',
-                       help='angle-like input files: skip the first line , and there are 3 atoms in the head of following lines')
+       help='angle-like input files: skip the first line , and there are 3 atoms in the head of following lines')
     exgen.add_argument('-d', '--dihedral', default=[], nargs='+',
-                       help='dihedral-like input files: skip the first line , and there are 4 atoms in the head of following lines')
+       help='dihedral-like input files: skip the first line , and there are 4 atoms in the head of following lines')
     exgen.add_argument('-v', '--virtual', default=[], nargs='+',
-                       help='virtual-atom-like input files: the first number indicates the virtual type')
+       help='virtual-atom-like input files: the first number indicates the virtual type')
     exgen.add_argument('-e', '--exclude', default=[], nargs='+',
-                       help='exclude-like input files: add the information of another exclude file')
+       help='exclude-like input files: add the information of another exclude file')
     exgen.set_defaults(func=tools.exgen)
 
 
 def _dat1frame(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     dat1frame = subparsers.add_parser("dat1frame", help='extract 1 frame from .dat traj file')
     dat1frame.add_argument('-n', type=int, required=True, help='the atom numbers')
     dat1frame.add_argument('-frame', type=int, required=True, help='the frame to extract')
@@ -82,6 +122,11 @@ def _dat1frame(subparsers):
 
 
 def _crd2rst7(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     crd2rst7 = subparsers.add_parser("crd2rst7", help='convert a coordinate file from SPONGE .txt to .rst7')
     crd2rst7.add_argument("-title", default="converted by Xponge", help='the title of the rst7 file')
     crd2rst7.add_argument("-crd", required=True, help='the SPONGE coordinate file')
@@ -91,6 +136,11 @@ def _crd2rst7(subparsers):
 
 
 def _trr2dat(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     trr2dat = subparsers.add_parser("trr2dat",
                                     help='convert a trajectory file from GROMACS .trr to SPONGE .dat and .box')
     trr2dat.add_argument("-i", required=True, help='the trr file name')
@@ -99,6 +149,11 @@ def _trr2dat(subparsers):
 
 
 def _name2name(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     name2name = subparsers.add_parser("name2name",
                                       help="change the atom names of a residue from one file to another file")
     name2name.add_argument("-fformat", "-from_format", dest="from_format", choices=["mol2", "pdb", "gaff_mol2"],
@@ -125,6 +180,11 @@ def _name2name(subparsers):
 
 
 def _mol2opt(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     mol2opt = subparsers.add_parser("mol2opt", help='optimize a mol2 file by using minimization-mode SPONGE and GAFF')
     mol2opt.add_argument("-sponge", default="SPONGE", help="SPONGE program command")
     mol2opt.add_argument("-i", required=True, help="the input mol2 file")
@@ -138,6 +198,11 @@ def _mol2opt(subparsers):
 
 
 def _mol2hfe(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     mol2hfe = subparsers.add_parser("mol2hfe",
                                     help='calculate the hydration free energy of a small molecule using SPONGE')
     mol2hfe.add_argument("-lambda_numbers", type=int, default=20,
@@ -161,11 +226,16 @@ def _mol2hfe(subparsers):
 
 
 def _mol2rfe(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     mol2rfe = subparsers.add_parser("mol2rfe",
                                     help='calculate the relative free energy of a small molecule using SPONGE')
     mol2rfe.add_argument("-do", metavar="todo", nargs="*", action="append",
-                         help="the things need to do, should be one or more of 'build', 'min', 'prebalance', 'balance', 'analysis'",
-                         choices=["build", "min", "prebalance", "balance", "analysis"])
+        help="the things need to do, should be one or more of 'build', 'min', 'prebalance', 'balance', 'analysis'",
+        choices=["build", "min", "prebalance", "balance", "analysis"])
 
     mol2rfe.add_argument("-pdb", required=True, help="the initial conformation given by the pdb file")
     mol2rfe.add_argument("-r2", "-residuetype2", required=True,
@@ -220,6 +290,11 @@ def _mol2rfe(subparsers):
 
 
 def _crd2pdb(subparsers):
+    """
+
+    :param subparsers:
+    :return:
+    """
     crd2pdb = subparsers.add_parser("crd2pdb", help='add the coordinary from SPONGE file to pdb')
     crd2pdb.add_argument("-pdb", required=True, help="the input pdb file")
     crd2pdb.add_argument("-crd", required=True, help="the SPONGE coordinary file")
@@ -228,25 +303,28 @@ def _crd2pdb(subparsers):
 
 
 def main():
-    import argparse
+    """
+
+    :return:
+    """
+
 
     parser = argparse.ArgumentParser(prog="Xponge")
     subparsers = parser.add_subparsers(help="subcommands",
                                        description="Tools for SPONGE. Use Xponge XXX -h for the help of tool 'XXX'.")
-    mytest = _mytest(subparsers)
-    dat2nc = _dat2nc(subparsers)
-    gro2crd = _gro2crd(subparsers)
-    nc2rst7 = _nc2rst7(subparsers)
-    maskgen = _maskgen(subparsers)
-    exgen = _exgen(subparsers)
-    dat1frame = _dat1frame(subparsers)
-    crd2rst7 = _crd2rst7(subparsers)
-    trr2dat = _trr2dat(subparsers)
-    name2name = _name2name(subparsers)
-    mol2opt = _mol2opt(subparsers)
-    mol2hfe = _mol2hfe(subparsers)
-    mol2rfe = _mol2rfe(subparsers)
-    crd2pdb = _crd2pdb(subparsers)
+    _mytest(subparsers)
+    _dat2nc(subparsers)
+    _nc2rst7(subparsers)
+    _maskgen(subparsers)
+    _exgen(subparsers)
+    _dat1frame(subparsers)
+    _crd2rst7(subparsers)
+    _trr2dat(subparsers)
+    _name2name(subparsers)
+    _mol2opt(subparsers)
+    _mol2hfe(subparsers)
+    _mol2rfe(subparsers)
+    _crd2pdb(subparsers)
 
     args = parser.parse_args()
 

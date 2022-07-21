@@ -44,13 +44,13 @@ def _initialize():
     set_global_alternative_names(globals(), True)
     AtomType.New_From_String("name\nUNKNOWN")
 
-    @Molecule.Set_Save_SPONGE_Input("residue")
     def write_residue(self):
         towrite = "%d %d\n" % (len(self.atoms), len(self.residues))
         towrite += "\n".join([str(len(res.atoms)) for res in self.residues])
         return towrite
 
-    @Molecule.Set_Save_SPONGE_Input("coordinate")
+    Molecule.Set_Save_SPONGE_Input("residue")(write_residue)
+
     def write_coordinate(self):
         towrite = "%d\n" % (len(self.atoms))
         boxlength = [0, 0, 0, self.box_angle[0], self.box_angle[1], self.box_angle[2]]
@@ -87,6 +87,8 @@ def _initialize():
         towrite += "\n%f %f %f %f %f %f" % (
             boxlength[0], boxlength[1], boxlength[2], boxlength[3], boxlength[4], boxlength[5])
         return towrite
+
+    Molecule.Set_Save_SPONGE_Input("coordinate")(write_coordinate)
 
 
 _initialize()
