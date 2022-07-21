@@ -75,7 +75,7 @@ This **function** is used to find the chemical equivalent atoms in the molecule
     for i in range(len(assign.atoms)):
         mols.append(assign_to_rdmol(assign))
         mols[-1].GetAtoms()[i].SetIsotope(1)
-        canon_smiles.append(Chem.MolToSmiles(mols[-1]))
+        canon_smiles.append(Chem.MolToSmiles(mols[-1], isomericSmiles=True))
     group = {i: i for i in range(len(assign.atoms))}
     for i in range(len(assign.atoms)):
         if group[i] == i:

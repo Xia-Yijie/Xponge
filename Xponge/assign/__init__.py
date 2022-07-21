@@ -295,7 +295,7 @@ This **class** is used to assign properties for atoms, which is called an "assig
         self.atom_numbers += 1
         self.names.append(name)
         if self.coordinate is None:
-            self.coordinate = np.array([[x, y, z]])
+            self.coordinate = np.array([[float(x), float(y), float(z)]])
         else:
             self.coordinate = np.vstack((self.coordinate, np.array([x, y, z])))
         if self.charge is None:
@@ -463,8 +463,8 @@ This **class** is used to assign properties for atoms, which is called an "assig
         """
         method = method.upper()
         if method == "RESP":
-            from . import RESP
-            self.charge = RESP.RESP_Fit(self, basis=parameters.get("basis", "6-31g*"), opt=parameters.get("opt", False),
+            from . import resp
+            self.charge = resp.RESP_Fit(self, basis=parameters.get("basis", "6-31g*"), opt=parameters.get("opt", False),
                                         charge=parameters.get("charge", 0), spin=parameters.get("spin", 0),
                                         extra_equivalence=parameters.get("extra_equivalence", []),
                                         grid_density=parameters.get("grid_density", 6),

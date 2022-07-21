@@ -386,8 +386,8 @@ def load_frcmod(filename, nbtype="RE"):
     atoms = "name  mass  LJtype\n"
     for atom, mass in atom_types.items():
         atoms += atom + "\t" + mass + "\t" + atom + "\n"
-
-    return atoms, bonds, angles, propers, impropers, ljs, cmap
+    toret = atoms, bonds, angles, propers, impropers, ljs, cmap
+    return toret
 
 
 def _parmdat_read_harmonic_bonds(f, bonds, n):
@@ -491,8 +491,8 @@ def load_parmdat(filename):
     atoms = "name  mass  LJtype\n"
     for atom, mass in atom_types.items():
         atoms += atom + "\t" + mass + "\t" + lj_types[atom] + "\n"
-
-    return atoms, bonds, angles, propers, impropers, ljs
+    toret = atoms, bonds, angles, propers, impropers, ljs
+    return toret
 
 
 def load_rst7(filename, mol=None):

@@ -1,15 +1,19 @@
-import sys
-from Xponge import *
+"""
+This **module** implements the terminal commands
+"""
+from ..helper import source, GlobalSetting
 
-__main__ = sys.modules["__main__"]
 
+def _basic_test(args):
+    """
 
-def basic_test(args):
-    import Xponge
-    import Xponge.forcefield.AMBER.ff14sb
-    import Xponge.forcefield.AMBER.tip3p
-
-    globals().update(__main__.__dict__)
+    :param args:
+    :return:
+    """
+    source("..")
+    source("..forcefield.amber.ff14sb")
+    source("..forcefield.amber.tip3p")
+    source("__main__")
 
     t = ACE + ALA * 10 + NME
 
@@ -29,10 +33,15 @@ def basic_test(args):
     Save_SPONGE_Input(t, f"{args.o}")
 
 
-def assign_test(args):
-    import Xponge
-    import Xponge.forcefield.AMBER.gaff as gaff
-    globals().update(__main__.__dict__)
+def _assign_test(args):
+    """
+
+    :param args:
+    :return:
+    """
+    source("..")
+    source("..forcefield.amber.gaff")
+    source("__main__")
 
     t = assign.Assign()
     t.add_atom("O", 0, 0, 0)
@@ -46,137 +55,52 @@ def assign_test(args):
     t.calculate_charge("resp", opt=True, extra_equivalence=equal_atoms)
     Save_PDB(t, f"{args.o}.pdb")
     Save_Mol2(t, f"{args.o}.mol2")
-    WAT = t.to_residuetype("WAT")
-    Save_PDB(WAT, f"{args.o}_Residue.pdb")
-    Save_Mol2(WAT, f"{args.o}_Residue.pdb")
+    wat = t.to_residuetype("WAT")
+    Save_PDB(wat, f"{args.o}_Residue.pdb")
+    Save_Mol2(wat, f"{args.o}_Residue.pdb")
     Save_SPONGE_Input(WAT, f"{args.o}")
 
 
-def charmm27_test(args):
-    import Xponge
-    import Xponge.forcefield.CHARMM27.protein
-    globals().update(__main__.__dict__)
+def _charmm27_test(args):
+    """
+
+    :param args:
+    :return:
+    """
+    source("..")
+    source("..forcefield.charmm27.protein")
+    source("__main__")
 
     t = ACE + ALA * 10 + NME
     Save_SPONGE_Input(t, f"{args.o}")
 
 
 def test(args):
+    """
+
+    :param args:
+    :return:
+    """
+    GlobalSetting.verbose = args.verbose
     if not args.do:
         args.do = [["base"]]
     args.do = args.do[0]
     if "base" in args.do:
-        basic_test(args)
+        _basic_test(args)
 
     if "assign" in args.do:
-        assign_test(args)
+        _assign_test(args)
 
     if "charmm27" in args.do:
-        charmm27_test(args)
-
-
-def dat2nc(args):
-    from struct import unpack
-    from netCDF4 import Dataset
-    import numpy as np
-    import os
-    from itertools import islice
-    data = Dataset(args.nc, "w", format="NETCDF3_64BIT_OFFSET")
-    data.createDimension("frame", 0)
-    data.createDimension("spatial", 3)
-    data.createDimension("atom", args.n)
-    data.createDimension("cell_spatial", 3)
-    data.createDimension("label", 5)
-    data.createDimension("cell_angular", 3)
-
-    data.title = args.title
-    data.application = "SPONGE"
-    data.program = "SPONGE"
-    data.programVersion = "1.2"
-    data.Conventions = "amber"
-    data.ConventionVersion = "1.0"
-
-    data.createVariable("time", "f", ("frame"))
-    data.variables["time"].units = "picosecond"
-    data.createVariable("spatial", "S1", ("spatial"))
-    data.createVariable("coordinates", "f", ("frame", "atom", "spatial"))
-    data.variables["coordinates"].units = "angstrom"
-    data.createVariable("cell_spatial", "S1", ("cell_spatial"))
-    data.createVariable("cell_angular", "S1", ("cell_angular", "label"))
-    data.createVariable("cell_lengths", "f8", ("frame", "cell_spatial"))
-    data.variables["cell_lengths"].units = "angstrom"
-    data.createVariable("cell_angles", "f8", ("frame", "cell_angular"))
-    data.variables["cell_angles"].units = "degree"
-
-    data.variables["cell_angular"][:] = [[b'a', b'l', b'p', b'h', b'a'],
-                                         [b'b', b'e', b't', b'a', b' '],
-                                         [b'g', b'a', b'm', b'm', b'a']]
-    data.variables["cell_spatial"][:] = [b'a', b'b', b'c']
-    data.variables["spatial"][:] = [b'x', b'y', b'z']
-
-    if not args.frame:
-        size = os.path.getsize(args.x)
-        args.frame = size // 12 // args.n
-        print("frame = %d" % args.frame)
-
-    if args.box:
-        with open(args.box) as fr:
-            box = np.loadtxt(islice(fr, args.frame), dtype=np.float32)
-        box = box.reshape((-1, 6))
-        data.variables["cell_lengths"][:] = box[:, :3]
-        data.variables["cell_angles"][:] = box[:, 3:]
-        box = None
-    else:
-        data.variables["cell_lengths"][:] = np.array(args.xyz)
-        data.variables["cell_angles"][:] = [90, 90, 90]
-
-    data.variables["time"][:] = np.arange(args.frame, dtype=np.float32) * args.dt
-
-    data.variables["coordinates"][:] = np.fromfile(args.x, dtype=np.float32)[:args.frame * args.n * 3].reshape(
-        (args.frame, args.n, 3))
-    data.close()
-
-
-def nc2rst7(args):
-    from netCDF4 import Dataset
-
-    data = Dataset(args.nc)
-
-    crds = data.variables["coordinates"][:]
-    crds = list(crds.reshape(-1, 3))
-    vels = data.variables["velocities"][:]
-    vels = list(vels.reshape(-1, 3))
-
-    cell_lengths = data.variables["cell_lengths"][:]
-    cell_angles = data.variables["cell_angles"][:]
-    title = data.title
-    time = data.variables["time"][0]
-    atom_numbers = data.dimensions["atom"].size
-
-    towrite = "%s\n%d %f\n" % (title, atom_numbers, time)
-    for i, ci in enumerate(crds):
-        towrite += " ".join(map(lambda x: "%12.7f" % x, ci))
-        if i % 2 == 1:
-            towrite += "\n"
-    if i % 2 == 0:
-        towrite += "\n"
-
-    for i, ci in enumerate(vels):
-        towrite += " ".join(map(lambda x: "%12.7f" % x, ci))
-        if i % 2 == 1:
-            towrite += "\n"
-    if i % 2 == 0:
-        towrite += "\n"
-
-    towrite += " ".join(map(lambda x: "%12.7f" % x, cell_lengths))
-    towrite += " ".join(map(lambda x: "%12.7f" % x, cell_angles))
-
-    fw = open(args.rst7, "w")
-    fw.write(towrite)
-    fw.close()
+        _charmm27_test(args)
 
 
 def maskgen(args):
+    """
+
+    :param args:
+    :return:
+    """
     import os
 
     s = input("Please Enter Your Selection Mask:\n")
@@ -199,15 +123,19 @@ close $f
 quit
 """.format(args.o, p, c, s)
 
-    temp = open("maskgen_temp_tcl_file", "w")
-    temp.write(temp_write)
-    temp.close()
+    with open("maskgen_temp_tcl_file", "w") as temp:
+        temp.write(temp_write)
 
     os.system("{0} -dispdev none -e maskgen_temp_tcl_file".format(args.vmd))
     os.remove("maskgen_temp_tcl_file")
 
 
 def exgen(args):
+    """
+
+    :param args:
+    :return:
+    """
     partners = [set([]) for i in range(args.n)]
 
     def exclude_2_atoms(words):
@@ -216,12 +144,12 @@ def exgen(args):
         partners[j].add(i)
 
     def exclude_3_atoms(words):
-        i, j, k = int(words[0]), int(words[1]), int(words[2])
+        i, k = int(words[0]), int(words[2])
         partners[i].add(k)
         partners[k].add(i)
 
     def exclude_4_atoms(words):
-        i, j, k, l = int(words[0]), int(words[1]), int(words[2]), int(words[3])
+        i, l = int(words[0]), int(words[3])
         partners[i].add(l)
         partners[l].add(i)
 
@@ -272,222 +200,91 @@ def exgen(args):
     total = 0
     towrite = "{} {}\n"
     for i, p in enumerate(partners):
-        p = list(filter(lambda x: x > i, p))
-        towrite += "%d " % len(p)
-        towrite += ("{} " * len(p)).format(*p) + "\n"
-        total += len(p)
+        newp = []
+        for pi in p:
+            if pi > i:
+                newp.append(pi)
+        towrite += "%d " % len(newp)
+        towrite += ("{} " * len(newp)).format(*newp) + "\n"
+        total += len(newp)
         towrite = towrite.format(args.n, total)
 
-    f = open(args.o, "w")
-    f.write(towrite)
-    f.close()
-
-
-def dat1frame(args):
-    f = open(args.box)
-    for i, BOX in enumerate(f):
-        if i == args.frame:
-            break
-    f.close()
-    import numpy as np
-    crds = np.fromfile(args.dat, np.float32, count=args.n * 3, offset=args.n * 12 * args.frame).reshape(-1, 3)
     with open(args.o, "w") as f:
-        f.write("%d\n" % args.n + "".join(
-            list(map(lambda crd: "%12.7f %12.7f %12.7f\n" % (crd[0], crd[1], crd[2]), crds))) + BOX)
-
-
-def gro2crd(args):
-    with open(args.i) as f:
-        f.readline()
-        towrite = f.readline().strip() + "\n"
-        t = int(towrite.strip())
-        for i in range(t):
-            towrite += " ".join(["%f" % (float(s) * 10) for s in f.readline().split()[3:]]) + "\n"
-        t = f.readline()
-        assert len(t.split()) == 3, "orthogonal box needed"
-        towrite += " ".join(["%f" % (float(s) * 10) for s in t.split()[:3]]) + " 90 90 90"
-    with open(args.o, "w") as fo:
-        fo.write(towrite)
-        # print(towrite)
-
-
-def crd2rst7(args):
-    towrite = args.title + "\n"
-    atom_numbers = 0
-    start_time = None
-    crds = []
-    vels = []
-    box = [0, 0, 0, 90, 90, 90]
-    with open(args.crd) as f:
-        t = f.readline().split()
-        atom_numbers = int(t[0])
-        if len(t) > 1:
-            start_time = float(t[1])
-        for i in range(atom_numbers):
-            t = list(map(float, f.readline().split()))
-            crds.append(t)
-        box = [float(i) for i in f.readline().split()]
-
-    if args.vel:
-        second_line = " %d %f\n" % (atom_numbers, start_time)
-        with open(args.vel) as f:
-            t = f.readline().split()
-            for i in range(atom_numbers):
-                t = list(map(float, f.readline().split()))
-                vels.append(t)
-
-    else:
-        second_line = " %d\n" % atom_numbers
-
-    towrite += second_line
-    for i in range(0, atom_numbers):
-        towrite += "%12.7f%12.7f%12.7f" % (crds[i][0], crds[i][1], crds[i][2])
-        if i % 2 == 1:
-            towrite += "\n"
-    if atom_numbers % 2 == 1:
-        towrite += "\n"
-
-    if args.vel:
-        for i in range(0, atom_numbers):
-            towrite += "%12.7f%12.7f%12.7f" % (vels[i][0], vels[i][1], vels[i][2])
-            if i % 2 == 1:
-                towrite += "\n"
-    if atom_numbers % 2 == 1:
-        towrite += "\n"
-    towrite += "%12.7f%12.7f%12.7f%12.7f%12.7f%12.7f\n" % (box[0], box[1], box[2], box[3], box[4], box[5])
-
-    with open(args.rst7, "w") as f:
         f.write(towrite)
 
 
-def trr2dat(args):
-    import numpy as np
-    from MDAnalysis.lib.formats.libmdaxdr import TRRFile
-    box = []
-    crd = []
-    with TRRFile(args.i) as f:
-        for frame in f:
-            crd.append(frame.x)
-            box.append([frame.box[0][0] * 10, frame.box[1][1] * 10, frame.box[2][2] * 10, 90, 90, 90])
-    box = np.array(box, dtype=np.float32)
-    crd = np.array(crd, dtype=np.float32) * 10
-    np.savetxt("{}.box".format(args.o), box)
-    crd.tofile("{}.dat".format(args.o))
-
-
 def name2name(args):
-    import Xponge
-    import Xponge.assign.RDKit_tools as rdktool
+    """
+
+    :param args:
+    :return:
+    """
     from rdkit import Chem
     from rdkit.Chem import rdFMCS
+    source("..")
+    rdktool = source("..helper.rdkit")
 
     if args.to_format == "mol2":
-        _to = Xponge.assign.Get_Assignment_From_Mol2(args.to_file)
+        to_ = assign.Get_Assignment_From_Mol2(args.to_file)
     elif args.to_format == "gaff_mol2":
-        import Xponge.forcefield.AMBER.gaff
-        _to = Xponge.load_mol2(args.to_file).residues[0]
-        _to = Xponge.assign.Get_Assignment_From_ResidueType(_to)
+        source("..forcefield.amber.gaff")
+        to_ = load_mol2(args.to_file).residues[0]
+        to_ = assign.Get_Assignment_From_ResidueType(to_)
     elif args.to_format == "pdb":
-        _to = Xponge.assign.Get_Assignment_From_PDB(args.to_file, determine_bond_order=False,
+        to_ = assign.Get_Assignment_From_PDB(args.to_file, determine_bond_order=False,
                                                     only_residue=args.to_residue)
 
     if args.from_format == "mol2":
-        _from = Xponge.assign.Get_Assignment_From_Mol2(args.from_file)
+        from_ = assign.Get_Assignment_From_Mol2(args.from_file)
     elif args.from_format == "gaff_mol2":
-        import Xponge.forcefield.AMBER.gaff
-        _from = Xponge.load_mol2(args.from_file).residues[0]
-        _from = Xponge.assign.Get_Assignment_From_ResidueType(_from)
+        source("..forcefield.amber.gaff")
+        from_ = load_mol2(args.from_file).residues[0]
+        from_ = assign.Get_Assignment_From_ResidueType(from_)
     elif args.from_format == "pdb":
-        _from = Xponge.assign.Get_Assignment_From_PDB(args.from_file, determine_bond_order=False,
-                                                      only_residue=args.from_residue)
+        from_ = assign.Get_Assignment_From_PDB(args.from_file, determine_bond_order=False,
+                                               only_residue=args.from_residue)
 
-    RDmolA = rdktool.Assign2RDKitMol(_to, True)
-    RDmolB = rdktool.Assign2RDKitMol(_from, True)
+    rdmol_a = rdktool.Assign2RDKitMol(to_, True)
+    rdmol_b = rdktool.Assign2RDKitMol(from_, True)
 
-    result = rdFMCS.FindMCS([RDmolA, RDmolB], completeRingsOnly=True, timeout=args.tmcs)
-    RDmol_mcs = Chem.MolFromSmarts(result.smartsString)
+    result = rdFMCS.FindMCS([rdmol_a, rdmol_b], completeRingsOnly=True, timeout=args.tmcs)
+    rdmol_mcs = Chem.MolFromSmarts(result.smartsString)
 
-    matchA = RDmolA.GetSubstructMatch(RDmol_mcs)
-    matchB = RDmolB.GetSubstructMatch(RDmol_mcs)
-    matchmap = {_from.names[matchB[j]]: _to.names[matchA[j]] for j in range(len(matchA))}
-    _from.names = [matchmap.get(name, name) for name in _from.names]
-    _from.name = args.out_residue
+    match_a = rdmol_a.GetSubstructMatch(rdmol_mcs)
+    match_b = rdmol_b.GetSubstructMatch(rdmol_mcs)
+    matchmap = {from_.names[match_b[j]]: to_.names[match_a[j]] for j in range(len(match_a))}
+    from_.names = [matchmap.get(name, name) for name in from_.names]
+    from_.name = args.out_residue
 
     if args.out_format == "mol2":
-        _from.Save_As_Mol2(args.out_file)
+        from_.Save_As_Mol2(args.out_file)
     elif args.out_format == "pdb":
-        _from.Save_As_PDB(args.out_file)
+        from_.Save_As_PDB(args.out_file)
     elif args.out_format == "mcs_pdb":
         towrite = towrite = "REMARK   Generated By Xponge (Max Common Structure)\n"
-        for i, atom in enumerate(_from.atoms):
-            if i in matchB:
-                towrite += "ATOM  %5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%17s%2s\n" % (i + 1, _from.names[i],
-                                                                                     _from.name, " ", 1,
-                                                                                     _from.coordinate[i][0],
-                                                                                     _from.coordinate[i][1],
-                                                                                     _from.coordinate[i][2], " ", atom)
+        for i, atom in enumerate(from_.atoms):
+            if i in match_b:
+                towrite += "ATOM  %5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%17s%2s\n" % (i + 1, from_.names[i],
+                                                                                     from_.name, " ", 1,
+                                                                                     from_.coordinate[i][0],
+                                                                                     from_.coordinate[i][1],
+                                                                                     from_.coordinate[i][2], " ", atom)
         with open(args.out_file, "w") as f:
             f.write(towrite)
 
 
-def mol2opt(args):
-    import Xponge
-    import Xponge.forcefield.AMBER.gaff
-    import os
+def _mol2rfe_build(args, merged_from, merged_to):
+    """
 
-    t = Xponge.assign.Get_Assignment_From_Mol2(args.i)
-    t.Save_As_Mol2("%s.mol2" % args.temp)
-    t.Determine_Atom_Type("gaff")
-    temp = t.To_ResidueType(args.temp)
-    Xponge.BUILD.Save_Mol2(temp)
-    Xponge.forcefield.AMBER.gaff.parmchk2_gaff("%s.mol2" % args.temp, "%s.frcmod" % args.temp)
-    Xponge.GlobalSetting.boxspace = 10
-    Xponge.BUILD.Save_SPONGE_Input(temp)
-    if args.nomin:
-        return
-    os.system(
-        "%s -mode minimization -rst %s -mdinfo %s.mdinfo -mdout %s.mdout -minimization_dynamic_dt 1 -default_in_file_prefix %s -step_limit %d -write_mdout_interval %d -write_restart_file_interval %d -write_information_interval 0 " % (
-            args.sponge, args.temp, args.temp, args.temp, args.temp, args.step1, args.step1, args.step1))
-    os.system(
-        "%s -mode minimization -dt 1e-3 -rst %s -mdinfo %s.mdinfo -mdout %s.mdout -default_in_file_prefix %s -step_limit %d -write_mdout_interval %d -write_restart_file_interval %d -write_information_interval 0 -coordinate_in_file %s_coordinate.txt" % (
-            args.sponge, args.temp, args.temp, args.temp, args.temp, args.step2, args.step2, args.step2, args.temp))
-    with open("%s_coordinate.txt" % args.temp) as f:
-        f.readline()
-        tt = f.read()
-        tt = map(float, tt.split()[:-6])
-    for i, xyzi in enumerate(tt):
-        t.coordinate[i // 3][i % 3] = xyzi
-    t.Save_As_Mol2(args.o)
-
-
-def crd2pdb(args):
-    towrite = ""
-    with open(args.crd) as f:
-        f.readline()
-        crd = f.read().split()[:-6]
-
-    count = 0
-    with open(args.pdb) as f:
-        for line in f:
-            if line.startswith("ATOM") or line.startswith("HETATM"):
-                towrite += line[:30]
-                towrite += "%8.3f" % float(crd[count])
-                count += 1
-                towrite += "%8.3f" % float(crd[count])
-                count += 1
-                towrite += "%8.3f\n" % float(crd[count])
-                count += 1
-            else:
-                towrite += line
-    with open(args.o, "w") as f:
-        f.write(towrite)
-
-
-def mol2rfe_build(args, merged_from, merged_to):
+    :param args:
+    :param merged_from:
+    :param merged_to:
+    :return:
+    """
     import os
     import Xponge
-    import Xponge.forcefield.SPECIAL.FEP as FEP
-    import Xponge.forcefield.SPECIAL.MIN_BONDED as MIN
+    import Xponge.forcefield.special.fep as FEP
+    import Xponge.forcefield.special.min as MIN
 
     if "build" in args.do:
         print("\nBUILDING TOPOLOGY\n")
@@ -499,15 +296,19 @@ def mol2rfe_build(args, merged_from, merged_to):
             os.mkdir("%d" % i)
             tt = FEP.Merge_Force_Field(merged_from, merged_to, i / args.nl)
             if i == 0:
-                MIN.Save_Min_Bonded_Parameters()
+                MIN.save_min_bonded_parameters()
             elif i == 1:
-                MIN.Do_Not_Save_Min_Bonded_Parameters()
+                MIN.do_not_save_min_bonded_parameters()
             Xponge.BUILD.Save_SPONGE_Input(tt, "%d/%s" % (i, args.temp))
 
 
-def mol2rfe_min(args):
-    import os
-    import Xponge
+def _mol2rfe_min(args):
+    """
+
+    :param args:
+    :return:
+    """
+    source("..")
 
     if "min" in args.do:
         for i in range(args.nl + 1):
@@ -558,9 +359,13 @@ def mol2rfe_min(args):
                     args.sponge, args.temp, i, i / args.nl, cif, args.msteps[1]))
 
 
-def mol2rfe_prebalance(args):
-    import os
-    import Xponge
+def _mol2rfe_prebalance(args):
+    """
+
+    :param args:
+    :return:
+    """
+    source("..")
 
     if "prebalance" in args.do:
         for i in range(args.nl + 1):
@@ -578,9 +383,13 @@ def mol2rfe_prebalance(args):
                         args.sponge, args.temp, i, i / args.nl, args.pi))
 
 
-def mol2rfe_balance(args):
-    import os
-    import Xponge
+def _mol2rfe_balance(args):
+    """
+
+    :param args:
+    :return:
+    """
+    source("..")
 
     if "balance" in args.do:
         for i in range(args.nl + 1):
@@ -598,10 +407,14 @@ def mol2rfe_balance(args):
                         args.sponge, args.temp, i, i / args.nl, args.bi))
 
 
-def mol2rfe_analysis(args, merged_from):
-    import os
-    import Xponge
-    import numpy as np
+def _mol2rfe_analysis(args, merged_from):
+    """
+
+    :param args:
+    :param merged_from:
+    :return:
+    """
+    source("..")
 
     if "analysis" in args.do:
         with open("dh_dlambda.txt", "w") as f:
@@ -638,17 +451,19 @@ def mol2rfe_analysis(args, merged_from):
 
 
 def mol2rfe(args):
-    import Xponge
-    import Xponge.forcefield.SPECIAL.FEP as FEP
-    import sys
-    import os
-    import numpy as np
-    import Xponge.forcefield.SPECIAL.MIN_BONDED as MIN
+    """
+
+    :param args:
+    :return:
+    """
+    source("..")
+    source("..forcefield.special.fep")
+    min =  source("..forcefield.special.min")
 
     if not args.ff:
-        import Xponge.forcefield.AMBER.gaff as gaff
-        import Xponge.forcefield.AMBER.ff14sb
-        import Xponge.forcefield.AMBER.tip3p
+        source("..forcefield.amber.gaff")
+        source("..forcefield.amber.ff14sb")
+        source("..forcefield.amber.tip3p")
     else:
         idic, ipy = os.path.split(args.ff)
         sys.path.append(idic)
@@ -660,26 +475,26 @@ def mol2rfe(args):
         args.do = [["build", "min", "prebalance", "balance", "analysis"]]
     args.do = args.do[0]
 
-    _from_res_type = Xponge.load_mol2(args.r1).residues[0]
-    _from = Xponge.assign.Get_Assignment_From_ResidueType(_from_res_type)
+    from_res_type_ = load_mol2(args.r1).residues[0]
+    from_ = assign.Get_Assignment_From_ResidueType(from_res_type_)
     if not args.ff:
-        gaff.parmchk2_gaff(args.r1, args.temp + "_TMP1.frcmod")
+        parmchk2_gaff(args.r1, args.temp + "_TMP1.frcmod")
 
-    _to_res_type = Xponge.load_mol2(args.r2).residues[0]
-    _to = Xponge.assign.Get_Assignment_From_ResidueType(_to_res_type)
+    to_res_type_ = Xponge.load_mol2(args.r2).residues[0]
+    to_ = Xponge.assign.Get_Assignment_From_ResidueType(to_res_type_)
     if not args.ff:
-        gaff.parmchk2_gaff(args.r2, args.temp + "_TMP2.frcmod")
+        parmchk2_gaff(args.r2, args.temp + "_TMP2.frcmod")
 
     for mol2file in args.r0:
-        Xponge.load_mol2(mol2file)
+        load_mol2(mol2file)
 
-    rmol = Xponge.load_pdb(args.pdb)
+    rmol = load_pdb(args.pdb)
 
-    merged_from, merged_to = FEP.Merge_Dual_Topology(rmol, rmol.residues[args.ri], _to_res_type, _from, _to, args.tmcs)
+    merged_from, merged_to = Merge_Dual_Topology(rmol, rmol.residues[args.ri], to_res_type_, from_, to_, args.tmcs)
 
     if args.dohmr:
-        Xponge.PROCESS.HMass_Repartition(merged_from)
-        Xponge.PROCESS.HMass_Repartition(merged_to)
+        H_Mass_Repartition(merged_from)
+        H_Mass_Repartition(merged_to)
 
     mol2rfe_build(args, merged_from, merged_to)
 
@@ -690,112 +505,3 @@ def mol2rfe(args):
     mol2rfe_balance(args)
 
     mol2rfe_analysis(args, merged_from)
-
-
-def mol2hfe(args):
-    import Xponge
-    import Xponge.forcefield.SPECIAL.FEP as FEP
-    import Xponge.forcefield.AMBER.gaff
-    import Xponge.forcefield.AMBER.tip3p
-    import os
-    import numpy as np
-    if args.assignment:
-        t = Xponge.assign.Get_Assignment_From_Mol2(args.assignment)
-        t.Determine_Atom_Type("gaff")
-        q = t.Calculate_Charge("RESP", opt=True)
-        restype = t.To_ResidueType(args.temp, q)
-        Xponge.BUILD.Save_Mol2(restype)
-        Xponge.forcefield.AMBER.gaff.parmchk2_gaff("%s.mol2" % args.temp, "%s.frcmod" % args.temp)
-        rmol = Xponge.Molecule(args.temp)
-        rmol.Add_Residue(restype)
-    elif args.name:
-        t = Xponge.assign.Get_Assignment_From_PubChem(args.name, "name")
-        t.Determine_Atom_Type("gaff")
-        q = t.Calculate_Charge("RESP", opt=True)
-        restype = t.To_ResidueType(args.temp, q)
-        Xponge.BUILD.Save_Mol2(restype)
-        Xponge.forcefield.AMBER.gaff.parmchk2_gaff("%s.mol2" % args.temp, "%s.frcmod" % args.temp)
-        rmol = Xponge.Molecule(args.temp)
-        rmol.Add_Residue(restype)
-    elif args.smiles:
-        t = Xponge.assign.Get_Assignment_From_PubChem(args.smiles, "smiles")
-        t.Determine_Atom_Type("gaff")
-        q = t.Calculate_Charge("RESP", opt=True)
-        restype = t.To_ResidueType(args.temp, q)
-        Xponge.BUILD.Save_Mol2(restype)
-        Xponge.forcefield.AMBER.gaff.parmchk2_gaff("%s.mol2" % args.temp, "%s.frcmod" % args.temp)
-        rmol = Xponge.Molecule(args.temp)
-        rmol.Add_Residue(restype)
-    elif args.residuetype:
-        rmol = Xponge.load_mol2(args.residuetype)
-        Xponge.forcefield.AMBER.gaff.parmchk2_gaff(args.residuetype, "%s.frcmod" % args.temp)
-
-    Xponge.PROCESS.Box(rmol, Xponge.ResidueType.types["WAT"], 20)
-    free_rmol = FEP.Get_Free_Molecule(rmol, rmol.residues[0])
-
-    Xponge.BUILD.Save_PDB(rmol)
-
-    print("\nBUILDING TOPOLOGY\n")
-    FEP.Save_Soft_Core_LJ()
-
-    for i in range(args.lambda_numbers + 1):
-        if os.path.exists("%d" % i):
-            os.system("rm -rf %d" % i)
-        os.mkdir("%d" % i)
-        tt = FEP.Merge_Force_Field(free_rmol, rmol, i / args.lambda_numbers)
-        Xponge.BUILD.Save_SPONGE_Input(tt, "%d/%s" % (i, args.temp))
-
-    for i in range(args.lambda_numbers + 1):
-        if os.path.exists("%d/min" % i):
-            os.system("rm -rf %d/min" % i)
-        os.mkdir("%d/min" % i)
-        os.system(
-            "{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit 2000".format(
-                args.sponge, args.temp, i, i / args.lambda_numbers))
-        os.system(
-            "{0} -mode minimization -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3}  -constrain_mode SHAKE -step_limit 2000 -coordinate_in_file {2}/min/{1}_coordinate.txt".format(
-                args.sponge, args.temp, i, i / args.lambda_numbers))
-
-    for i in range(args.lambda_numbers + 1):
-        if os.path.exists("%d/prebalance" % i):
-            os.system("rm -rf %d/prebalance" % i)
-        os.mkdir("%d/prebalance" % i)
-        os.system(
-            "{0} -mode NPT -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/prebalance/{1}.mdinfo -mdout {2}/prebalance/{1}.mdout -rst {2}/prebalance/{1} -crd {2}/prebalance/{1}.dat -box {2}/prebalance/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit {4} -barostat {5} -thermostat {6} -coordinate_in_file {2}/min/{1}_coordinate.txt".format(
-                args.sponge, args.temp, i, i / args.lambda_numbers, args.prebalance_step, args.barostat,
-                args.thermostat))
-
-    for i in range(args.lambda_numbers + 1):
-        if os.path.exists("%d/balance" % i):
-            os.system("rm -rf %d/balance" % i)
-        os.mkdir("%d/balance" % i)
-        os.system(
-            "{0} -mode NPT -dt 2e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/balance/{1}.mdinfo -mdout {2}/balance/{1}.mdout -rst {2}/balance/{1} -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit {4} -barostat {5} -thermostat {6} -coordinate_in_file {2}/prebalance/{1}_coordinate.txt -velocity_in_file {2}/prebalance/{1}_velocity.txt -write_information_interval 10 -write_mdout_interval 5000 -write_restart_file_interval {4}".format(
-                args.sponge, args.temp, i, i / args.lambda_numbers, args.balance_step, args.barostat, args.thermostat))
-    with open("dh_dlambda.txt", "w") as f:
-        pass
-    if args.method == "TI":
-        for i in range(args.lambda_numbers + 1):
-            if os.path.exists("%d/ti" % i):
-                os.system("rm -rf %d/ti" % i)
-            os.mkdir("%d/ti" % i)
-            os.system(
-                "{0} -LJ_soft_core_in_file {2}/{1}_LJ_soft_core.txt -exclude_in_file {2}/{1}_exclude.txt -charge_in_file {2}/{1}_charge.txt -chargeA_in_file 0/{1}_charge.txt -chargeB_in_file {4}/{1}_charge.txt -mdinfo {2}/ti/{1}.mdinfo -mdout {2}/ti/{1}.mdout -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -subsys_division_in_file {2}/{1}_subsys_division.txt  -charge_pertubated 1 -atom_numbers {5} -frame_numbers {6} -TI dh_dlambda.txt".format(
-                    args.sponge_ti, args.temp, i, i / args.lambda_numbers, args.lambda_numbers, len(rmol.atoms),
-                                                  args.balance_step // 10))
-
-        dh_dlambda = np.loadtxt("dh_dlambda.txt")
-        dh = []
-        dh_int = []
-        tempall = 0
-        for i in range(args.lambda_numbers):
-            temp = dh_dlambda[0] * 0.5 / args.lambda_numbers
-            temp += dh_dlambda[i + 1] * 0.5 / args.lambda_numbers
-            dh.append(temp)
-            tempall += temp
-            dh_int.append(tempall)
-        with open("free_energy.txt", "w") as f:
-            f.write("lambda_state\tFE(i+1)-FE(i)[kcal/mol]\tFE(i+1)-FE(0)[kcal/mol]\n")
-            f.write("\n".join(["%d\t\t%.2f\t\t\t%.2f" % (i, dh[i], dh_int[i]) for i in range(args.lambda_numbers)]))
-    elif args.method == "FEP_BAR":
-        raise NotImplementedError

@@ -36,6 +36,14 @@ This **function** is used to set the variable to real global variable
     """
     sys.modules["__main__"].__dict__[name] = value
 
+def remove_real_global_variable(name):
+    """
+This **function** is used to remove the variable from real global variable
+    :param name:
+    :param value:
+    :return:
+    """
+    sys.modules['__main__'].__dict__.pop(name)
 
 def set_alternative_name(obj, func, set_method):
     """
