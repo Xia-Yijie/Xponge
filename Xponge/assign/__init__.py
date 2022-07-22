@@ -53,6 +53,7 @@ This **class** is used to help with the ring assignment.
         self.is_pure_aliphatic_ring  = None
         self.is_planar_ring = None
         self.out_plane_double_bond  = None
+
     def __repr__(self):
         return self.tohash
 

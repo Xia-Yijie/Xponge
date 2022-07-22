@@ -2,7 +2,8 @@
 This **module** is used to load and read
 """
 import os
-from .helper import Molecule, Residue, ResidueType, AtomType, set_attribute_alternative_name, GlobalSetting
+from .helper import Molecule, Residue, ResidueType, AtomType, set_attribute_alternative_name, GlobalSetting, \
+    set_real_global_variable, Xdict
 
 
 ##########################################################################
@@ -26,7 +27,7 @@ def _mol2_atom(line, current_residue_index, current_residue, ignore_atom_type, t
     if current_residue_index is None or int(words[6]) != current_residue_index:
         current_residue_index = int(words[6])
         if words[7] not in ResidueType.types.keys():
-            sys.modules['__main__'].__dict__[words[7]] = ResidueType(name=words[7])
+            set_real_global_variable(words[7], ResidueType(name=words[7]))
             temp = True
         else:
             temp = False
@@ -222,7 +223,7 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
     :return:
     """
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
-    chain = {}
+    chain = Xdict()
     ssbonds = []
     residue_type_map = []
     current_residue_count = -1
@@ -241,7 +242,8 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
                     current_resname = resname
                     residue_type_map.append(resname)
                     current_residue_index = resindex
-                    chain[chr(ord("A") + len(chain.keys()))] = {resindex: current_residue_count}
+                    chain[chr(ord("A") + len(chain.keys()))] = Xdict()
+                    chain[chr(ord("A") + len(chain.keys()))][resindex] = current_residue_count
                     if resname in GlobalSetting.PDBResidueNameMap["head"].keys():
                         resname = GlobalSetting.PDBResidueNameMap["head"][resname]
                 elif current_residue_index != resindex or current_resname != resname:
@@ -417,7 +419,7 @@ def load_parmdat(filename):
         f.readline()
         # 读原子
         atom_types = {}  # 元素符号和质量
-        lj_types = {}  # 元素符号和LJ类型
+        lj_types = Xdict()  # 元素符号和LJ类型
         for line in f:
             if not line.strip():
                 break
@@ -531,7 +533,7 @@ def load_rst7(filename, mol=None):
 ##########################################################################
 class GromacsTopologyIterator():
     """
-This **class** is used to read GROMACS topology
+    This **class** is used to read GROMACS topology
     """
 
     def __init__(self, filename=None, macros=None):
@@ -684,7 +686,7 @@ def load_ffitp(filename, macros=None):
     :return:
     """
     iterator = GromacsTopologyIterator(filename, macros)
-    output = {}
+    output = Xdict()
     output["nb14"] = "name  kLJ  kee\n"
     output["atomtypes"] = "name mass charge[e] LJtype\n"
     output["bonds"] = "name b[nm] k[kJ/mol·nm^-2]\n"
@@ -692,7 +694,7 @@ def load_ffitp(filename, macros=None):
     output["Urey-Bradley"] = "name b[degree] k[kJ/mol·rad^-2] r13[nm] kUB[kJ/mol·nm^-2]\n"
     output["dihedrals"] = "name phi0[degree] k[kJ/mol] periodicity  reset\n"
     output["impropers"] = "name phi0[degree] k[kJ/mol·rad^-2]\n"
-    output["cmaps"] = {}
+    output["cmaps"] = Xdict()
     for line in iterator:
         if iterator.flag == "":
             continue

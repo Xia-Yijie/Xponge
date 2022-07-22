@@ -18,7 +18,34 @@ from .namespace import set_real_global_variable, remove_real_global_variable, se
 from .math import get_rotate_matrix, get_fibonacci_grid, guess_element_from_mass
 
 
+class Xdict(dict):
+    """
+This **class** is used to be a dict which can give not_found_message
+    """
+    def __init__(self, *args, **kwargs):
+        if "not_found_message" in kwargs:
+            self.not_found_message = kwargs.pop("not_found_message")
+        else:
+            self.not_found_message = None
+        super().__init__(self)
+        self.id = hash(id(self))
+
+    def __getitem__(self, key):
+        toget = self.get(key, self.id)
+        if toget != self.id:
+            return toget
+        if self.not_found_message:
+            raise KeyError(self.not_found_message.fromat(key))
+        raise KeyError
+
+
 def xopen(filename, mode):
+    """
+This **function** is used to open a file
+    :param filename:
+    :param mode:
+    :return:
+    """
     fd = os.open(filename, mode=os.O_RDWR | os.O_CREAT)
     fo = os.fdopen(fd, mode)
     return fo
@@ -70,41 +97,41 @@ This **class** is used to set the global settings.
                                       })
         setattr(self, "PDBResidueNameMap", {"head": {}, "tail": {}, "save": {}})
 
-        @staticmethod
-        def set_unit_transfer_function(sometype):
-            """
-    This **function** is used to replace  the property `BondedForces`,
-    and disables the types of bonded forces except named here when building.
-            :param sometype:
-            :return:
-            """
+    @staticmethod
+    def set_unit_transfer_function(sometype):
+        """
+This **function** is used to replace  the property `BondedForces`,
+and disables the types of bonded forces except named here when building.
+        :param sometype:
+        :return:
+        """
 
-            def wrapper(func):
-                setattr(sometype, "_unit_transfer", func)
-                return func
+        def wrapper(func):
+            setattr(sometype, "_unit_transfer", func)
+            return func
 
-            return wrapper
+        return wrapper
 
-        @staticmethod
-        def add_unit_transfer_function(sometype):
-            """
-    This **function** is used to return a function to add a static method  `_unit_transfer` for a class.
-    It is recommended used as a **decorator**. The origin `_unit_transfer`  method will be kept.
-            :param sometype:
-            :return:
-            """
-            func0 = getattr(sometype, "_unit_transfer")
+    @staticmethod
+    def add_unit_transfer_function(sometype):
+        """
+This **function** is used to return a function to add a static method  `_unit_transfer` for a class.
+It is recommended used as a **decorator**. The origin `_unit_transfer`  method will be kept.
+        :param sometype:
+        :return:
+        """
+        func0 = getattr(sometype, "_unit_transfer")
 
-            def wrapper(func):
-                @wraps(func0)
-                def temp(self):
-                    func0(self)
-                    func(self)
+        def wrapper(func):
+            @wraps(func0)
+            def temp(self):
+                func0(self)
+                func(self)
 
-                setattr(sometype, "_unit_transfer", temp)
-                return func
+            setattr(sometype, "_unit_transfer", temp)
+            return func
 
-            return wrapper
+        return wrapper
 
     def add_pdb_residue_name_mapping(self, place, pdb_name, real_name):
         """
@@ -149,8 +176,8 @@ This **class** is the abstract class of the types (atom types, bonded force type
     """
     name = None
     parameters = {"name": str}
-    types = {}
-    types_different_name = {}
+    types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
+    types_different_name = Xdict(not_found_message="{} not found. Did you import the proper force field?")
 
     def __init__(self, **kwargs):
 
@@ -347,8 +374,8 @@ This **class** is a subclass of Type, for atom types
     """
     name = "Atom"
     parameters = {"name": str, "x": float, "y": float, "z": float}
-    types = {}
-    types_different_name = {}
+    types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
+    types_different_name = Xdict(not_found_message="{} not found. Did you import the proper force field?")
 
 
 set_classmethod_alternative_names(AtomType)
@@ -362,8 +389,8 @@ This **class** is a subclass of Type, for residue types
     """
     name = "Residue"
     parameters = {"name": str}
-    types = {}
-    types_different_name = {}
+    types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
+    types_different_name = Xdict(not_found_message="{} not found. Did you import the proper force field?")
 
     def __init__(self, **kwargs):
         # 力场构建相关
@@ -457,6 +484,22 @@ This **function** convert an atom name to an AtomType object
         :return:
         """
         return self._name2atom[name]
+
+    def atom2index(self, name):
+        """
+This **function** convert an AtomType object to its index
+        :param name:
+        :return:
+        """
+        return self._atom2index[name]
+
+    def name2index(self, name):
+        """
+This **function** convert an atom name to its index
+        :param name:
+        :return:
+        """
+        return self._name2index[name]
 
     def add_atom(self, name, atom_type, x, y, z):
         """
@@ -714,6 +757,22 @@ This **function** convert an atom name to an AtomType object
         """
         return self._name2atom[name]
 
+    def atom2index(self, name):
+        """
+This **function** convert an atom name to an AtomType object
+        :param name:
+        :return:
+        """
+        return self._atom2index[name]
+
+    def name2index(self, name):
+        """
+This **function** convert an atom name to an AtomType object
+        :param name:
+        :return:
+        """
+        return self._name2index[name]
+
     def add_atom(self, name, atom_type=None, x=None, y=None, z=None):
         """
 This **function** is used to add an atom to the residue type.
@@ -878,6 +937,7 @@ This **class** is a class for molecules
         Molecule.all[self.name] = self
         self.residues = []
         self.atoms = []
+        self.atom_index = []
         self.residue_links = []
         self.bonded_forces = {}
         self.built = False
@@ -1558,8 +1618,8 @@ This **class** is a subclass of Type, for bonded force types
             "name": str,
         }
         entity = BondedForceEntity
-        types = {}
-        types_different_name = {}
+        types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
+        types_different_name = Xdict(not_found_message="{} not found. Did you import the proper force field?")
 
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
@@ -1641,7 +1701,7 @@ This **class** is a subclass of Type, for pairwise force types
         parameters = {
             "name": str,
         }
-        types = {}
+        types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
 
     set_classmethod_alternative_names(PairwiseForceType)
     PairwiseForceType.Add_Property(properties)
