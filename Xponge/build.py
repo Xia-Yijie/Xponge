@@ -4,7 +4,7 @@ This **module** is used to build and save
 import os
 from itertools import product
 from . import assign
-from .helper import ResidueType, Molecule, Residue, ResidueLink, GlobalSetting
+from .helper import ResidueType, Molecule, Residue, ResidueLink, GlobalSetting, Xopen
 
 
 def _analyze_connectivity(cls):
@@ -335,7 +335,7 @@ def save_sponge_input(cls, prefix=None, dirname="."):
         for key, func in Molecule.save_functions.items():
             towrite = func(cls)
             if towrite:
-                f = open(os.path.join(dirname, prefix + "_" + key + ".txt"), "w")
+                f = Xopen(os.path.join(dirname, prefix + "_" + key + ".txt"), "w")
                 f.write(towrite)
                 f.close()
 
@@ -396,7 +396,7 @@ def save_pdb(cls, filename=None):
         if not filename:
             filename = cls.name + ".pdb"
 
-        f = open(filename, "w")
+        f = Xopen(filename, "w")
         f.write(towrite)
         f.close()
     elif isinstance(cls, Residue):
@@ -472,7 +472,7 @@ def save_mol2(molecule, filename=None):
         if not filename:
             filename = molecule.name + ".mol2"
 
-        f = open(filename, "w")
+        f = Xopen(filename, "w")
         f.write(towrite)
         f.close()
     elif isinstance(molecule, Residue):
@@ -543,5 +543,6 @@ def save_gro(molecule, filename):
         boxlength[2] = molecule.box_length[2]
     towrite += "%8.3f %8.3f %8.3f" % (
         molecule.box_length[0] / 10, molecule.box_length[1] / 10, molecule.box_length[2] / 10)
-    with open(filename, "w") as f:
-        f.write(towrite)
+    f = Xopen(filename, "w")
+    f.write(towrite)
+    f.close()

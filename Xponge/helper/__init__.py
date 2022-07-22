@@ -2,6 +2,7 @@
 This **module** is used to provide help functions and classes
 """
 import sys
+import os
 import time
 from types import MethodType, FunctionType
 from functools import partial, wraps
@@ -15,6 +16,12 @@ from .namespace import set_real_global_variable, remove_real_global_variable, se
     set_dict_value_alternative_name, set_global_alternative_names, source
 
 from .math import get_rotate_matrix, get_fibonacci_grid, guess_element_from_mass
+
+
+def xopen(filename, mode):
+    fd = os.open(filename, mode=os.O_RDWR | os.O_CREAT)
+    fo = os.fdopen(fd, mode)
+    return fo
 
 
 def xprint(*args, **kwargs):
@@ -39,6 +46,65 @@ class _GlobalSetting():
     """
 This **class** is used to set the global settings.
     """
+    def __init__(self):
+        set_attribute_alternative_names(self)
+        # 打印信息的详细程度
+        self.verbose = 0
+        # 是否将分子移到中心
+        self.nocenter = False
+        # 分子与盒子之间的距离
+        self.boxspace = 3
+        # 最远的成键距离，用于拓扑分析时最远分析多远
+        self.farthest_bonded_force = 0
+        setattr(self, "HISMap", {"DeltaH": "", "EpsilonH": "", "HIS": {}})
+        # 所有的成键类型力的Type
+        setattr(self, "BondedForces", [])
+        setattr(self, "BondedForcesMap", {})
+        # 所有虚拟原子的Type和对应的依赖的其他原子的数量
+        setattr(self, "VirtualAtomTypes", {})
+        # 单位换算
+        setattr(self, "UnitMapping", {"distance": {"nm": 1e-9, "A": 1e-10},
+                                      "energy": {"kcal/mol": 4.184, "eV": 96.4853, "kJ/mol": 1},
+                                      "charge": {"e": 1, "SPONGE": 1.0 / 18.2223},
+                                      "angle": {"degree": np.pi, "rad": 180}
+                                      })
+        setattr(self, "PDBResidueNameMap", {"head": {}, "tail": {}, "save": {}})
+
+        @staticmethod
+        def set_unit_transfer_function(sometype):
+            """
+    This **function** is used to replace  the property `BondedForces`,
+    and disables the types of bonded forces except named here when building.
+            :param sometype:
+            :return:
+            """
+
+            def wrapper(func):
+                setattr(sometype, "_unit_transfer", func)
+                return func
+
+            return wrapper
+
+        @staticmethod
+        def add_unit_transfer_function(sometype):
+            """
+    This **function** is used to return a function to add a static method  `_unit_transfer` for a class.
+    It is recommended used as a **decorator**. The origin `_unit_transfer`  method will be kept.
+            :param sometype:
+            :return:
+            """
+            func0 = getattr(sometype, "_unit_transfer")
+
+            def wrapper(func):
+                @wraps(func0)
+                def temp(self):
+                    func0(self)
+                    func(self)
+
+                setattr(sometype, "_unit_transfer", temp)
+                return func
+
+            return wrapper
 
     def add_pdb_residue_name_mapping(self, place, pdb_name, real_name):
         """
@@ -73,66 +139,6 @@ and disables the types of bonded forces except named here when building.
         for typename in types:
             self.BondedForces.append(self.BondedForcesMap[typename])
 
-    @staticmethod
-    def set_unit_transfer_function(sometype):
-        """
-This **function** is used to replace  the property `BondedForces`,
-and disables the types of bonded forces except named here when building.
-        :param sometype:
-        :return:
-        """
-
-        def wrapper(func):
-            setattr(sometype, "_unit_transfer", func)
-            return func
-
-        return wrapper
-
-    @staticmethod
-    def add_unit_transfer_function(sometype):
-        """
-This **function** is used to return a function to add a static method  `_unit_transfer` for a class.
-It is recommended used as a **decorator**. The origin `_unit_transfer`  method will be kept.
-        :param sometype:
-        :return:
-        """
-        func0 = getattr(sometype, "_unit_transfer")
-
-        def wrapper(func):
-            @wraps(func0)
-            def temp(self):
-                func0(self)
-                func(self)
-
-            setattr(sometype, "_unit_transfer", temp)
-            return func
-
-        return wrapper
-
-    def __init__(self):
-        set_attribute_alternative_names(self)
-        # 打印信息的详细程度
-        self.verbose = 0
-        # 是否将分子移到中心
-        self.nocenter = False
-        # 分子与盒子之间的距离
-        self.boxspace = 3
-        # 最远的成键距离，用于拓扑分析时最远分析多远
-        self.farthest_bonded_force = 0
-        setattr(self, "HISMap", {"DeltaH": "", "EpsilonH": "", "HIS": {}})
-        # 所有的成键类型力的Type
-        setattr(self, "BondedForces", [])
-        setattr(self, "BondedForcesMap", {})
-        # 所有虚拟原子的Type和对应的依赖的其他原子的数量
-        setattr(self, "VirtualAtomTypes", {})
-        # 单位换算
-        setattr(self, "UnitMapping", {"distance": {"nm": 1e-9, "A": 1e-10},
-                                      "energy": {"kcal/mol": 4.184, "eV": 96.4853, "kJ/mol": 1},
-                                      "charge": {"e": 1, "SPONGE": 1.0 / 18.2223},
-                                      "angle": {"degree": np.pi, "rad": 180}
-                                      })
-        setattr(self, "PDBResidueNameMap", {"head": {}, "tail": {}, "save": {}})
-
 
 globals()["GlobalSetting"] = _GlobalSetting()
 
@@ -145,6 +151,39 @@ This **class** is the abstract class of the types (atom types, bonded force type
     parameters = {"name": str}
     types = {}
     types_different_name = {}
+
+    def __init__(self, **kwargs):
+
+        prop_fmt = type(self).parameters
+
+        self.contents = {}.fromkeys(prop_fmt.keys())
+        self.name = kwargs.pop("name")
+        assert self.name not in type(self).types.keys(), "The name '%s' has already existed in '%sType'" % (
+            self.name, type(self).name)
+        type(self).types[self.name] = self
+        type(self).types_different_name[self.name] = self
+        for key, value in kwargs.items():
+            assert key in self.contents.keys(), "The parameter '%s' is not one of the parameters of '%sType'" % (
+                key, type(self).name)
+            self.contents[key] = prop_fmt[key](value)
+        type(self)._unit_transfer(self)
+
+    def __repr__(self):
+        return "Type of " + type(self).name + ": " + self.name
+
+    def __hash__(self):
+        return hash(repr(self))
+
+    def __getattribute__(self, attr):
+        if attr != "contents" and attr in self.contents.keys():
+            return self.contents[attr]
+        return super().__getattribute__(attr)
+
+    def __setattr__(self, attr, value):
+        if attr != "contents" and attr in self.contents.keys():
+            self.contents[attr] = value
+        else:
+            super().__setattr__(attr, value)
 
     @classmethod
     def add_property(cls, parm_fmt, parm_default=None):
@@ -205,19 +244,6 @@ This **function** is used to set the unit of the property of the class
             temp_prop = prop + '[' + unit + ']'
             prop_alls[temp_prop] = temp_func(current_rate, base_unit_rate)
         cls.Add_Property(prop_alls)
-
-    @staticmethod
-    def _unit_transfer(instance):
-        """
-
-        :param instance:
-        :return:
-        """
-        for prop in instance.contents.keys():
-            if "[" in prop and "]" in prop and instance.contents[prop] is not None:
-                real_prop = prop.split('[')[0]
-                instance.contents[real_prop] = instance.contents[prop]
-                instance.contents[prop] = None
 
     @classmethod
     def new_from_string(cls, string, skip_lines=0):
@@ -290,38 +316,18 @@ This **function** is used to update the types of the class
                 temp = cls.types[name]
                 temp.Update(**values)
 
-    def __repr__(self):
-        return "Type of " + type(self).name + ": " + self.name
+    @staticmethod
+    def _unit_transfer(instance):
+        """
 
-    def __hash__(self):
-        return hash(repr(self))
-
-    def __getattribute__(self, attr):
-        if attr != "contents" and attr in self.contents.keys():
-            return self.contents[attr]
-        return super().__getattribute__(attr)
-
-    def __setattr__(self, attr, value):
-        if attr != "contents" and attr in self.contents.keys():
-            self.contents[attr] = value
-        else:
-            super().__setattr__(attr, value)
-
-    def __init__(self, **kwargs):
-
-        prop_fmt = type(self).parameters
-
-        self.contents = {}.fromkeys(prop_fmt.keys())
-        self.name = kwargs.pop("name")
-        assert self.name not in type(self).types.keys(), "The name '%s' has already existed in '%sType'" % (
-            self.name, type(self).name)
-        type(self).types[self.name] = self
-        type(self).types_different_name[self.name] = self
-        for key, value in kwargs.items():
-            assert key in self.contents.keys(), "The parameter '%s' is not one of the parameters of '%sType'" % (
-                key, type(self).name)
-            self.contents[key] = prop_fmt[key](value)
-        type(self)._unit_transfer(self)
+        :param instance:
+        :return:
+        """
+        for prop in instance.contents.keys():
+            if "[" in prop and "]" in prop and instance.contents[prop] is not None:
+                real_prop = prop.split('[')[0]
+                instance.contents[real_prop] = instance.contents[prop]
+                instance.contents[prop] = None
 
     def update(self, **kwargs):
         """
@@ -358,6 +364,28 @@ This **class** is a subclass of Type, for residue types
     parameters = {"name": str}
     types = {}
     types_different_name = {}
+
+    def __init__(self, **kwargs):
+        # 力场构建相关
+        self.contents = {}
+        self.connectivity = {}
+        self.built = False
+        self.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+
+        # 索引相关
+        self._name2atom = {}
+        self.atoms = []
+        self._atom2name = {}
+        self._atom2index = {}
+        self._name2index = {}
+
+        super().__init__(**kwargs)
+        # 连接功能
+        self.link = {"head": None, "tail": None, "head_next": None, "tail_next": None,
+                     "head_length": 1.5, "tail_length": 1.5, "head_link_conditions": [], "tail_link_conditions": []}
+        self.connect_atoms = {}
+
+        set_attribute_alternative_names(self)
 
     def __getattribute__(self, attr):
         if attr not in ("_name2atom", "contents") and attr in self._name2atom.keys():
@@ -421,28 +449,6 @@ This **class** is a subclass of Type, for residue types
     @property
     def tail_link_conditions(self):
         return self.link["tail_link_conditions"]
-
-    def __init__(self, **kwargs):
-        # 力场构建相关
-        self.contents = {}
-        self.connectivity = {}
-        self.built = False
-        self.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
-
-        # 索引相关
-        self._name2atom = {}
-        self.atoms = []
-        self._atom2name = {}
-        self._atom2index = {}
-        self._name2index = {}
-
-        super().__init__(**kwargs)
-        # 连接功能
-        self.link = {"head": None, "tail": None, "head_next": None, "tail_next": None,
-                     "head_length": 1.5, "tail_length": 1.5, "head_link_conditions": [], "tail_link_conditions": []}
-        self.connect_atoms = {}
-
-        set_attribute_alternative_names(self)
 
     def name2atom(self, name):
         """
@@ -550,6 +556,15 @@ This **class** is the abstract class of the entities (atoms, bonded forces, resi
     count = 0
     name = None
 
+    def __init__(self, entity_type, name=None):
+        self.contents = {**entity_type.contents}
+        self.count = type(self).count
+        if not name:
+            name = entity_type.name
+        type(self).count += 1
+        self.name = name
+        self.type = entity_type
+
     def __repr__(self):
         return "Entity of " + type(self).name + ": " + self.name + "(" + str(self.count) + ")"
 
@@ -566,15 +581,6 @@ This **class** is the abstract class of the entities (atoms, bonded forces, resi
             self.contents[attr] = value
         else:
             super().__setattr__(attr, value)
-
-    def __init__(self, entity_type, name=None):
-        self.contents = {**entity_type.contents}
-        self.count = type(self).count
-        if not name:
-            name = entity_type.name
-        type(self).count += 1
-        self.name = name
-        self.type = entity_type
 
     def update(self, **kwargs):
         """
@@ -597,13 +603,13 @@ This **class** is a subclass of Entity, for atoms
     name = "Atom"
     count = 0
 
-    @property
-    def extra_excluded_atoms(self):
-        return self.linked_atoms["extra_excluded_atoms"]
-
     def __init__(self, entity_type, name=None):
         # 力场基本信息
         super().__init__(entity_type, name)
+        self.x = None
+        self.y = None
+        self.z = None
+
         # 父信息
         self.residue = None
 
@@ -615,6 +621,10 @@ This **class** is a subclass of Entity, for atoms
         self.copied = {}
 
         set_attribute_alternative_names(self)
+
+    @property
+    def extra_excluded_atoms(self):
+        return self.linked_atoms["extra_excluded_atoms"]
 
     def deepcopy(self, forcopy=None):
         """
@@ -668,13 +678,6 @@ This **class** is a subclass of Entity, for residues
     name = "Residue"
     count = 0
 
-    def __getattribute__(self, attr):
-        if attr not in ("_name2atom", "contents") and attr in self._name2atom.keys():
-            return self._name2atom[attr]
-        if attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
-            return np.sum([getattr(atom, attr) for atom in self.atoms])
-        return super().__getattribute__(attr)
-
     def __init__(self, entity_type, name=None, directly_copy=False):
         super().__init__(entity_type, name)
         self.atoms = []
@@ -695,6 +698,13 @@ This **class** is a subclass of Entity, for residues
                     atom.copied[forcopy].Extra_Exclude_Atom(aton.copied[forcopy])
 
         set_attribute_alternative_names(self)
+
+    def __getattribute__(self, attr):
+        if attr not in ("_name2atom", "contents") and attr in self._name2atom.keys():
+            return self._name2atom[attr]
+        if attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
+            return np.sum([getattr(atom, attr) for atom in self.atoms])
+        return super().__getattribute__(attr)
 
     def name2atom(self, name):
         """
@@ -819,18 +829,18 @@ class ResidueLink:
 This **class** is a class for the link between residues
     """
 
-    def __repr__(self):
-        return "Entity of ResidueLink: " + repr(self.atom1) + "-" + repr(self.atom2)
-
-    def __hash__(self):
-        return hash(repr(self))
-
     def __init__(self, atom1, atom2):
         self.atom1 = atom1
         self.atom2 = atom2
         self.built = False
         self.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
         set_attribute_alternative_names(self)
+
+    def __repr__(self):
+        return "Entity of ResidueLink: " + repr(self.atom1) + "-" + repr(self.atom2)
+
+    def __hash__(self):
+        return hash(repr(self))
 
     def add_bonded_force(self, bonded_force_entity):
         """
@@ -859,6 +869,59 @@ This **class** is a class for molecules
     """
     all = {}
     save_functions = {}
+
+    def __init__(self, name):
+        if isinstance(name, ResidueType):
+            self.name = name.name
+        else:
+            self.name = name
+        Molecule.all[self.name] = self
+        self.residues = []
+        self.atoms = []
+        self.residue_links = []
+        self.bonded_forces = {}
+        self.built = False
+        self.box_length = None
+        self.box_angle = [90.0, 90.0, 90.0]
+        if isinstance(name, ResidueType):
+            new_residue = Residue(name)
+            for i in name.atoms:
+                new_residue.Add_Atom(i)
+            self.Add_Residue(new_residue)
+
+        set_attribute_alternative_names(self)
+
+    def __repr__(self):
+        return "Entity of Molecule: " + self.name
+
+    def __getattribute__(self, attr):
+        if attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
+            return np.sum([getattr(atom, attr) for res in self.residues for atom in res.atoms])
+        return super().__getattribute__(attr)
+
+    @classmethod
+    def set_save_sponge_input(cls, keyname):
+        """
+This **function** is used to set the function when `Save_SPONGE_Input`.
+It is recommended used as a **decorator**.
+        :param keyname:
+        :return:
+        """
+
+        def wrapper(func):
+            cls.save_functions[keyname] = func
+            return func
+
+        return wrapper
+
+    @classmethod
+    def del_save_sponge_input(cls, keyname):
+        """
+This **function** is used to delete the function when `Save_SPONGE_Input`.
+        :param keyname:
+        :return:
+        """
+        cls.save_functions.pop(keyname)
 
     @staticmethod
     def _set_friends_in_different_residue(molecule, atom1, atom2):
@@ -914,59 +977,6 @@ This **class** is a class for molecules
                 index_next.update(index_temp)
             index_dict = index_next
         return head, tail
-
-    @classmethod
-    def set_save_sponge_input(cls, keyname):
-        """
-This **function** is used to set the function when `Save_SPONGE_Input`.
-It is recommended used as a **decorator**.
-        :param keyname:
-        :return:
-        """
-
-        def wrapper(func):
-            cls.save_functions[keyname] = func
-            return func
-
-        return wrapper
-
-    @classmethod
-    def del_save_sponge_input(cls, keyname):
-        """
-This **function** is used to delete the function when `Save_SPONGE_Input`.
-        :param keyname:
-        :return:
-        """
-        cls.save_functions.pop(keyname)
-
-    def __repr__(self):
-        return "Entity of Molecule: " + self.name
-
-    def __init__(self, name):
-        if isinstance(name, ResidueType):
-            self.name = name.name
-        else:
-            self.name = name
-        Molecule.all[self.name] = self
-        self.residues = []
-        self.atoms = []
-        self.residue_links = []
-        self.bonded_forces = {}
-        self.built = False
-        self.box_length = None
-        self.box_angle = [90.0, 90.0, 90.0]
-        if isinstance(name, ResidueType):
-            new_residue = Residue(name)
-            for i in name.atoms:
-                new_residue.Add_Atom(i)
-            self.Add_Residue(new_residue)
-
-        set_attribute_alternative_names(self)
-
-    def __getattribute__(self, attr):
-        if attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
-            return np.sum([getattr(atom, attr) for res in self.residues for atom in res.atoms])
-        return super().__getattribute__(attr)
 
     def add_residue(self, residue):
         """
@@ -1109,13 +1119,13 @@ This **function** is used to divide the molecule into two parts
             else:
                 atom2_friends.extend(list(range(resindex_tail + 1, len(self.atoms))))
 
-            atom1_friends = set(atom1_friends)
-            atom1_friends.add(self.atom_index[atom1])
-            atom1_friends = np.array(list(atom1_friends))
-            atom2_friends = set(atom2_friends)
-            atom2_friends.add(self.atom_index[atom2])
-            atom2_friends = np.array(list(atom2_friends))
-        return atom1_friends, atom2_friends
+            atom1_friends_set = set(atom1_friends)
+            atom1_friends_set.add(self.atom_index[atom1])
+            atom1_friends_np = np.array(list(atom1_friends_set))
+            atom2_friends_set = set(atom2_friends)
+            atom2_friends_set.add(self.atom_index[atom2])
+            atom2_friends_np = np.array(list(atom2_friends_set))
+        return atom1_friends_np, atom2_friends_np
 
 
 set_classmethod_alternative_names(Molecule)
@@ -1551,6 +1561,18 @@ This **class** is a subclass of Type, for bonded force types
         types = {}
         types_different_name = {}
 
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            for name in type(self).Same_Force(self.name):
+                type(self).types_different_name[name] = self
+
+            if type(self).multiple:
+                for key in self.multiple:
+                    self.contents[key + "s"] = [self.contents[key]]
+                    self.contents[key] = None
+                self.contents["multiple_numbers"] = 1
+
         @classmethod
         def same_force(cls, atom_list):
             """
@@ -1568,18 +1590,6 @@ This **function** receives a list of atoms and output all the same force permuta
         @classmethod
         def set_same_force_function(cls, func):
             cls.Same_Force = classmethod(func)
-
-        def __init__(self, **kwargs):
-            super().__init__(**kwargs)
-
-            for name in type(self).Same_Force(self.name):
-                type(self).types_different_name[name] = self
-
-            if type(self).multiple:
-                for key in self.multiple:
-                    self.contents[key + "s"] = [self.contents[key]]
-                    self.contents[key] = None
-                self.contents["multiple_numbers"] = 1
 
         def update(self, **kwargs):
             reset = 1

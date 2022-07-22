@@ -32,6 +32,42 @@ This **class** is the interface to MDAnalysis
         self.ts = base.Timestep(self.n_atoms, **self._ts_kwargs)
         self._read_next_timestep()
 
+    @property
+    def n_frames(self):
+        return self._n_frames
+
+    @property
+    def n_atoms(self):
+        return self._n_atoms
+
+    def close(self):
+        """
+
+        :return:
+        """
+        if self.trajfile is not None:
+            self.trajfile.close()
+            self.trajfile = None
+        if self.boxfile is not None:
+            self.boxfile.close()
+            self.boxfile = None
+
+    def open_trajectory(self):
+        """
+
+        :return:
+        """
+        self.trajfile = util.anyopen(self.filename, "rb")
+        if self.box is None:
+            self.boxfile = util.anyopen(self.boxname)
+        ts = self.ts
+        ts.frame = -1
+        return self.trajfile, self.boxfile
+
+    def _reopen(self):
+        self.close()
+        self.open_trajectory()
+
     def _read_frame(self, frame):
         """
 
@@ -65,42 +101,6 @@ This **class** is the interface to MDAnalysis
             ts.dimensions = list(map(float, self.boxfile.readline().split()))
         ts.frame += 1
         return ts
-
-    @property
-    def n_frames(self):
-        return self._n_frames
-
-    @property
-    def n_atoms(self):
-        return self._n_atoms
-
-    def close(self):
-        """
-
-        :return:
-        """
-        if self.trajfile is not None:
-            self.trajfile.close()
-            self.trajfile = None
-        if self.boxfile is not None:
-            self.boxfile.close()
-            self.boxfile = None
-
-    def _reopen(self):
-        self.close()
-        self.open_trajectory()
-
-    def open_trajectory(self):
-        """
-
-        :return:
-        """
-        self.trajfile = util.anyopen(self.filename, "rb")
-        if self.box is None:
-            self.boxfile = util.anyopen(self.boxname)
-        ts = self.ts
-        ts.frame = -1
-        return self.trajfile, self.boxfile
 
     def _get_box_offset(self):
         """

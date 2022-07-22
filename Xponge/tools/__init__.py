@@ -1,7 +1,7 @@
 """
 This **module** implements the terminal commands
 """
-from ..helper import source, GlobalSetting
+from ..helper import source, GlobalSetting, Xopen
 
 
 def _basic_test(args):
@@ -123,8 +123,9 @@ close $f
 quit
 """.format(args.o, p, c, s)
 
-    with open("maskgen_temp_tcl_file", "w") as temp:
-        temp.write(temp_write)
+    temp = Xopen("maskgen_temp_tcl_file", "w")
+    temp.write(temp_write)
+    temp.close()
 
     os.system("{0} -dispdev none -e maskgen_temp_tcl_file".format(args.vmd))
     os.remove("maskgen_temp_tcl_file")
@@ -209,8 +210,9 @@ def exgen(args):
         total += len(newp)
         towrite = towrite.format(args.n, total)
 
-    with open(args.o, "w") as f:
-        f.write(towrite)
+    f = Xopen(args.o, "w")
+    f.write(towrite)
+    f.close()
 
 
 def name2name(args):
@@ -232,7 +234,7 @@ def name2name(args):
         to_ = assign.Get_Assignment_From_ResidueType(to_)
     elif args.to_format == "pdb":
         to_ = assign.Get_Assignment_From_PDB(args.to_file, determine_bond_order=False,
-                                                    only_residue=args.to_residue)
+                                             only_residue=args.to_residue)
 
     if args.from_format == "mol2":
         from_ = assign.Get_Assignment_From_Mol2(args.from_file)
@@ -269,8 +271,9 @@ def name2name(args):
                                                                                      from_.coordinate[i][0],
                                                                                      from_.coordinate[i][1],
                                                                                      from_.coordinate[i][2], " ", atom)
-        with open(args.out_file, "w") as f:
-            f.write(towrite)
+        f = Xopen(args.out_file, "w")
+        f.write(towrite)
+        f.close()
 
 
 def _mol2rfe_build(args, merged_from, merged_to):
@@ -302,6 +305,19 @@ def _mol2rfe_build(args, merged_from, merged_to):
             Xponge.BUILD.Save_SPONGE_Input(tt, "%d/%s" % (i, args.temp))
 
 
+def _mol2rfe_output_path(subdir, workdir, tempname):
+    """
+
+    :param subdir:
+    :param workdir:
+    :param tempname:
+    :return:
+    """
+    toadd = " -mdinfo {2}/{0}/{1}.mdinfo -mdout {2}/{0}/{1}.mdout".format(subdir, tempname, workdir)
+    toadd += " -rst {2}/{0}/{1} -crd {2}/{0}/{1}.dat -box {2}/{0}/{1}.box".format(subdir, tempname, workdir)
+    return toadd
+
+
 def _mol2rfe_min(args):
     """
 
@@ -315,48 +331,30 @@ def _mol2rfe_min(args):
             if os.path.exists("%d/min" % i):
                 os.system("rm -rf %d/min" % i)
             os.mkdir("%d/min" % i)
+            basic = f"{args.sponge} -default_in_file_prefix {i}/{args.temp}"
+            lambda_ = i / args.nl
+            basic += f" -mode minimization -lambda_lj {lambda_}"
+            basic += _mol2rfe_output_path("min", i, args.temp)
             if i != 0 and args.mlast:
-                cif = "-coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i - 1)
+                cif = " -coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i - 1)
+                cif += " -constrain_mode SHAKE"
             else:
-                cif = ""
-                os.system(
-                    "{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -step_limit {5} {4} -mass_in_file 0/{1}_fake_mass.txt -lambda_lj {3}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m1steps[0]))
-                cif = "-coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i)
-                os.system(
-                    "{0} -mode minimization -dt 1e-7 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -step_limit {5}  {4} -mass_in_file 0/{1}_fake_mass.txt -lambda_lj {3}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m1steps[1]))
-                os.system(
-                    "{0} -mode minimization -dt 1e-6 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -step_limit {5}  {4} -mass_in_file 0/{1}_fake_mass.txt -lambda_lj {3}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m1steps[2]))
-                os.system(
-                    "{0} -mode minimization -dt 1e-5 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -step_limit {5}  {4} -mass_in_file 0/{1}_fake_mass.txt -lambda_lj {3}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m1steps[3]))
-                os.system(
-                    "{0} -mode minimization -dt 1e-4 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -step_limit {5}  {4} -mass_in_file 0/{1}_fake_mass.txt -lambda_lj {3}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m1steps[4]))
-                os.system(
-                    "{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit {5}  {4}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m2steps[0]))
-                os.system(
-                    "{0} -mode minimization -dt 1e-7 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit {5} -constrain_mode SHAKE {4}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m2steps[1]))
-                os.system(
-                    "{0} -mode minimization -dt 1e-6 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit {5} -constrain_mode SHAKE  {4}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m2steps[2]))
-                os.system(
-                    "{0} -mode minimization -dt 1e-5 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit {5} -constrain_mode SHAKE  {4}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m2steps[3]))
-                os.system(
-                    "{0} -mode minimization -dt 1e-4 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit {5} -constrain_mode SHAKE  {4}".format(
-                        args.sponge, args.temp, i, i / args.nl, cif, args.m2steps[4]))
+                cif = f" -mass_in_file 0/{args.temp}_fake_mass.txt"
+                os.system(f"{basic} {cif} -minimization_dynamic_dt 1 -step_limit {args.m1steps[0]}")
+                cif += " -coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i)
+                os.system(f"{basic} {cif} -dt 1e-7 -step_limit {args.m1steps[1]}")
+                os.system(f"{basic} {cif} -dt 1e-6 -step_limit {args.m1steps[2]}")
+                os.system(f"{basic} {cif} -dt 1e-5 -step_limit {args.m1steps[3]}")
+                os.system(f"{basic} {cif} -dt 1e-4 -step_limit {args.m1steps[4]}")
+                cif = " -coordinate_in_file {1}/min/{0}_coordinate.txt -constrain_mode SHAKE".format(args.temp, i)
+                os.system(f"{basic} {cif} -minimization_dynamic_dt 1 -step_limit {args.m2steps[0]}")
+                os.system(f"{basic} {cif} -dt 1e-7 -step_limit {args.m2steps[1]}")
+                os.system(f"{basic} {cif} -dt 1e-6 -step_limit {args.m2steps[2]}")
+                os.system(f"{basic} {cif} -dt 1e-5 -step_limit {args.m2steps[3]}")
+                os.system(f"{basic} {cif} -dt 1e-4 -step_limit {args.m2steps[4]}")
 
-            os.system(
-                "{0} -mode minimization -minimization_dynamic_dt 1 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit {5} {4} constrain_mode SHAKE".format(
-                    args.sponge, args.temp, i, i / args.nl, cif, args.msteps[0]))
-            os.system(
-                "{0} -mode minimization -dt 1e-3 -default_in_file_prefix {2}/{1} -mdinfo {2}/min/{1}.mdinfo -mdout {2}/min/{1}.mdout -rst {2}/min/{1} -crd {2}/min/{1}.dat -box {2}/min/{1}.box -lambda_lj {3} -step_limit {5} -constrain_mode SHAKE {4}".format(
-                    args.sponge, args.temp, i, i / args.nl, cif, args.msteps[1]))
+            os.system(f"{basic} {cif} -minimization_dynamic_dt 1 -step_limit {args.msteps[0]}")
+            os.system(f"{basic} {cif} -minimization_dynamic_dt 1e-3 -step_limit {args.msteps[1]}")
 
 
 def _mol2rfe_prebalance(args):
@@ -372,15 +370,18 @@ def _mol2rfe_prebalance(args):
             if os.path.exists("%d/prebalance" % i):
                 os.system("rm -rf %d/prebalance" % i)
             os.mkdir("%d/prebalance" % i)
+            command = f"{args.sponge} -default_in_file_prefix {i}/{args.temp}"
+            lambda_ = i / args.nl
+            command += f" -lambda_lj {lambda_}"
+            command += _mol2rfe_output_path("prebalance", i, args.temp)
+            command += f" -coordinate_in_file {i}/min/{args.temp}_coordinate.txt"
             if not args.pi:
-                os.system(
-                    "{0} -mode NPT -dt {7} -default_in_file_prefix {2}/{1} -mdinfo {2}/prebalance/{1}.mdinfo -mdout {2}/prebalance/{1}.mdout -rst {2}/prebalance/{1} -crd {2}/prebalance/{1}.dat -box {2}/prebalance/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit {4} -barostat {5} -thermostat {6} -coordinate_in_file {2}/min/{1}_coordinate.txt".format(
-                        args.sponge, args.temp, i, i / args.nl, args.prebalance_step, args.barostat, args.thermostat,
-                        args.dt))
+                command += f" -mode NPT -step_limit {args.prebalance_step} -dt {args.dt} -constrain_mode SHAKE"
+                command += f" -barostat {args.barostat} -thermostat {args.thermostat}"
+                os.system(command)
             else:
-                os.system(
-                    "{0} -default_in_file_prefix {2}/{1} -mdinfo {2}/prebalance/{1}.mdinfo -mdout {2}/prebalance/{1}.mdout -rst {2}/prebalance/{1} -crd {2}/prebalance/{1}.dat -box {2}/prebalance/{1}.box -lambda_lj {3} -coordinate_in_file {2}/min/{1}_coordinate.txt -mdin {4}".format(
-                        args.sponge, args.temp, i, i / args.nl, args.pi))
+                command += f" -mdin {args.pi}"
+                os.system(command)
 
 
 def _mol2rfe_balance(args):
@@ -396,15 +397,18 @@ def _mol2rfe_balance(args):
             if os.path.exists("%d/balance" % i):
                 os.system("rm -rf %d/balance" % i)
             os.mkdir("%d/balance" % i)
+            command = f"{args.sponge} -default_in_file_prefix {i}/{args.temp}"
+            lambda_ = i / args.nl
+            command += f" -lambda_lj {lambda_}"
+            command += _mol2rfe_output_path("balance", i, args.temp)
+            command += f" -coordinate_in_file {i}/prebalance/{args.temp}_coordinate.txt"
             if not args.bi:
-                os.system(
-                    "{0} -mode NPT -dt {7} -default_in_file_prefix {2}/{1} -mdinfo {2}/balance/{1}.mdinfo -mdout {2}/balance/{1}.mdout -rst {2}/balance/{1} -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -constrain_mode SHAKE -step_limit {4} -barostat {5} -thermostat {6} -coordinate_in_file {2}/prebalance/{1}_coordinate.txt -velocity_in_file {2}/prebalance/{1}_velocity.txt -write_information_interval 100 -write_mdout_interval 5000 -write_restart_file_interval {4}".format(
-                        args.sponge, args.temp, i, i / args.nl, args.balance_step, args.barostat, args.thermostat,
-                        args.dt))
+                command += f" -mode NPT -step_limit {args.balance_step} -dt {args.dt} -constrain_mode SHAKE"
+                command += f" -barostat {args.barostat} -thermostat {args.thermostat}"
+                os.system(command)
             else:
-                os.system(
-                    "{0} -default_in_file_prefix {2}/{1} -mdinfo {2}/balance/{1}.mdinfo -mdout {2}/balance/{1}.mdout -rst {2}/balance/{1} -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -coordinate_in_file {2}/prebalance/{1}_coordinate.txt -velocity_in_file {2}/prebalance/{1}_velocity.txt -mdin {4}".format(
-                        args.sponge, args.temp, i, i / args.nl, args.bi))
+                command += f" -mdin {args.pi}"
+                os.system(command)
 
 
 def _mol2rfe_analysis(args, merged_from):
@@ -417,22 +421,33 @@ def _mol2rfe_analysis(args, merged_from):
     source("..")
 
     if "analysis" in args.do:
-        with open("dh_dlambda.txt", "w") as f:
-            f.write("")
+        f = Xopen("dh_dlambda.txt", "w")
+        f.write("")
+        f.close()
         if args.method == "TI":
             for i in range(args.nl + 1):
                 if os.path.exists("%d/ti" % i):
                     os.system("rm -rf %d/ti" % i)
                 os.mkdir("%d/ti" % i)
+                inprefix = f"{i}/{args.temp}"
+                command = f"{args.sponge_ti} -LJ_soft_core_in_file {inprefix}_LJ_soft_core.txt"
+                command += " -exclude_in_file {0}_exclude.txt -charge_in_file {0}_charge.txt".format(inprefix)
+                command += f" -chargeA_in_file 0/{args.temp}_charge.txt"
+                command += f" -chargeB_in_file {args.nl}/{args.temp}_charge.txt"
+                lambda_ = i / args.nl
+                command += f" -lambda_lj {lambda_}"
+                command += f" -subsys_division_in_file {inprefix}_subsys_division.txt  -charge_pertubated 1"
+                inprefix = f"{i}/ti/{args.temp}"
+                command += f" -mdinfo {inprefix}.mdinfo -mdout {inprefix}.mdout"
+                inprefix = f"{i}/balance/{args.temp}"
+                command += f" -crd {inprefix}.dat -box {inprefix}.box -TI dh_dlambda.txt"
+                command += f" -atom_numbers {len(merged_from.atoms)}"
+                command += f" -frame_numbers {args.balance_step // 100}"
                 if not args.ai:
-                    os.system(
-                        "{0} -LJ_soft_core_in_file {2}/{1}_LJ_soft_core.txt -exclude_in_file {2}/{1}_exclude.txt -charge_in_file {2}/{1}_charge.txt -chargeA_in_file 0/{1}_charge.txt -chargeB_in_file {4}/{1}_charge.txt -mdinfo {2}/ti/{1}.mdinfo -mdout {2}/ti/{1}.mdout -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -subsys_division_in_file {2}/{1}_subsys_division.txt  -charge_pertubated 1 -atom_numbers {5} -frame_numbers {6} -TI dh_dlambda.txt".format(
-                            args.sponge_ti, args.temp, i, i / args.nl, args.nl, len(merged_from.atoms),
-                                                          args.balance_step // 100))
+                    os.system(command)
                 else:
-                    os.system(
-                        "{0} -LJ_soft_core_in_file {2}/{1}_LJ_soft_core.txt -exclude_in_file {2}/{1}_exclude.txt -charge_in_file {2}/{1}_charge.txt -chargeA_in_file 0/{1}_charge.txt -chargeB_in_file {4}/{1}_charge.txt -mdinfo {2}/ti/{1}.mdinfo -mdout {2}/ti/{1}.mdout -crd {2}/balance/{1}.dat -box {2}/balance/{1}.box -lambda_lj {3} -subsys_division_in_file {2}/{1}_subsys_division.txt  -charge_pertubated 1 -TI dh_dlambda.txt -mdin {5}".format(
-                            args.sponge_ti, args.temp, i, i / args.nl, args.nl, args.ai))
+                    command += f" -mdin {args.ai}"
+                    os.system(command)
             dh_dlambda = np.loadtxt("dh_dlambda.txt")
             dh = []
             dh_int = []
@@ -443,9 +458,10 @@ def _mol2rfe_analysis(args, merged_from):
                 dh.append(temp)
                 tempall += temp
                 dh_int.append(tempall)
-            with open("free_energy.txt", "w") as f:
-                f.write("lambda_state\tFE(i+1)-FE(i)[kcal/mol]\tFE(i+1)-FE(0)[kcal/mol]\n")
-                f.write("\n".join(["%d\t\t%.2f\t\t\t%.2f" % (i, dh[i], dh_int[i]) for i in range(args.nl)]))
+            f = Xopen("free_energy.txt", "w")
+            f.write("lambda_state\tFE(i+1)-FE(i)[kcal/mol]\tFE(i+1)-FE(0)[kcal/mol]\n")
+            f.write("\n".join(["%d\t\t%.2f\t\t\t%.2f" % (i, dh[i], dh_int[i]) for i in range(args.nl)]))
+            f.close()
         elif args.method == "FEP_BAR":
             raise NotImplementedError
 
@@ -458,7 +474,7 @@ def mol2rfe(args):
     """
     source("..")
     source("..forcefield.special.fep")
-    min =  source("..forcefield.special.min")
+    source("..forcefield.special.min")
 
     if not args.ff:
         source("..forcefield.amber.gaff")

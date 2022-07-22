@@ -183,16 +183,16 @@ def _correct_extra_equivalence(tofit_second, fit_group, sublength, extra_equival
         all_groups = set()
         for atom in range(atom_numbers):
             all_groups.add(fit_group[atom])
-        all_groups = list(all_groups)
-        all_groups.sort()
+        all_groups_list = list(all_groups)
+        all_groups_list.sort()
 
-        group_map = {i: i for i in all_groups}
+        group_map = {i: i for i in all_groups_list}
         for eq in equi_group:
             for group in eq:
                 group_map[group] = eq[0]
 
         temp_max = 0
-        for group in all_groups:
+        for group in all_groups_list:
             if group == -1:
                 continue
             if group_map[group] == group:

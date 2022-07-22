@@ -26,7 +26,7 @@ HW-OW-HW    0       0
 OW-HW-HW    0       0
 """)
 
-lj_base.LJType.New_From_String(r"""
+lj_base.lj_type.New_From_String(r"""
 name    epsilon[kcal/mol]   sigma[A]
 OW-OW   0.162750               3.16435
 HW-HW   0                   0

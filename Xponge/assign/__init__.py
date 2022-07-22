@@ -5,7 +5,7 @@ import sys
 from collections import OrderedDict
 from itertools import groupby
 import numpy as np
-from ..helper import set_attribute_alternative_names, AtomType, ResidueType
+from ..helper import set_attribute_alternative_names, AtomType, ResidueType, Xopen
 
 
 class AssignRule:
@@ -41,6 +41,26 @@ class _RING():
     """
 This **class** is used to help with the ring assignment.
     """
+    def __init__(self, atom_list):
+        min_index = np.argmin(atom_list)
+        self.atoms = atom_list[min_index:] + atom_list[:min_index]
+        reverse_list = self.atoms[::-1]
+        reverse_list = reverse_list[-1:] + reverse_list[:-1]
+        if reverse_list[1] < self.atoms[1]:
+            self.atoms = reverse_list
+        self.tohash = "-".join(["%d" % atom for atom in self.atoms])
+        self.is_pure_aromatic_ring = None
+        self.is_pure_aliphatic_ring  = None
+        self.is_planar_ring = None
+        self.out_plane_double_bond  = None
+    def __repr__(self):
+        return self.tohash
+
+    def __hash__(self):
+        return hash(self.tohash)
+
+    def __eq__(self, other):
+        return isinstance(other, _RING) and self.tohash == other.tohash
 
     @staticmethod
     def add_rings_basic_marker(assign, rings):
@@ -125,24 +145,6 @@ This **class** is used to help with the ring assignment.
                             father_atom = current_path_father.pop()
                             current_path_sons[father_atom] -= 1
         return have_found_rings
-
-    def __repr__(self):
-        return self.tohash
-
-    def __hash__(self):
-        return hash(self.tohash)
-
-    def __eq__(self, other):
-        return isinstance(other, _RING) and self.tohash == other.tohash
-
-    def __init__(self, atom_list):
-        min_index = np.argmin(atom_list)
-        self.atoms = atom_list[min_index:] + atom_list[:min_index]
-        reverse_list = self.atoms[::-1]
-        reverse_list = reverse_list[-1:] + reverse_list[:-1]
-        if reverse_list[1] < self.atoms[1]:
-            self.atoms = reverse_list
-        self.tohash = "-".join(["%d" % atom for atom in self.atoms])
 
     def get_3_neighbors(self):
         """
@@ -357,13 +359,6 @@ This **class** is used to assign properties for atoms, which is called an "assig
         from ..helper.rdkit import Find_Equal_Atoms
         return Find_Equal_Atoms(self)
 
-    def determine_bond_order(self):
-        """
-
-        :return:
-        """
-        raise NotImplementedError
-
     def determine_ring_and_bond_type(self):
         """
 
@@ -515,8 +510,9 @@ This **class** is used to assign properties for atoms, which is called an "assig
                         towrite += " %4d" % (atom + 1)
                     towrite += "\n"
 
-        with open(filename, "w") as f:
-            f.write(towrite)
+        f = Xopen(filename, "w")
+        f.write(towrite)
+        f.close()
 
     def save_as_mol2(self, filename):
         """
@@ -563,8 +559,9 @@ This **class** is used to assign properties for atoms, which is called an "assig
         towrite += "@<TRIPOS>SUBSTRUCTURE\n"
         towrite += "%5d %8s %6d ****               0 ****  **** \n" % (1, self.name, 1)
 
-        with open(filename, "w") as f:
-            f.write(towrite)
+        f = Xopen(filename, "w")
+        f.write(towrite)
+        f.close()
 
 
 def get_assignment_from_pubchem(parameter, keyword):
@@ -628,8 +625,7 @@ def get_assignment_from_pdb(filename, determine_bond_order=True, only_residue=""
                     if bonded_atom in index_atom_map.keys():
                         assign.Add_Bond(index_atom_map[atom], index_atom_map[int(bonded_atom)])
     if determine_bond_order:
-        assign.Determine_Bond_Order()
-        assign.Determine_Ring_And_Bond_Type()
+        raise NotImplementedError
     return assign
 
 

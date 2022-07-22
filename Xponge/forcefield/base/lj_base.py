@@ -79,8 +79,8 @@ def _find_ab_lj(ljtypes, stat=True):
     coefficients_a = []
     coefficients_b = []
 
-    for i in range(len(ljtypes)):
-        lj_i = LJType.types[ljtypes[i] + "-" + ljtypes[i]]
+    for i, lj_single_i in enumerate(ljtypes):
+        lj_i = LJType.types[lj_single_i + "-" + lj_single_i]
         if stat:
             j_max = len(ljtypes)
         else:
@@ -88,7 +88,7 @@ def _find_ab_lj(ljtypes, stat=True):
         for j in range(j_max):
             lj_j = LJType.types[ljtypes[j] + "-" + ljtypes[j]]
             finded = False
-            findnames = [ljtypes[i] + "-" + ljtypes[j], ljtypes[j] + "-" + ljtypes[i]]
+            findnames = [lj_single_i + "-" + ljtypes[j], ljtypes[j] + "-" + lj_single_i]
             for findname in findnames:
                 if findname in LJType.types.keys():
                     finded = True
@@ -150,9 +150,9 @@ def _get_real_lj(ljtypes, same_type):
     """
     real_ljtypes = []
     tosub = 0
-    for i in range(len(ljtypes)):
+    for i, lj_single_i in enumerate(ljtypes):
         if same_type[i] == i:
-            real_ljtypes.append(ljtypes[i])
+            real_ljtypes.append(lj_single_i)
             same_type[i] -= tosub
         else:
             same_type[i] = same_type[same_type[i]]

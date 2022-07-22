@@ -545,12 +545,43 @@ This **class** is used to read GROMACS topology
         self.files = []
         self.filenames = []
 
+        self.flag = ""
+        self.macro_define_stat = []
+
         if macros:
             self.defined_macros = macros
         else:
             self.defined_macros = {}
         if filename:
             self.add_iterator_file(filename)
+
+    def __iter__(self):
+        self.flag = ""
+        self.macro_define_stat = []
+        return self
+
+    def __next__(self):
+        while self.files:
+            f = self.files[-1]
+            line = f.readline()
+            if line:
+                line = self._line_preprocess(line)
+                if line[0] == "#":
+                    line = self._line_define(line)
+                elif self.macro_define_stat and not self.macro_define_stat[-1]:
+                    line = next(self)
+                elif "[" in line and "]" in line:
+                    self.flag = line[1:-1].strip()
+                    line = next(self)
+                for macro, tobecome in self.defined_macros.items():
+                    line = line.replace(macro, tobecome)
+                return line
+
+            f.close()
+            self.files.pop()
+            self.filenames.pop()
+
+        raise StopIteration
 
     def add_iterator_file(self, filename):
         """
@@ -618,34 +649,6 @@ This **class** is used to read GROMACS topology
             raise Exception(line)
         line = next(self)
         return line
-
-    def __iter__(self):
-        self.flag = ""
-        self.macro_define_stat = []
-        return self
-
-    def __next__(self):
-        while self.files:
-            f = self.files[-1]
-            line = f.readline()
-            if line:
-                line = self._line_preprocess(line)
-                if line[0] == "#":
-                    line = self._line_define(line)
-                elif self.macro_define_stat and not self.macro_define_stat[-1]:
-                    line = next(self)
-                elif "[" in line and "]" in line:
-                    self.flag = line[1:-1].strip()
-                    line = next(self)
-                for macro, tobecome in self.defined_macros.items():
-                    line = line.replace(macro, tobecome)
-                return line
-
-            f.close()
-            self.files.pop()
-            self.filenames.pop()
-
-        raise StopIteration
 
 
 def _ffitp_dihedrals(line, output):

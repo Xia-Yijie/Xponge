@@ -26,13 +26,13 @@ def write_zero_lj(self):
     """
     towrite = "%d %d\n\n" % (len(self.atoms), 1)
     for _ in range(1):
-        for __ in range(1):
+        for _ in range(1):
             towrite += "%16.7e" % 0 + " "
         towrite += "\n"
     towrite += "\n"
 
     for _ in range(1):
-        for __ in range(1):
+        for _ in range(1):
             towrite += "%16.7e" % 0 + " "
         towrite += "\n"
     towrite += "\n"
