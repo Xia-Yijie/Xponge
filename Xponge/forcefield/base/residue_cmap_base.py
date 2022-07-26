@@ -2,7 +2,7 @@
 This **module** is the basic setting for the force field format of atom-specific cmap
 """
 from ... import Generate_New_Bonded_Force_Type
-from ...helper import Molecule
+from ...helper import Molecule, Xdict
 
 # pylint: disable=invalid-name
 CMapType = Generate_New_Bonded_Force_Type("residue_specific_cmap", "1-2-3-4-5", {}, False)
@@ -13,14 +13,14 @@ CMapType.Residue_Map = {}
 @Molecule.Set_Save_SPONGE_Input("cmap")
 def write_cmap(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """
     cmaps = []
     resolutions = []
     used_types = []
-    used_types_map = {}
+    used_types_map = Xdict()
     cmap = None
     for cmap in self.bonded_forces.get("residue_specific_cmap", []):
         resname = cmap.atoms[2].residue.type.name

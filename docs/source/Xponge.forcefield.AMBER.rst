@@ -1,85 +1,82 @@
-Xponge.forcefield.AMBER package
+Xponge.forcefield.amber package
 ===============================
+
+.. automodule:: Xponge.forcefield.amber
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Submodules
 ----------
 
-Xponge.forcefield.AMBER.ff14SB module
+Xponge.forcefield.amber.ff14sb module
 -------------------------------------
 
-.. automodule:: Xponge.forcefield.AMBER.ff14SB
+.. automodule:: Xponge.forcefield.amber.ff14sb
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.AMBER.ff19SB module
+Xponge.forcefield.amber.ff19sb module
 -------------------------------------
 
-.. automodule:: Xponge.forcefield.AMBER.ff19SB
+.. automodule:: Xponge.forcefield.amber.ff19sb
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.AMBER.gaff module
+Xponge.forcefield.amber.gaff module
 -----------------------------------
 
-.. automodule:: Xponge.forcefield.AMBER.gaff
+.. automodule:: Xponge.forcefield.amber.gaff
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.AMBER.lipid14 module
+Xponge.forcefield.amber.lipid14 module
 --------------------------------------
 
-.. automodule:: Xponge.forcefield.AMBER.lipid14
+.. automodule:: Xponge.forcefield.amber.lipid14
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.AMBER.lipid17 module
+Xponge.forcefield.amber.lipid17 module
 --------------------------------------
 
-.. automodule:: Xponge.forcefield.AMBER.lipid17
+.. automodule:: Xponge.forcefield.amber.lipid17
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.AMBER.opc module
+Xponge.forcefield.amber.opc module
 ----------------------------------
 
-.. automodule:: Xponge.forcefield.AMBER.opc
+.. automodule:: Xponge.forcefield.amber.opc
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.AMBER.spce module
+Xponge.forcefield.amber.spce module
 -----------------------------------
 
-.. automodule:: Xponge.forcefield.AMBER.spce
+.. automodule:: Xponge.forcefield.amber.spce
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.AMBER.tip3p module
+Xponge.forcefield.amber.tip3p module
 ------------------------------------
 
-.. automodule:: Xponge.forcefield.AMBER.tip3p
+.. automodule:: Xponge.forcefield.amber.tip3p
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.AMBER.tip4pew module
+Xponge.forcefield.amber.tip4pew module
 --------------------------------------
 
-.. automodule:: Xponge.forcefield.AMBER.tip4pew
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: Xponge.forcefield.AMBER
+.. automodule:: Xponge.forcefield.amber.tip4pew
    :members:
    :undoc-members:
    :show-inheritance:

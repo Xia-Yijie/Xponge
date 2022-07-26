@@ -8,7 +8,7 @@ except ModuleNotFoundError as exc:
         "To calculate RESP charge, 'pyscf' package needed. Maybe you need 'pip install pyscf'") from exc
 
 import numpy as np
-from ..helper import get_fibonacci_grid, Xprint, set_dict_value_alternative_name
+from ..helper import get_fibonacci_grid, Xprint, set_dict_value_alternative_name, Xdict
 
 # Pay Attention To !!!UNIT!!!
 default_radius = {"H": 1.2, "C": 1.5, "N": 1.5,
@@ -29,7 +29,8 @@ def _get_mk_grid(assign, crd, area_density=1.0, layer=4, radius=None):
     """
     grids = []
     factor = area_density * 0.52918 * 0.52918 * 4 * np.pi
-    real_radius = {}
+    real_radius = Xdict(not_found_message="Radius for element {} not found. Maybe you need to set a dict \
+     ({element : radii}) to the argument variable radius when calling this function.")
     real_radius.update(default_radius)
     if radius:
         real_radius.update(radius)

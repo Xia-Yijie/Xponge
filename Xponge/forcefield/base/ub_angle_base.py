@@ -17,7 +17,7 @@ UreyBradleyType.Set_Property_Unit("r13", "distance", "A")
 @Molecule.Set_Save_SPONGE_Input("urey_bradley")
 def write_angle(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

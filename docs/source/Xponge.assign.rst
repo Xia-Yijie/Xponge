@@ -1,29 +1,18 @@
 Xponge.assign package
 =====================
 
+.. automodule:: Xponge.assign
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
-Xponge.assign.RDKit\_tools module
----------------------------------
-
-.. automodule:: Xponge.assign.RDKit_tools
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.assign.RESP module
+Xponge.assign.resp module
 -------------------------
 
-.. automodule:: Xponge.assign.RESP
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: Xponge.assign
+.. automodule:: Xponge.assign.resp
    :members:
    :undoc-members:
    :show-inheritance:

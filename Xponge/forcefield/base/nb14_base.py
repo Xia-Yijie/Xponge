@@ -14,7 +14,7 @@ NB14Type.topology_matrix = [[1, -4],
 @Molecule.Set_Save_SPONGE_Input("nb14")
 def write_nb14(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

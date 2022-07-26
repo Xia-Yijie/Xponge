@@ -10,7 +10,7 @@ from functools import partial
 
 def source(module):
     """
-This **function** import the module and merge all the global variables into the caller module globals()
+    This **function** import the module and merge all the global variables into the caller module globals()
     :param module:
     :return:
     """
@@ -23,33 +23,33 @@ This **function** import the module and merge all the global variables into the 
 
 
 # for the special alternative name
-SPECIAL_STRINGS = {"Pdb": "PDB", "Sponge": "SPONGE", "Nb14": "NB14", "Nb14extra": "NB14EXTRA", "Lj": "LJ",
+SPECIAL_STRINGS = {"Pdb": "PDB", "Sponge": "SPONGE", "Nb14": "NB14", "Lj": "LJ",
                    "Residuetype": "ResidueType", "Pubchem": "PubChem", "Resp": "RESP", "Name2atom": "Name2Atom"}
 
 
 def set_real_global_variable(name, value):
     """
-This **function** is used to set the variable to real global variable
+    This **function** is used to set the variable to real global variable
     :param name:
     :param value:
     :return:
     """
-    sys.modules["__main__"].__dict__[name] = value
+    sys.modules.get("__main__").__dict__[name] = value
 
 
 def remove_real_global_variable(name):
     """
-This **function** is used to remove the variable from real global variable
+    This **function** is used to remove the variable from real global variable
     :param name:
     :param value:
     :return:
     """
-    sys.modules['__main__'].__dict__.pop(name)
+    sys.modules.get("__main__").__dict__.pop(name)
 
 
 def set_alternative_name(obj, func, set_method):
     """
-This **function** is used to set the alternative name for a function and an object
+    This **function** is used to set the alternative name for a function and an object
     :param obj:
     :param func:
     :param set_method:
@@ -78,7 +78,7 @@ set_attribute_alternative_name = partial(set_alternative_name, set_method=setatt
 
 def set_classmethod_alternative_names(cls):
     """
-This **function** is used to set the attribute/method alternative names for a class
+    This **function** is used to set the attribute/method alternative names for a class
     :param cls:
     :return:
     """
@@ -96,7 +96,7 @@ This **function** is used to set the attribute/method alternative names for a cl
 
 def set_attribute_alternative_names(instance):
     """
-This **function** is used to set the attribute/method alternative names for an instance
+    This **function** is used to set the attribute/method alternative names for an instance
     :param instance:
     :return:
     """
@@ -126,7 +126,7 @@ set_dict_value_alternative_name = partial(set_alternative_name, set_method=_dict
 
 def set_global_alternative_names(dic, real_global=False):
     """
-This **function** is used to set the variables to be global
+    This **function** is used to set the variables to be global
     :param dic:
     :param real_global:
     :return:

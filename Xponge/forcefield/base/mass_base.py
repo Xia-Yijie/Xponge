@@ -9,7 +9,7 @@ AtomType.Add_Property({"mass": float})
 @Molecule.Set_Save_SPONGE_Input("mass")
 def write_mass(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

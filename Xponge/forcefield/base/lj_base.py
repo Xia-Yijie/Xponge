@@ -3,7 +3,7 @@ This **module** is the basic setting for the force field property of charge
 """
 import numpy as np
 from ... import Generate_New_Pairwise_Force_Type
-from ...helper import Molecule, AtomType, GlobalSetting, set_dict_value_alternative_name
+from ...helper import Molecule, AtomType, GlobalSetting, set_dict_value_alternative_name, Xdict
 
 AtomType.Add_Property({"LJtype": str})
 
@@ -21,7 +21,7 @@ LJType.Set_Property_Unit("B", "energy·distance^12", "kcal/mol·A^12")
 @GlobalSetting.Add_Unit_Transfer_Function(LJType)
 def lj_unit_transfer(self):
     """
-This **function** is used to transfer the units of lj
+    This **function** is used to transfer the units of lj
     :param self:
     :return:
     """
@@ -41,7 +41,7 @@ This **function** is used to transfer the units of lj
 
 def lorentz_berthelot_for_a(epsilon1, rmin1, epsilon2, rmin2):
     """
-This **function** is used to calculate the A coefficient for Lorentz_Berthelot mix rule
+    This **function** is used to calculate the A coefficient for Lorentz_Berthelot mix rule
     :param epsilon1:
     :param rmin1:
     :param epsilon2:
@@ -56,7 +56,7 @@ set_dict_value_alternative_name(globals(), lorentz_berthelot_for_a)
 
 def lorentz_berthelot_for_b(epsilon1, rmin1, epsilon2, rmin2):
     """
-This **function** is used to calculate the A coefficient for Lorentz_Berthelot mix rule
+    This **function** is used to calculate the A coefficient for Lorentz_Berthelot mix rule
     :param epsilon1:
     :param rmin1:
     :param epsilon2:
@@ -80,19 +80,19 @@ def _find_ab_lj(ljtypes, stat=True):
     coefficients_b = []
 
     for i, lj_single_i in enumerate(ljtypes):
-        lj_i = LJType.types[lj_single_i + "-" + lj_single_i]
+        lj_i = LJType.get_type(lj_single_i + "-" + lj_single_i)
         if stat:
             j_max = len(ljtypes)
         else:
             j_max = i + 1
         for j in range(j_max):
-            lj_j = LJType.types[ljtypes[j] + "-" + ljtypes[j]]
+            lj_j = LJType.get_type(ljtypes[j] + "-" + ljtypes[j])
             finded = False
             findnames = [lj_single_i + "-" + ljtypes[j], ljtypes[j] + "-" + lj_single_i]
             for findname in findnames:
-                if findname in LJType.types.keys():
+                if findname in LJType.get_all_types():
                     finded = True
-                    lj_ij = LJType.types[findname]
+                    lj_ij = LJType.get_type(findname)
                     coefficients_a.append(
                         LJType.combining_method_A(lj_ij.epsilon, lj_ij.rmin, lj_ij.epsilon, lj_ij.rmin))
                     coefficients_b.append(
@@ -112,7 +112,7 @@ def _get_checks(ljtypes, coefficients_a, coefficients_b):
     :param coefficients_b:
     :return:
     """
-    checks = {}
+    checks = Xdict()
     count = 0
     for i in range(len(ljtypes)):
         check_string_a = ""
@@ -162,12 +162,12 @@ def _get_real_lj(ljtypes, same_type):
 
 def write_lj(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """
     ljtypes = []
-    ljtypemap = {}
+    ljtypemap = Xdict()
     for atom in self.atoms:
         if atom.LJtype not in ljtypemap.keys():
             ljtypemap[atom.LJtype] = len(ljtypes)

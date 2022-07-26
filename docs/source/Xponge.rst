@@ -1,6 +1,11 @@
 Xponge package
 ==============
 
+.. automodule:: Xponge
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -10,47 +15,32 @@ Subpackages
    Xponge.analysis
    Xponge.assign
    Xponge.forcefield
+   Xponge.helper
    Xponge.tools
 
 Submodules
 ----------
 
-Xponge.BUILD module
+Xponge.build module
 -------------------
 
-.. automodule:: Xponge.BUILD
+.. automodule:: Xponge.build
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.IMPOSE module
---------------------
-
-.. automodule:: Xponge.IMPOSE
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.LOAD module
+Xponge.load module
 ------------------
 
-.. automodule:: Xponge.LOAD
+.. automodule:: Xponge.load
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.PROCESS module
+Xponge.process module
 ---------------------
 
-.. automodule:: Xponge.PROCESS
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: Xponge
+.. automodule:: Xponge.process
    :members:
    :undoc-members:
    :show-inheritance:

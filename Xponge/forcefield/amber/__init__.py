@@ -41,7 +41,7 @@ def load_parameters_from_parmdat(filename, prefix=True):
 
 def load_parameters_from_frcmod(filename, include_cmap=False, prefix=True):
     """
-This **function** is used to get amber force field parameters from frcmod files
+    This **function** is used to get amber force field parameters from frcmod files
     :param filename:
     :param include_cmap:
     :return:

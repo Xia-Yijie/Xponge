@@ -58,7 +58,7 @@ def _assign_test(args):
     wat = t.to_residuetype("WAT")
     Save_PDB(wat, f"{args.o}_Residue.pdb")
     Save_Mol2(wat, f"{args.o}_Residue.pdb")
-    Save_SPONGE_Input(WAT, f"{args.o}")
+    Save_SPONGE_Input(wat, f"{args.o}")
 
 
 def _charmm27_test(args):

@@ -4,7 +4,7 @@ This **module** is used to build and save
 import os
 from itertools import product
 from . import assign
-from .helper import ResidueType, Molecule, Residue, ResidueLink, GlobalSetting, Xopen
+from .helper import ResidueType, Molecule, Residue, ResidueLink, GlobalSetting, Xopen, Xdict
 
 
 def _analyze_connectivity(cls):
@@ -14,12 +14,12 @@ def _analyze_connectivity(cls):
     :return:
     """
     for atom0, c in cls.connectivity.items():
-        index_dict = {}.fromkeys(c, atom0)
+        index_dict = Xdict().fromkeys(c, atom0)
         for i in range(2, GlobalSetting.farthest_bonded_force + 1):
-            index_next = {}
+            index_next = Xdict()
             for atom1, from_atom in index_dict.items():
                 atom0.Link_Atom(i, atom1)
-                index_temp = {}.fromkeys(cls.connectivity[atom1], atom1)
+                index_temp = Xdict().fromkeys(cls.connectivity[atom1], atom1)
                 index_temp.pop(from_atom)
                 index_next.update(index_temp)
             index_dict = index_next
@@ -81,7 +81,7 @@ def _get_frc_all_final(frc, frc_all):
     :return:
     """
     frc_all_final = []
-    frc_keys = {}
+    frc_keys = Xdict()
     for frc_one in frc_all:
         frc_one_name = "".join([str(hash(atom)) for atom in frc_one])
         if frc_one_name in frc_keys.keys():
@@ -104,12 +104,12 @@ def _find_the_force(frc, frc_all_final, cls):
     :return:
     """
     for frc_ones in frc_all_final:
-        finded = {}
+        finded = Xdict()
         # 先直接找
         for frc_one in frc_ones:
             tofindname = "-".join([atom.type.name for atom in frc_one])
-            if tofindname in frc.types.keys():
-                finded[tofindname] = [frc.types[tofindname], frc_one]
+            if tofindname in frc.get_all_types():
+                finded[tofindname] = [frc.get_type(tofindname), frc_one]
                 break
         # 没找到再找通用的
         if not finded:
@@ -121,8 +121,8 @@ def _find_the_force(frc, frc_all_final, cls):
                     if pcountx > leastfinded_x:
                         continue
                     tofindname = "-".join(p)
-                    if tofindname in frc.types.keys():
-                        finded = {tofindname: [frc.types[tofindname], frc_one]}
+                    if tofindname in frc.get_all_types():
+                        finded = {tofindname: [frc.get_type(tofindname), frc_one]}
                         leastfinded_x = pcountx
                         break
 
@@ -156,8 +156,8 @@ def _build_residue(cls):
     if not cls.type.built:
         _build_residue_type(cls.type)
 
-    res_type_atom_map = {}
-    res_type_atom_map_inverse = {}
+    res_type_atom_map = Xdict()
+    res_type_atom_map_inverse = Xdict()
     clsatoms = {atom: None for atom in cls.atoms}
     for atom0 in cls.type.atoms:
         for atom in clsatoms.keys():
@@ -174,12 +174,13 @@ def _build_residue(cls):
                 atom.Link_Atom(key, res_type_atom_map[atomi])
 
     for frc in GlobalSetting.BondedForces:
-        frc_entities = cls.type.bonded_forces.get(frc.name, [])
+        frc_name = frc.get_class_name()
+        frc_entities = cls.type.bonded_forces.get(frc_name, [])
         for frc_entity in frc_entities:
             finded_atoms = [res_type_atom_map[atom] for atom in frc_entity.atoms]
             finded_type = frc_entity.type
             cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
-            cls.bonded_forces[frc.name][-1].contents = frc_entity.contents
+            cls.bonded_forces[frc_name][-1].contents = frc_entity.contents
 
 
 def _modify_linked_atoms(cls):
@@ -268,14 +269,14 @@ def _build_molecule(cls):
         build_bonded_force(link)
 
     cls.atoms = []
-    cls.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+    cls.bonded_forces = {frc.get_class_name(): [] for frc in GlobalSetting.BondedForces}
     for res in cls.residues:
         cls.atoms.extend(res.atoms)
         for frc in GlobalSetting.BondedForces:
-            cls.bonded_forces[frc.name].extend(res.bonded_forces.get(frc.name, []))
+            cls.bonded_forces[frc.get_class_name()].extend(res.bonded_forces.get(frc.get_class_name(), []))
     for link in cls.residue_links:
         for frc in GlobalSetting.BondedForces:
-            cls.bonded_forces[frc.name].extend(link.bonded_forces.get(frc.name, []))
+            cls.bonded_forces[frc.get_class_name()].extend(link.bonded_forces.get(frc.get_class_name(), []))
     cls.atom_index = {cls.atoms[i]: i for i in range(len(cls.atoms))}
 
     for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
@@ -332,7 +333,7 @@ def save_sponge_input(cls, prefix=None, dirname="."):
         if not prefix:
             prefix = cls.name
 
-        for key, func in Molecule.save_functions.items():
+        for key, func in getattr(Molecule, "_save_functions").items():
             towrite = func(cls)
             if towrite:
                 f = Xopen(os.path.join(dirname, prefix + "_" + key + ".txt"), "w")

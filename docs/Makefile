@@ -12,6 +12,11 @@ BUILDDIR      = build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
+API:
+	rm source/Xponge.*
+	rm source/modules.rst
+	sphinx-apidoc -o source ../Xponge -M -f --implicit-namespaces
+
 .PHONY: help Makefile
 
 # Catch-all target: route all unknown targets to Sphinx using the new

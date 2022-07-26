@@ -21,7 +21,7 @@ NB14Type.topology_matrix = [[1, -4],
 
 def get_nb14_extra_lj(atom1, atom2):
     """
-This **function** is used to get the LJ parameters for NB14EXTRA
+    This **function** is used to get the LJ parameters for NB14EXTRA
     :param atom1:
     :param atom2:
     :return:
@@ -32,16 +32,16 @@ This **function** is used to get the LJ parameters for NB14EXTRA
     a = 0
     b = 0
 
-    lj_i = lj_type.types[atom1.LJtype + "-" + atom1.LJtype]
-    lj_j = lj_type.types[atom2.LJtype + "-" + atom2.LJtype]
+    lj_i = lj_type.get_type(atom1.LJtype + "-" + atom1.LJtype)
+    lj_j = lj_type.get_type(atom2.LJtype + "-" + atom2.LJtype)
     finded = False
     findnames = [atom1.LJtype + "-" + atom2.LJtype,
                  atom2.LJtype + "-" + atom1.LJtype]
 
     for findname in findnames:
-        if findname in lj_type.types.keys():
+        if findname in lj_type.get_all_types():
             finded = True
-            lj_ij = lj_type.types[findname]
+            lj_ij = lj_type.get_type(findname)
             a = lj_type.combining_method_A(lj_ij.epsilon, lj_ij.rmin, lj_ij.epsilon, lj_ij.rmin)
             b = lj_type.combining_method_B(lj_ij.epsilon, lj_ij.rmin, lj_ij.epsilon, lj_ij.rmin)
             break
@@ -51,18 +51,18 @@ This **function** is used to get the LJ parameters for NB14EXTRA
     return a, b
 
 
-set_dict_value_alternative_name(globals(), get_nb14extra_lj)
+set_dict_value_alternative_name(globals(), get_nb14_extra_lj)
 
 
 def exclude_to_nb14_extra(molecule, atom1, atom2):
     """
-This **function** is used to calculate nb14extra instead of non-bonded interactions for atom1 and atom2
+    This **function** is used to calculate nb14_extra instead of non-bonded interactions for atom1 and atom2
     :param molecule:
     :param atom1:
     :param atom2:
     :return:
     """
-    new_force = NB14Type.entity([atom1, atom2], NB14Type.types["UNKNOWNS"])
+    new_force = NB14Type.entity([atom1, atom2], NB14Type.get_type("UNKNOWNS"))
     a, b = Get_NB14EXTRA_AB(new_force.atoms[0], new_force.atoms[1])
     new_force.A = nb14_bond.kLJ * a
     new_force.B = nb14_bond.kLJ * b
@@ -72,12 +72,12 @@ This **function** is used to calculate nb14extra instead of non-bonded interacti
     molecule.Add_Bonded_Force(new_force)
 
 
-set_dict_value_alternative_name(globals(), exclude_to_nb14extra)
+set_dict_value_alternative_name(globals(), exclude_to_nb14_extra)
 
 
 def nb14_to_nb14_extra(molecule):
     """
-This **function** is used to convert nb14 to nb14extra
+    This **function** is used to convert nb14 to nb14_extra
     :param molecule:
     :return:
     """
@@ -85,9 +85,9 @@ This **function** is used to convert nb14 to nb14extra
     # A、B中的nb14全部变为nb14_extra
     while molecule.bonded_forces.get("nb14", []):
         nb14_bond = molecule.bonded_forces["nb14"].pop()
-        new_force = NB14Type.entity(nb14_bond.atoms, NB14Type.types["UNKNOWNS"], nb14_bond.name)
+        new_force = NB14Type.entity(nb14_bond.atoms, NB14Type.get_type("UNKNOWNS"), nb14_bond.name)
 
-        a, b = get_nb14extra_lj(new_force.atoms[0], new_force.atoms[1])
+        a, b = get_nb14_extra_lj(new_force.atoms[0], new_force.atoms[1])
 
         new_force.A = nb14_bond.kLJ * a
         new_force.B = nb14_bond.kLJ * b
@@ -96,13 +96,13 @@ This **function** is used to convert nb14 to nb14extra
         molecule.Add_Bonded_Force(new_force)
 
 
-set_dict_value_alternative_name(globals(), nb14_to_nb14extra)
+set_dict_value_alternative_name(globals(), nb14_to_nb14_extra)
 
 
 @GlobalSetting.Add_Unit_Transfer_Function(NB14Type)
 def lj_unit_transfer(self):
     """
-This **function** is used to transfer the units of lj
+    This **function** is used to transfer the units of lj
     :param self:
     :return:
     """
@@ -119,7 +119,7 @@ This **function** is used to transfer the units of lj
 @Molecule.Set_Save_SPONGE_Input("nb14_extra")
 def write_nb14(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

@@ -7,12 +7,13 @@ except ModuleNotFoundError as exc:
     raise ModuleNotFoundError(
         "'rdkit' package needed. Maybe you need 'conda install -c rdkit rdkit'") from exc
 
+from . import Xdict
 from .namespace import set_global_alternative_names
 
 
 def assign_to_rdmol(assign, ignore_bond_type=False):
     """
-This **function** is used to convert an Xponge.Assign to a RDKit.rdMol
+    This **function** is used to convert an Xponge.Assign to a RDKit.rdMol
     :param assign:
     :param ignore_bond_type:
     :return:
@@ -46,7 +47,7 @@ This **function** is used to convert an Xponge.Assign to a RDKit.rdMol
 
 def insert_atom_type_to_rdmol(mol, res, assign, atom_type_dict=None):
     """
-This **function** inserts the atom types in the force field to the RDKit.rdmol instance
+    This **function** inserts the atom types in the force field to the RDKit.rdmol instance
     :param mol:
     :param res:
     :param assign:
@@ -55,7 +56,7 @@ This **function** inserts the atom types in the force field to the RDKit.rdmol i
     """
     i = 0
     if atom_type_dict is None:
-        atom_type_dict = {}
+        atom_type_dict = Xdict()
     for a in mol.GetAtoms():
         atom_type = res.name2atom(assign.names[i]).type.name
         if atom_type not in atom_type_dict.keys():
@@ -66,7 +67,7 @@ This **function** inserts the atom types in the force field to the RDKit.rdmol i
 
 def find_equal_atoms(assign):
     """
-This **function** is used to find the chemical equivalent atoms in the molecule
+    This **function** is used to find the chemical equivalent atoms in the molecule
     :param assign:
     :return:
     """
@@ -83,7 +84,7 @@ This **function** is used to find the chemical equivalent atoms in the molecule
                 if canon_smiles[j] == canon_smiles[i]:
                     group[j] = i
     ret = []
-    realmap = {}
+    realmap = Xdict()
     for i in group:
         if group[i] == i:
             ret.append([i])

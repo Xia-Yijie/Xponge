@@ -26,7 +26,7 @@ HW-OW-HW  0   0
 OW-HW-HW  0   0
 """)
 
-lj_base.lj_type.New_From_String(r"""
+lj_base.LJType.New_From_String(r"""
 name    epsilon[kcal/mol]   rmin[A]
 OW-OW   0.152               1.7683
 HW-HW   0                   0
@@ -44,3 +44,4 @@ Xprint("""Reference for tip3p:
     The Journal of Chemical Physics 1983 79, 926-935, 
     DOI: 10.1063/1.445869
 """)
+# pylint:disable=undefined-variable

@@ -3,7 +3,7 @@ This **module** is used to load and read
 """
 import os
 from .helper import Molecule, Residue, ResidueType, AtomType, set_attribute_alternative_name, GlobalSetting, \
-    set_real_global_variable, Xdict
+    set_real_global_variable, Xdict, Xopen
 
 
 ##########################################################################
@@ -22,22 +22,21 @@ def _mol2_atom(line, current_residue_index, current_residue, ignore_atom_type, t
     :param atom_residue_map:
     :return:
     """
-    import sys
     words = line.split()
     if current_residue_index is None or int(words[6]) != current_residue_index:
         current_residue_index = int(words[6])
-        if words[7] not in ResidueType.types.keys():
+        if words[7] not in ResidueType.get_all_types():
             set_real_global_variable(words[7], ResidueType(name=words[7]))
             temp = True
         else:
             temp = False
         if current_residue:
             current_molecule.Add_Residue(current_residue)
-        current_residue = Residue(ResidueType.types[words[7]])
+        current_residue = Residue(ResidueType.get_type(words[7]))
     if ignore_atom_type:
-        temp_atom_type = AtomType.types["UNKNOWN"]
+        temp_atom_type = AtomType.get_type("UNKNOWN")
     else:
-        temp_atom_type = AtomType.types[words[5]]
+        temp_atom_type = AtomType.get_type(words[5])
 
     if temp:
         current_residue.type.Add_Atom(words[1], temp_atom_type, *words[2:5])
@@ -243,7 +242,7 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
                     residue_type_map.append(resname)
                     current_residue_index = resindex
                     chain[chr(ord("A") + len(chain.keys()))] = Xdict()
-                    chain[chr(ord("A") + len(chain.keys()))][resindex] = current_residue_count
+                    chain[chr(ord("A") + len(chain.keys())-1)][resindex] = current_residue_count
                     if resname in GlobalSetting.PDBResidueNameMap["head"].keys():
                         resname = GlobalSetting.PDBResidueNameMap["head"][resname]
                 elif current_residue_index != resindex or current_resname != resname:
@@ -388,7 +387,7 @@ def load_frcmod(filename, nbtype="RE"):
     atoms = "name  mass  LJtype\n"
     for atom, mass in atom_types.items():
         atoms += atom + "\t" + mass + "\t" + atom + "\n"
-    toret = atoms, bonds, angles, propers, impropers, ljs, cmap
+    toret = [atoms, bonds, angles, propers, impropers, ljs, cmap]
     return toret
 
 
@@ -403,9 +402,8 @@ def _parmdat_read_harmonic_bonds(f, bonds, n):
     for line in f:
         if not line.strip():
             break
-        else:
-            atoms, words = _frcmod_atoms_words(line, n)
-            bonds += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
+        atoms, words = _frcmod_atoms_words(line, n)
+        bonds += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\n"
     return bonds
 
 
@@ -423,10 +421,10 @@ def load_parmdat(filename):
         for line in f:
             if not line.strip():
                 break
-            else:
-                words = line.split()
-                atom_types[words[0]] = words[1]
-                lj_types[words[0]] = words[0]
+
+            words = line.split()
+            atom_types[words[0]] = words[1]
+            lj_types[words[0]] = words[0]
         f.readline()
         # 读键长
         bonds = "name  k[kcal/mol·A^-2]    b[A]\n"
@@ -442,23 +440,21 @@ def load_parmdat(filename):
         for line in f:
             if not line.strip():
                 break
+            atoms, words = _frcmod_atoms_words(line, 11)
+            propers += "-".join(atoms) + "\t" + str(float(words[1]) / int(words[0])) + "\t" + words[2] + "\t" + str(
+                abs(int(float(words[3])))) + "\t" + str(reset) + "\n"
+            if int(float(words[3])) < 0:
+                reset = 0
             else:
-                atoms, words = _frcmod_atoms_words(line, 11)
-                propers += "-".join(atoms) + "\t" + str(float(words[1]) / int(words[0])) + "\t" + words[2] + "\t" + str(
-                    abs(int(float(words[3])))) + "\t" + str(reset) + "\n"
-                if int(float(words[3])) < 0:
-                    reset = 0
-                else:
-                    reset = 1
+                reset = 1
         # 读非恰当二面角
         impropers = "name  k[kcal/mol]    phi0[degree]    periodicity\n"
         for line in f:
             if not line.strip():
                 break
-            else:
-                atoms, words = _frcmod_atoms_words(line, 11)
-                impropers += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\t" + str(
-                    int(float(words[2]))) + "\n"
+            atoms, words = _frcmod_atoms_words(line, 11)
+            impropers += "-".join(atoms) + "\t" + words[0] + "\t" + words[1] + "\t" + str(
+                int(float(words[2]))) + "\n"
 
         # 跳过水的信息
         f.readline()
@@ -468,11 +464,10 @@ def load_parmdat(filename):
         for line in f:
             if not line.strip():
                 break
-            else:
-                atoms = line.split()
-                atom0 = atoms.pop(0)
-                for atom in atoms:
-                    lj_types[atom] = atom0
+            atoms = line.split()
+            atom0 = atoms.pop(0)
+            for atom in atoms:
+                lj_types[atom] = atom0
 
         # 读LJ信息
         word = f.readline().split()[1]
@@ -486,14 +481,13 @@ def load_parmdat(filename):
         for line in f:
             if not line.strip():
                 break
-            else:
-                words = line.split()
-                ljs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
+            words = line.split()
+            ljs += words[0] + "-" + words[0] + "\t" + words[1] + "\t" + words[2] + "\n"
 
     atoms = "name  mass  LJtype\n"
     for atom, mass in atom_types.items():
         atoms += atom + "\t" + mass + "\t" + lj_types[atom] + "\n"
-    toret = atoms, bonds, angles, propers, impropers, ljs
+    toret = [atoms, bonds, angles, propers, impropers, ljs]
     return toret
 
 
@@ -596,7 +590,7 @@ class GromacsTopologyIterator():
         else:
             filename = os.path.abspath(filename.replace('"', ''))
 
-        f = open(filename)
+        f = Xopen(filename, "r")
         self.files.append(f)
         self.filenames.append(filename)
 
@@ -698,7 +692,7 @@ def load_ffitp(filename, macros=None):
     for line in iterator:
         if iterator.flag == "":
             continue
-        elif iterator.flag == "defaults":
+        if iterator.flag == "defaults":
             words = line.split()
             assert int(words[0]) == 1, "SPONGE Only supports Lennard-Jones now"
             if int(words[1]) == 1:

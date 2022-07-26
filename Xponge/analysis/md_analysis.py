@@ -5,16 +5,16 @@ import os.path
 import numpy as np
 from ..helper import set_global_alternative_names
 try:
-    from md_analysis.coordinates import base
-    from md_analysis.lib import util
+    from MDAnalysis.coordinates import base
+    from MDAnalysis.lib import util
 except ModuleNotFoundError as exc:
     raise ModuleNotFoundError(
-        "'MDAnalysis' package needed. Maybe you need 'pip install MDANalysis'") from exc
+        "'MDAnalysis' package needed. Maybe you need 'pip install MDAnalysis'") from exc
 
 
 class SpongeTrajectoryReader(base.ReaderBase):
     """
-This **class** is the interface to MDAnalysis
+    This **class** is the interface to MDAnalysis
     """
     def __init__(self, dat_file_name, box, n_atoms, **kwargs):
         super().__init__(dat_file_name, **kwargs)
@@ -118,7 +118,7 @@ This **class** is the interface to MDAnalysis
 
 def universe(topname, trajname, box, **kwargs):
     """
-This **function** gives an interface to MDAnalysis.Universe
+    This **function** gives an interface to MDAnalysis.Universe
     :param topname:
     :param trajname:
     :param box:

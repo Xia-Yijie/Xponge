@@ -6,7 +6,7 @@ import numpy as np
 
 def get_rotate_matrix(r0, angle):
     """
-This **function** is used to get the rotation matrix
+    This **function** is used to get the rotation matrix
     :param r0:
     :param angle:
     :return:
@@ -25,7 +25,7 @@ This **function** is used to get the rotation matrix
 
 def get_fibonacci_grid(n, origin, radius):
     """
-This **function** is used to get the sphere grid by fibonacci algorithm
+    This **function** is used to get the sphere grid by fibonacci algorithm
     :param n:
     :param origin:
     :param radius:
@@ -45,7 +45,7 @@ This **function** is used to get the sphere grid by fibonacci algorithm
 
 def guess_element_from_mass(mass):
     """
-This **function** is used to guess element from its mass
+    This **function** is used to guess element from its mass
     :param mass:
     :return:
     """

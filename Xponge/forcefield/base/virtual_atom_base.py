@@ -14,7 +14,7 @@ GlobalSetting.VirtualAtomTypes["vatom2"] = 3
 @Molecule.Set_Save_SPONGE_Input("virtual_atom")
 def write_virtual_atoms(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

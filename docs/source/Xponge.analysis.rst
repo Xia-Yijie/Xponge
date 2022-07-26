@@ -1,21 +1,18 @@
 Xponge.analysis package
 =======================
 
-Submodules
-----------
-
-Xponge.analysis.MDAnalysis module
----------------------------------
-
-.. automodule:: Xponge.analysis.MDAnalysis
+.. automodule:: Xponge.analysis
    :members:
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
+Submodules
+----------
 
-.. automodule:: Xponge.analysis
+Xponge.analysis.md\_analysis module
+-----------------------------------
+
+.. automodule:: Xponge.analysis.md_analysis
    :members:
    :undoc-members:
    :show-inheritance:

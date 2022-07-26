@@ -1,133 +1,130 @@
-Xponge.forcefield.BASE package
+Xponge.forcefield.base package
 ==============================
+
+.. automodule:: Xponge.forcefield.base
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Submodules
 ----------
 
-Xponge.forcefield.BASE.ACMAP module
------------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.ACMAP
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.ANGLE module
------------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.ANGLE
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.BOND module
-----------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.BOND
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.CHARGE module
-------------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.CHARGE
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.DIHEDRAL module
---------------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.DIHEDRAL
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.EXCLUDE module
--------------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.EXCLUDE
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.IMPROPER module
---------------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.IMPROPER
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.LJ module
---------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.LJ
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.MASS module
-----------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.MASS
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.NB14 module
-----------------------------------
-
-.. automodule:: Xponge.forcefield.BASE.NB14
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Xponge.forcefield.BASE.NB14\_EXTRA module
+Xponge.forcefield.base.angle\_base module
 -----------------------------------------
 
-.. automodule:: Xponge.forcefield.BASE.NB14_EXTRA
+.. automodule:: Xponge.forcefield.base.angle_base
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.BASE.RCMAP module
------------------------------------
+Xponge.forcefield.base.atom\_cmap\_base module
+----------------------------------------------
 
-.. automodule:: Xponge.forcefield.BASE.RCMAP
+.. automodule:: Xponge.forcefield.base.atom_cmap_base
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.BASE.SOFT\_BOND module
+Xponge.forcefield.base.bond\_base module
 ----------------------------------------
 
-.. automodule:: Xponge.forcefield.BASE.SOFT_BOND
+.. automodule:: Xponge.forcefield.base.bond_base
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.BASE.UREY\_BRADLEY module
+Xponge.forcefield.base.charge\_base module
+------------------------------------------
+
+.. automodule:: Xponge.forcefield.base.charge_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.base.dihedral\_base module
+--------------------------------------------
+
+.. automodule:: Xponge.forcefield.base.dihedral_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.base.exclude\_base module
 -------------------------------------------
 
-.. automodule:: Xponge.forcefield.BASE.UREY_BRADLEY
+.. automodule:: Xponge.forcefield.base.exclude_base
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.BASE.VIRTUAL\_ATOM module
--------------------------------------------
+Xponge.forcefield.base.improper\_base module
+--------------------------------------------
 
-.. automodule:: Xponge.forcefield.BASE.VIRTUAL_ATOM
+.. automodule:: Xponge.forcefield.base.improper_base
    :members:
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
+Xponge.forcefield.base.lj\_base module
+--------------------------------------
 
-.. automodule:: Xponge.forcefield.BASE
+.. automodule:: Xponge.forcefield.base.lj_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.base.mass\_base module
+----------------------------------------
+
+.. automodule:: Xponge.forcefield.base.mass_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.base.nb14\_base module
+----------------------------------------
+
+.. automodule:: Xponge.forcefield.base.nb14_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.base.nb14\_extra\_base module
+-----------------------------------------------
+
+.. automodule:: Xponge.forcefield.base.nb14_extra_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.base.residue\_cmap\_base module
+-------------------------------------------------
+
+.. automodule:: Xponge.forcefield.base.residue_cmap_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.base.soft\_bond\_base module
+----------------------------------------------
+
+.. automodule:: Xponge.forcefield.base.soft_bond_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.base.ub\_angle\_base module
+---------------------------------------------
+
+.. automodule:: Xponge.forcefield.base.ub_angle_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.base.virtual\_atom\_base module
+-------------------------------------------------
+
+.. automodule:: Xponge.forcefield.base.virtual_atom_base
    :members:
    :undoc-members:
    :show-inheritance:

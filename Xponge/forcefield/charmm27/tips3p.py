@@ -25,7 +25,7 @@ HW-OW-HW  0   0
 OW-HW-HW  0   0
 """)
 
-lj_base.lj_type.New_From_String(r"""
+lj_base.LJType.New_From_String(r"""
 name    sigma[nm]   epsilon[kJ/mol]
 OW-OW   0.315057422683    0.6363864
 HW-HW   0.0400013524445 0.192464
@@ -40,3 +40,4 @@ set_real_global_variable("WAT", TIPS3P)
 Xprint("""Reference for CHARMM modified tip3p:
   to do
 """)
+# pylint:disable=undefined-variable

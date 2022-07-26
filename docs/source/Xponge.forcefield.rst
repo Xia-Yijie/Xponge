@@ -1,21 +1,18 @@
 Xponge.forcefield package
 =========================
 
+.. automodule:: Xponge.forcefield
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
 .. toctree::
    :maxdepth: 4
 
-   Xponge.forcefield.AMBER
-   Xponge.forcefield.BASE
-   Xponge.forcefield.CHARMM27
-   Xponge.forcefield.SPECIAL
-
-Module contents
----------------
-
-.. automodule:: Xponge.forcefield
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   Xponge.forcefield.amber
+   Xponge.forcefield.base
+   Xponge.forcefield.charmm27
+   Xponge.forcefield.special

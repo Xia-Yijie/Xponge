@@ -54,8 +54,9 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 extensions = ['sphinx.ext.autodoc',
-'sphinx.ext.doctest',
-'sphinx.ext.intersphinx',
-'sphinx.ext.todo',
-'sphinx.ext.coverage',
-'sphinx.ext.mathjax']
+              'sphinx.ext.doctest',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.todo',
+              'sphinx.ext.coverage',
+              'sphinx.ext.mathjax',
+              'sphinx.ext.autosectionlabel']

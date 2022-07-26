@@ -2,14 +2,15 @@
 This **module** is the basic setting for the force field format of soft bond
 """
 from ...helper import Molecule
+from . import bond_base
 
-BOND.BondType.Add_Property({"from_AorB": int})
+bond_base.BondType.Add_Property({"from_AorB": int})
 
 
 @Molecule.Set_Save_SPONGE_Input("bond_soft")
 def write_bond(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

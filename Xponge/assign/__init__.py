@@ -1,18 +1,17 @@
 """
 This **package** is used to assign the properties for atoms, residues and molecules
 """
-import sys
 from collections import OrderedDict
 from itertools import groupby
 import numpy as np
-from ..helper import set_attribute_alternative_names, AtomType, ResidueType, Xopen
+from ..helper import set_attribute_alternative_names, AtomType, ResidueType, Xopen, Xdict, set_real_global_variable
 
 
 class AssignRule:
     """
-This **class** is to be the rule to determine the atom type for one atom
+    This **class** is to be the rule to determine the atom type for one atom
     """
-    all = {}
+    all = Xdict(not_found_message="AssignRule {} not found. Did you import the proper force field?")
 
     def __init__(self, name):
         self.name = name
@@ -22,12 +21,12 @@ This **class** is to be the rule to determine the atom type for one atom
 
     def add_rule(self, atomtype):
         """
-This **function** is used as an **decorator** to add the atom type - judge function
+        This **function** is used as an **decorator** to add the atom type - judge function
         :param atomtype:
         :return:
         """
         if isinstance(atomtype, str):
-            atomtype = AtomType.types[atomtype]
+            atomtype = AtomType.get_type(atomtype)
         elif not isinstance(atomtype, AtomType):
             raise TypeError("atomtype should be a string or AtomType")
 
@@ -39,7 +38,7 @@ This **function** is used as an **decorator** to add the atom type - judge funct
 
 class _RING():
     """
-This **class** is used to help with the ring assignment.
+    This **class** is used to help with the ring assignment.
     """
     def __init__(self, atom_list):
         min_index = np.argmin(atom_list)
@@ -50,9 +49,9 @@ This **class** is used to help with the ring assignment.
             self.atoms = reverse_list
         self.tohash = "-".join(["%d" % atom for atom in self.atoms])
         self.is_pure_aromatic_ring = None
-        self.is_pure_aliphatic_ring  = None
+        self.is_pure_aliphatic_ring = None
         self.is_planar_ring = None
-        self.out_plane_double_bond  = None
+        self.out_plane_double_bond = None
 
     def __repr__(self):
         return self.tohash
@@ -109,9 +108,9 @@ This **class** is used to help with the ring assignment.
         :return:
         """
         current_path = []
-        current_path_sons = {}
+        current_path_sons = Xdict()
         current_work = []
-        current_path_father = {}
+        current_path_father = Xdict()
         have_found_rings = set([])
         for atom0 in range(len(assign.atoms)):
             current_path.append(atom0)
@@ -220,7 +219,7 @@ This **class** is used to help with the ring assignment.
 
 class Assign():
     """
-This **class** is used to assign properties for atoms, which is called an "assignment"
+    This **class** is used to assign properties for atoms, which is called an "assignment"
     """
     XX = set("CNOPS")
     XA = set("OS")
@@ -237,12 +236,12 @@ This **class** is used to assign properties for atoms, which is called an "assig
         self.element_details = []
         self.coordinate = None
         self.charge = None
-        self.atom_types = {}
-        self.atom_marker = {}
-        self.bonds = {}
-        self.ar_bonds = {}
-        self.am_bonds = {}
-        self.bond_marker = {}
+        self.atom_types = Xdict()
+        self.atom_marker = Xdict()
+        self.bonds = Xdict()
+        self.ar_bonds = Xdict()
+        self.am_bonds = Xdict()
+        self.bond_marker = Xdict()
         set_attribute_alternative_names(self)
 
     def add_index_to_name(self):
@@ -291,9 +290,9 @@ This **class** is used to assign properties for atoms, which is called an "assig
             element_detail = ""
         self.element_details.append(element_detail)
         self.atoms.append(element)
-        self.bonds[self.atom_numbers] = {}
-        self.bond_marker[self.atom_numbers] = {}
-        self.atom_marker[self.atom_numbers] = {}
+        self.bonds[self.atom_numbers] = Xdict()
+        self.bond_marker[self.atom_numbers] = Xdict()
+        self.atom_marker[self.atom_numbers] = Xdict()
         self.atom_types[self.atom_numbers] = None
         self.atom_numbers += 1
         self.names.append(name)
@@ -428,7 +427,7 @@ This **class** is used to assign properties for atoms, which is called an "assig
                 charge = np.zeros(self.atom_numbers)
             else:
                 charge = self.charge
-        count = {}
+        count = Xdict()
         for i in range(self.atom_numbers):
             assert self.atom_types[i] is not None
             if self.names[i]:
@@ -447,7 +446,7 @@ This **class** is used to assign properties for atoms, which is called an "assig
         for i, bondi in self.bonds.items():
             for j in bondi.keys():
                 temp.Add_Connectivity(temp.atoms[i], temp.atoms[j])
-        sys.modules["__main__"].__dict__[name] = temp
+        set_real_global_variable(name, temp)
         return temp
 
     def calculate_charge(self, method, **parameters):
@@ -481,7 +480,7 @@ This **class** is used to assign properties for atoms, which is called an "assig
         if not isinstance(filename, str):
             raise TypeError("filename needed to save an assignment to a pdb file")
         towrite = towrite = "REMARK   Generated By Xponge (Assignment)\n"
-        count = {}
+        count = Xdict()
         for i in range(self.atom_numbers):
             if self.names[i]:
                 atom_name = self.names[i]
@@ -534,7 +533,7 @@ This **class** is used to assign properties for atoms, which is called an "assig
                     else:
                         bonds.append("%6d %6d %1d\n" % (i + 1, j + 1, order))
         bonds.sort(key=lambda x: list(map(int, x.split()[:2])))
-        count = {}
+        count = Xdict()
         for i in range(self.atom_numbers):
             if self.names[i]:
                 atom_name = self.names[i]
@@ -597,7 +596,7 @@ def get_assignment_from_pdb(filename, determine_bond_order=True, only_residue=""
     :return:
     """
     assign = Assign()
-    index_atom_map = {}
+    index_atom_map = Xdict()
     with open(filename) as f:
         for line in f:
             if line.startswith("ATOM") or line.startswith("HETATM"):
@@ -656,8 +655,8 @@ def _deal_with_ar_bonds(assign):
     """
     ar_bonds_atoms = list(assign.ar_bonds.keys())
     ar_bonds_atoms.sort(key=lambda x: (x, len(assign.ar_bonds[x])))
-    doubled = {}
-    checked = {}
+    doubled = Xdict()
+    checked = Xdict()
     for ar_atom in ar_bonds_atoms:
         assign.ar_bonds[ar_atom].sort(key=lambda x: (x, len(assign.ar_bonds[x])))
         doubled[ar_atom] = False

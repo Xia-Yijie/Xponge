@@ -1,37 +1,34 @@
-Xponge.forcefield.SPECIAL package
+Xponge.forcefield.special package
 =================================
+
+.. automodule:: Xponge.forcefield.special
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Submodules
 ----------
 
-Xponge.forcefield.SPECIAL.FEP module
+Xponge.forcefield.special.fep module
 ------------------------------------
 
-.. automodule:: Xponge.forcefield.SPECIAL.FEP
+.. automodule:: Xponge.forcefield.special.fep
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.SPECIAL.GB module
+Xponge.forcefield.special.gb module
 -----------------------------------
 
-.. automodule:: Xponge.forcefield.SPECIAL.GB
+.. automodule:: Xponge.forcefield.special.gb
    :members:
    :undoc-members:
    :show-inheritance:
 
-Xponge.forcefield.SPECIAL.MIN\_BONDED module
---------------------------------------------
+Xponge.forcefield.special.min module
+------------------------------------
 
-.. automodule:: Xponge.forcefield.SPECIAL.MIN_BONDED
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: Xponge.forcefield.SPECIAL
+.. automodule:: Xponge.forcefield.special.min
    :members:
    :undoc-members:
    :show-inheritance:

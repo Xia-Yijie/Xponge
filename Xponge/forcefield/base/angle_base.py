@@ -14,7 +14,7 @@ AngleType.Set_Property_Unit("b", "angle", "rad")
 @Molecule.Set_Save_SPONGE_Input("angle")
 def write_angle(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

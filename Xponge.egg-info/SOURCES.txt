@@ -7,7 +7,6 @@ Xponge/PROCESS.py
 Xponge/__init__.py
 Xponge/__main__.py
 Xponge/build.py
-Xponge/helper.py
 Xponge/load.py
 Xponge/process.py
 Xponge.egg-info/PKG-INFO
@@ -18,7 +17,6 @@ Xponge.egg-info/requires.txt
 Xponge.egg-info/top_level.txt
 Xponge/analysis/MDAnalysis.py
 Xponge/analysis/__init__.py
-Xponge/assign/RDKit_tools.py
 Xponge/assign/RESP.py
 Xponge/assign/__init__.py
 Xponge/forcefield/__init__.py
@@ -27,9 +25,11 @@ Xponge/forcefield/AMBER/atomic_ions.mol2
 Xponge/forcefield/AMBER/ff14SB.frcmod
 Xponge/forcefield/AMBER/ff14SB.mol2
 Xponge/forcefield/AMBER/ff14SB.py
+Xponge/forcefield/AMBER/ff14sb.py
 Xponge/forcefield/AMBER/ff19SB.frcmod
 Xponge/forcefield/AMBER/ff19SB.mol2
 Xponge/forcefield/AMBER/ff19SB.py
+Xponge/forcefield/AMBER/ff19sb.py
 Xponge/forcefield/AMBER/gaff.dat
 Xponge/forcefield/AMBER/gaff.py
 Xponge/forcefield/AMBER/gaff2.dat
@@ -89,4 +89,8 @@ Xponge/forcefield/SPECIAL/FEP.py
 Xponge/forcefield/SPECIAL/GB.py
 Xponge/forcefield/SPECIAL/MIN_BONDED.py
 Xponge/forcefield/SPECIAL/__init__.py
+Xponge/helper/__init__.py
+Xponge/helper/math.py
+Xponge/helper/namespace.py
+Xponge/helper/rdkit.py
 Xponge/tools/__init__.py

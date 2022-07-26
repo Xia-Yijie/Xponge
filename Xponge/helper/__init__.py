@@ -1,9 +1,9 @@
 """
 This **module** is used to provide help functions and classes
 """
-import sys
 import os
 import time
+import stat
 from types import MethodType, FunctionType
 from functools import partial, wraps
 from collections import OrderedDict
@@ -20,14 +20,14 @@ from .math import get_rotate_matrix, get_fibonacci_grid, guess_element_from_mass
 
 class Xdict(dict):
     """
-This **class** is used to be a dict which can give not_found_message
+    This **class** is used to be a dict which can give not_found_message
     """
     def __init__(self, *args, **kwargs):
         if "not_found_message" in kwargs:
             self.not_found_message = kwargs.pop("not_found_message")
         else:
             self.not_found_message = None
-        super().__init__(self)
+        super().__init__(*args, **kwargs)
         self.id = hash(id(self))
 
     def __getitem__(self, key):
@@ -35,25 +35,34 @@ This **class** is used to be a dict which can give not_found_message
         if toget != self.id:
             return toget
         if self.not_found_message:
-            raise KeyError(self.not_found_message.fromat(key))
+            raise KeyError(self.not_found_message.format(key))
         raise KeyError
 
 
-def xopen(filename, mode):
+def xopen(filename, flag, mode=None):
     """
-This **function** is used to open a file
+    This **function** is used to open a file
     :param filename:
+    :param flag:
     :param mode:
     :return:
     """
-    fd = os.open(filename, mode=os.O_RDWR | os.O_CREAT)
-    fo = os.fdopen(fd, mode)
+    if mode is None:
+        mode = stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU
+    if flag == "w":
+        real_flags = os.O_RDWR | os.O_CREAT | os.O_TRUNC
+    elif flag == "r":
+        real_flags = os.O_RDONLY
+    else:
+        raise NotImplementedError
+    fd = os.open(filename, real_flags, mode)
+    fo = os.fdopen(fd, flag)
     return fo
 
 
 def xprint(*args, **kwargs):
     """
-This **function** is used to print information
+    This **function** is used to print information
     :param args:
     :param kwargs:
     :return:
@@ -71,7 +80,7 @@ set_global_alternative_names(globals())
 
 class _GlobalSetting():
     """
-This **class** is used to set the global settings.
+    This **class** is used to set the global settings.
     """
     def __init__(self):
         set_attribute_alternative_names(self)
@@ -83,25 +92,25 @@ This **class** is used to set the global settings.
         self.boxspace = 3
         # 最远的成键距离，用于拓扑分析时最远分析多远
         self.farthest_bonded_force = 0
-        setattr(self, "HISMap", {"DeltaH": "", "EpsilonH": "", "HIS": {}})
+        setattr(self, "HISMap", {"DeltaH": "", "EpsilonH": "", "HIS": Xdict()})
         # 所有的成键类型力的Type
         setattr(self, "BondedForces", [])
-        setattr(self, "BondedForcesMap", {})
+        setattr(self, "BondedForcesMap", Xdict(not_found_message="bonded force {} not found"))
         # 所有虚拟原子的Type和对应的依赖的其他原子的数量
-        setattr(self, "VirtualAtomTypes", {})
+        setattr(self, "VirtualAtomTypes", Xdict(not_found_message="virtual atom type {} not found"))
         # 单位换算
         setattr(self, "UnitMapping", {"distance": {"nm": 1e-9, "A": 1e-10},
                                       "energy": {"kcal/mol": 4.184, "eV": 96.4853, "kJ/mol": 1},
                                       "charge": {"e": 1, "SPONGE": 1.0 / 18.2223},
                                       "angle": {"degree": np.pi, "rad": 180}
                                       })
-        setattr(self, "PDBResidueNameMap", {"head": {}, "tail": {}, "save": {}})
+        setattr(self, "PDBResidueNameMap", {"head": Xdict(), "tail": Xdict(), "save": Xdict()})
 
     @staticmethod
     def set_unit_transfer_function(sometype):
         """
-This **function** is used to replace  the property `BondedForces`,
-and disables the types of bonded forces except named here when building.
+        This **function** is used to replace  the property `BondedForces`,
+        and disables the types of bonded forces except named here when building.
         :param sometype:
         :return:
         """
@@ -115,8 +124,8 @@ and disables the types of bonded forces except named here when building.
     @staticmethod
     def add_unit_transfer_function(sometype):
         """
-This **function** is used to return a function to add a static method  `_unit_transfer` for a class.
-It is recommended used as a **decorator**. The origin `_unit_transfer`  method will be kept.
+        This **function** is used to return a function to add a static method  `_unit_transfer` for a class.
+        It is recommended used as a **decorator**. The origin `_unit_transfer`  method will be kept.
         :param sometype:
         :return:
         """
@@ -135,7 +144,7 @@ It is recommended used as a **decorator**. The origin `_unit_transfer`  method w
 
     def add_pdb_residue_name_mapping(self, place, pdb_name, real_name):
         """
-This **function** is used to add the residue name mapping to the property `PDBResidueNameMap`.
+        This **function** is used to add the residue name mapping to the property `PDBResidueNameMap`.
         :param place:
         :param pdb_name:
         :param real_name:
@@ -147,8 +156,8 @@ This **function** is used to add the residue name mapping to the property `PDBRe
 
     def set_invisible_bonded_forces(self, types):
         """
-This **function** is used to remove elements from the property `BondedForces`,
-and disables the corresponding types of bonded forces when building.
+        This **function** is used to remove elements from the property `BondedForces`,
+        and disables the corresponding types of bonded forces when building.
         :param types:
         :return:
         """
@@ -157,8 +166,8 @@ and disables the corresponding types of bonded forces when building.
 
     def set_visible_bonded_forces(self, types):
         """
-This **function** is used to replace  the property `BondedForces`,
-and disables the types of bonded forces except named here when building.
+        This **function** is used to replace  the property `BondedForces`,
+        and disables the types of bonded forces except named here when building.
         :param types:
         :return:
         """
@@ -172,31 +181,31 @@ globals()["GlobalSetting"] = _GlobalSetting()
 
 class Type:
     """
-This **class** is the abstract class of the types (atom types, bonded force types and so on).
+    This **class** is the abstract class of the types (atom types, bonded force types and so on).
     """
-    name = None
-    parameters = {"name": str}
-    types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
-    types_different_name = Xdict(not_found_message="{} not found. Did you import the proper force field?")
+    _name = None
+    _parameters = {"name": str}
+    _types = Xdict(not_found_message="Type {} not found. Did you import the proper force field?")
+    _types_different_name = Xdict(not_found_message="Type {} not found. Did you import the proper force field?")
 
     def __init__(self, **kwargs):
 
-        prop_fmt = type(self).parameters
+        prop_fmt = Xdict(type(self)._parameters)
 
-        self.contents = {}.fromkeys(prop_fmt.keys())
+        self.contents = Xdict().fromkeys(prop_fmt.keys())
         self.name = kwargs.pop("name")
-        assert self.name not in type(self).types.keys(), "The name '%s' has already existed in '%sType'" % (
-            self.name, type(self).name)
-        type(self).types[self.name] = self
-        type(self).types_different_name[self.name] = self
+        assert self.name not in type(self)._types.keys(), "The name '%s' has already existed in '%sType'" % (
+            self.name, self.get_class_name())
+        type(self)._types[self.name] = self
+        type(self)._types_different_name[self.name] = self
         for key, value in kwargs.items():
             assert key in self.contents.keys(), "The parameter '%s' is not one of the parameters of '%sType'" % (
-                key, type(self).name)
+                key, self.get_class_name())
             self.contents[key] = prop_fmt[key](value)
         type(self)._unit_transfer(self)
 
     def __repr__(self):
-        return "Type of " + type(self).name + ": " + self.name
+        return "Type of " + self.get_class_name() + ": " + self.name
 
     def __hash__(self):
         return hash(repr(self))
@@ -215,27 +224,27 @@ This **class** is the abstract class of the types (atom types, bonded force type
     @classmethod
     def add_property(cls, parm_fmt, parm_default=None):
         """
-This **function** is used to add a property to the class
+        This **function** is used to add a property to the class
         :param parm_fmt:
         :param parm_default:
         :return:
         """
-        cls.parameters.update(parm_fmt)
+        cls._parameters.update(parm_fmt)
         if parm_default is None:
-            parm_default = {}
-        for type_ in cls.types.values():
+            parm_default = Xdict()
+        for type_ in cls._types.values():
             type_.contents.update({key: parm_default.get(key, None) for key in parm_fmt.keys()})
 
     @classmethod
     def set_property_unit(cls, prop, unit_type, base_unit):
         """
-This **function** is used to set the unit of the property of the class
+        This **function** is used to set the unit of the property of the class
         :param prop:
         :param unit_type:
         :param base_unit:
         :return:
         """
-        assert prop in cls.parameters.keys(), "Unknown property '%s' for type '%s'" % (prop, cls.name)
+        assert prop in cls._parameters.keys(), "Unknown property '%s' for type '%s'" % (prop, cls.name)
         temp_unit_lists = unit_type.split("·")
         temp_unit_power = []
 
@@ -249,7 +258,7 @@ This **function** is used to set the unit of the property of the class
             assert unit[0] in GlobalSetting.UnitMapping.keys(), "Unknown unit type '%s'" % unit_type
 
         temp_unit_lists_units = [list(GlobalSetting.UnitMapping[unit].keys()) for unit in temp_unit_lists]
-        alls = {}
+        alls = Xdict()
         for unit_combination in product(*temp_unit_lists_units):
             unit = []
             value = 1
@@ -266,7 +275,7 @@ This **function** is used to set the unit of the property of the class
         def temp_func(current_rate, base_unit_rate):
             return lambda x: float(x) * current_rate / base_unit_rate
 
-        prop_alls = {}
+        prop_alls = Xdict()
         for unit, current_rate in alls.items():
             temp_prop = prop + '[' + unit + ']'
             prop_alls[temp_prop] = temp_func(current_rate, base_unit_rate)
@@ -275,7 +284,7 @@ This **function** is used to set the unit of the property of the class
     @classmethod
     def new_from_string(cls, string, skip_lines=0):
         """
-This **function** is used to update the types of the class
+        This **function** is used to update the types of the class
         :param string:
         :param skip_lines:
         :return:
@@ -294,27 +303,27 @@ This **function** is used to update the types of the class
             else:
                 words = line.split()
                 i = 0
-                tempkw = {}.fromkeys(kwargs.keys())
+                tempkw = Xdict().fromkeys(kwargs.keys())
                 for key in tempkw.keys():
                     tempkw[key] = words[i]
                     i += 1
                 type_already_have = False
 
-                if tempkw["name"] in cls.types_different_name.keys():
-                    tempkw["name"] = cls.types_different_name[tempkw["name"]].name
+                if tempkw["name"] in cls._types_different_name.keys():
+                    tempkw["name"] = cls._types_different_name[tempkw["name"]].name
                     type_already_have = True
                 if not type_already_have:
                     if "reset" in tempkw.keys():
                         tempkw.pop("reset")
                     cls(**tempkw)
                 else:
-                    temp = cls.types[tempkw.pop("name")]
+                    temp = cls._types[tempkw.pop("name")]
                     temp.Update(**tempkw)
 
     @classmethod
     def new_from_file(cls, filename, skip_lines=0):
         """
-This **function** is used to update the types of the class
+        This **function** is used to update the types of the class
         :param filename:
         :param skip_lines:
         :return:
@@ -325,14 +334,14 @@ This **function** is used to update the types of the class
     @classmethod
     def new_from_dict(cls, dic):
         """
-This **function** is used to update the types of the class
+        This **function** is used to update the types of the class
         :param dic:
         :return:
         """
         for name, values in dic.items():
             type_already_have = False
-            if name in cls.types_different_name.keys():
-                name = cls.types_different_name[name].name
+            if name in cls._types_different_name.keys():
+                name = cls._types_different_name[name].name
                 type_already_have = True
             if not type_already_have:
                 if "reset" in values.keys():
@@ -340,8 +349,57 @@ This **function** is used to update the types of the class
                 values["name"] = name
                 cls(**values)
             else:
-                temp = cls.types[name]
+                temp = cls._types[name]
                 temp.Update(**values)
+
+    @classmethod
+    def get_class_name(cls):
+        """
+
+        :param name:
+        :return:
+        """
+        return cls._name
+
+    @classmethod
+    def clear_type(cls, name = None):
+        """
+
+        :param name:
+        :return:
+        """
+        if name is None:
+            cls._types.clear()
+            cls._types_different_name.clear()
+        else:
+            cls._types.pop(name)
+
+    @classmethod
+    def set_type(cls, name, toset):
+        """
+
+        :param name:
+        :param toset:
+        :return:
+        """
+        cls._types[name] = toset
+
+    @classmethod
+    def get_type(cls, name):
+        """
+
+        :param name:
+        :return:
+        """
+        return cls._types[name]
+
+    @classmethod
+    def get_all_types(cls):
+        """
+
+        :return:
+        """
+        return cls._types
 
     @staticmethod
     def _unit_transfer(instance):
@@ -358,24 +416,26 @@ This **function** is used to update the types of the class
 
     def update(self, **kwargs):
         """
-This **function** is used to update the properties of the instance
+        This **function** is used to update the properties of the instance
         :param kwargs:
         :return:
         """
         for key, value in kwargs.items():
-            assert key in self.contents.keys()
-            self.contents[key] = type(self).parameters[key](value)
+            type_func = type(self)._parameters.get(key, None)
+            if not type_func:
+                raise KeyError(f"{key} is not a property of {type(self)._name}")
+            self.contents[key] = type_func(value)
         type(self)._unit_transfer(self)
 
 
 class AtomType(Type):
     """
-This **class** is a subclass of Type, for atom types
+    This **class** is a subclass of Type, for atom types
     """
-    name = "Atom"
-    parameters = {"name": str, "x": float, "y": float, "z": float}
-    types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
-    types_different_name = Xdict(not_found_message="{} not found. Did you import the proper force field?")
+    _name = "Atom"
+    _parameters = {"name": str, "x": float, "y": float, "z": float}
+    _types = Xdict(not_found_message="Atom Type {} not found. Did you import the proper force field?")
+    _types_different_name = Xdict(not_found_message="Atom Type {} not found. Did you import the proper force field?")
 
 
 set_classmethod_alternative_names(AtomType)
@@ -385,45 +445,45 @@ AtomType.New_From_String("name\nUNKNOWN")
 
 class ResidueType(Type):
     """
-This **class** is a subclass of Type, for residue types
+    This **class** is a subclass of Type, for residue types
     """
-    name = "Residue"
-    parameters = {"name": str}
-    types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
-    types_different_name = Xdict(not_found_message="{} not found. Did you import the proper force field?")
+    _name = "Residue"
+    _parameters = {"name": str}
+    _types = Xdict(not_found_message="Residue Type {} not found. Did you import the proper force field?")
+    _types_different_name = Xdict(not_found_message="Residue Type {} not found. Did you import the proper force field?")
 
     def __init__(self, **kwargs):
         # 力场构建相关
-        self.contents = {}
-        self.connectivity = {}
+        self.contents = Xdict()
+        self.connectivity = Xdict()
         self.built = False
-        self.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+        self.bonded_forces = {frc._name: [] for frc in GlobalSetting.BondedForces}
 
         # 索引相关
-        self._name2atom = {}
+        self._name2atom = Xdict()
         self.atoms = []
-        self._atom2name = {}
-        self._atom2index = {}
-        self._name2index = {}
+        self._atom2name = Xdict()
+        self._atom2index = Xdict()
+        self._name2index = Xdict()
 
         super().__init__(**kwargs)
         # 连接功能
         self.link = {"head": None, "tail": None, "head_next": None, "tail_next": None,
                      "head_length": 1.5, "tail_length": 1.5, "head_link_conditions": [], "tail_link_conditions": []}
-        self.connect_atoms = {}
+        self.connect_atoms = Xdict()
 
         set_attribute_alternative_names(self)
 
     def __getattribute__(self, attr):
         if attr not in ("_name2atom", "contents") and attr in self._name2atom.keys():
             return self._name2atom[attr]
-        if attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
+        if AtomType._parameters.get(attr, None) == float:
             return np.sum([getattr(atom, attr) for atom in self.atoms])
         return super().__getattribute__(attr)
 
     @property
     def head(self):
-        return self.link["head"]
+        return self.link.get("head")
 
     @head.setter
     def head(self, atom):
@@ -431,7 +491,7 @@ This **class** is a subclass of Type, for residue types
 
     @property
     def tail(self):
-        return self.link["tail"]
+        return self.link.get("tail")
 
     @tail.setter
     def tail(self, atom):
@@ -439,7 +499,7 @@ This **class** is a subclass of Type, for residue types
 
     @property
     def head_next(self):
-        return self.link["head_next"]
+        return self.link.get("head_next")
 
     @head_next.setter
     def head_next(self, atom):
@@ -447,7 +507,7 @@ This **class** is a subclass of Type, for residue types
 
     @property
     def tail_next(self):
-        return self.link["tail_next"]
+        return self.link.get("tail_next")
 
     @tail_next.setter
     def tail_next(self, atom):
@@ -455,7 +515,7 @@ This **class** is a subclass of Type, for residue types
 
     @property
     def head_length(self):
-        return self.link["head_length"]
+        return self.link.get("head_length")
 
     @head_length.setter
     def head_length(self, atom):
@@ -463,7 +523,7 @@ This **class** is a subclass of Type, for residue types
 
     @property
     def tail_length(self):
-        return self.link["tail_length"]
+        return self.link.get("tail_length")
 
     @tail_length.setter
     def tail_length(self, atom):
@@ -471,15 +531,15 @@ This **class** is a subclass of Type, for residue types
 
     @property
     def head_link_conditions(self):
-        return self.link["head_link_conditions"]
+        return self.link.get("head_link_conditions")
 
     @property
     def tail_link_conditions(self):
-        return self.link["tail_link_conditions"]
+        return self.link.get("tail_link_conditions")
 
     def name2atom(self, name):
         """
-This **function** convert an atom name to an AtomType object
+        This **function** convert an atom name to an AtomType object
         :param name:
         :return:
         """
@@ -487,7 +547,7 @@ This **function** convert an atom name to an AtomType object
 
     def atom2index(self, name):
         """
-This **function** convert an AtomType object to its index
+        This **function** convert an AtomType object to its index
         :param name:
         :return:
         """
@@ -495,7 +555,7 @@ This **function** convert an AtomType object to its index
 
     def name2index(self, name):
         """
-This **function** convert an atom name to its index
+        This **function** convert an atom name to its index
         :param name:
         :return:
         """
@@ -503,7 +563,7 @@ This **function** convert an atom name to its index
 
     def add_atom(self, name, atom_type, x, y, z):
         """
-This **function** is used to add an atom to the residue type.
+        This **function** is used to add an atom to the residue type.
         :param name:
         :param atom_type:
         :param x:
@@ -525,7 +585,7 @@ This **function** is used to add an atom to the residue type.
 
     def add_connectivity(self, atom0, atom1):
         """
-This **function** is used to add the connectivity between two atoms to the residue type.
+        This **function** is used to add the connectivity between two atoms to the residue type.
         :param atom0:
         :param atom1:
         :return:
@@ -539,20 +599,20 @@ This **function** is used to add the connectivity between two atoms to the resid
 
     def add_bonded_force(self, bonded_force_entity, typename=None):
         """
-This **function** is used to add the bonded force to the residue type.
+        This **function** is used to add the bonded force to the residue type.
         :param bonded_force_entity:
         :param typename:
         :return:
         """
         if typename is None:
-            typename = type(bonded_force_entity).name
+            typename = bonded_force_entity.get_class_name()
         if typename not in self.bonded_forces.keys():
             self.bonded_forces[typename] = []
         self.bonded_forces[typename].append(bonded_force_entity)
 
     def deepcopy(self, name, forcopy=None):
         """
-This **function** is used to deep copy the instance
+        This **function** is used to deep copy the instance
         :param name:
         :param forcopy:
         :return:
@@ -566,7 +626,7 @@ This **function** is used to deep copy the instance
         for atom in self.atoms:
             new_restype.Add_Atom(atom.name, atom.type, atom.x, atom.y, atom.z)
             atom.copied[forcopy] = new_restype.atoms[-1]
-            atom.copied[forcopy].contents = {}
+            atom.copied[forcopy].contents = Xdict()
             atom.copied[forcopy].contents.update(atom.contents)
 
         for atom, connect_set in self.connectivity.items():
@@ -594,22 +654,22 @@ This **function** is used to deep copy the instance
 
 class Entity:
     """
-This **class** is the abstract class of the entities (atoms, bonded forces, residues and so on).
+    This **class** is the abstract class of the entities (atoms, bonded forces, residues and so on).
     """
-    count = 0
-    name = None
+    _count = 0
+    _name = None
 
     def __init__(self, entity_type, name=None):
         self.contents = {**entity_type.contents}
-        self.count = type(self).count
+        self._count = type(self)._count
         if not name:
             name = entity_type.name
-        type(self).count += 1
+        type(self)._count += 1
         self.name = name
         self.type = entity_type
 
     def __repr__(self):
-        return "Entity of " + type(self).name + ": " + self.name + "(" + str(self.count) + ")"
+        return "Entity of " + type(self)._name + ": " + self.name + "(" + str(self._count) + ")"
 
     def __hash__(self):
         return hash(repr(self))
@@ -625,26 +685,34 @@ This **class** is the abstract class of the entities (atoms, bonded forces, resi
         else:
             super().__setattr__(attr, value)
 
+    @classmethod
+    def get_class_name(cls):
+        """
+
+        :return:
+        """
+        return cls._name
+
     def update(self, **kwargs):
         """
-This **function** is used to update the properties of the instance
+        This **function** is used to update the properties of the instance
         :param kwargs:
         :return:
         """
         for key, value in kwargs.items():
             assert key in self.contents.keys()
-            self.contents[key] = type(self.type).parameters[key](value)
+            self.contents[key] = getattr(type(self.type), "_parameters")[key](value)
         unit_transfer = getattr(type(self.type), "_unit_transfer")
         unit_transfer(self)
 
 
 class Atom(Entity):
     """
-This **class** is a subclass of Entity, for atoms
+    This **class** is a subclass of Entity, for atoms
 
     """
-    name = "Atom"
-    count = 0
+    _name = "Atom"
+    _count = 0
 
     def __init__(self, entity_type, name=None):
         # 力场基本信息
@@ -661,7 +729,7 @@ This **class** is a subclass of Entity, for atoms
         self.linked_atoms["extra_excluded_atoms"] = set()
 
         # 复制信息
-        self.copied = {}
+        self.copied = Xdict()
 
         set_attribute_alternative_names(self)
 
@@ -671,7 +739,7 @@ This **class** is a subclass of Entity, for atoms
 
     def deepcopy(self, forcopy=None):
         """
-This **function** is used to deep copy the instance
+        This **function** is used to deep copy the instance
         :param forcopy:
         :return:
         """
@@ -683,7 +751,7 @@ This **function** is used to deep copy the instance
 
     def link_atom(self, link_type, atom):
         """
-This **function** is used to link atoms for building
+        This **function** is used to link atoms for building
         :param link_type:
         :param atom:
         :return:
@@ -694,7 +762,7 @@ This **function** is used to link atoms for building
 
     def extra_exclude_atom(self, atom):
         """
-This **function** is used to extra exclude one atom
+        This **function** is used to extra exclude one atom
         :param atom:
         :return:
         """
@@ -703,7 +771,7 @@ This **function** is used to extra exclude one atom
 
     def extra_exclude_atoms(self, lists):
         """
-This **function** is used to extra exclude a list of atoms
+        This **function** is used to extra exclude a list of atoms
         :param lists:
         :return:
         """
@@ -716,20 +784,20 @@ set_classmethod_alternative_names(Atom)
 
 class Residue(Entity):
     """
-This **class** is a subclass of Entity, for residues
+    This **class** is a subclass of Entity, for residues
     """
-    name = "Residue"
-    count = 0
+    _name = "Residue"
+    _count = 0
 
     def __init__(self, entity_type, name=None, directly_copy=False):
         super().__init__(entity_type, name)
         self.atoms = []
-        self._name2atom = {}
-        self._atom2name = {}
-        self._atom2index = {}
-        self._name2index = {}
-        self.connectivity = {}
-        self.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+        self._name2atom = Xdict()
+        self._atom2name = Xdict()
+        self._atom2index = Xdict()
+        self._name2index = Xdict()
+        self.connectivity = Xdict()
+        self.bonded_forces = {frc._name: [] for frc in GlobalSetting.BondedForces}
         self.built = False
         if directly_copy:
             forcopy = hash(int(time.time()))
@@ -745,13 +813,13 @@ This **class** is a subclass of Entity, for residues
     def __getattribute__(self, attr):
         if attr not in ("_name2atom", "contents") and attr in self._name2atom.keys():
             return self._name2atom[attr]
-        if attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
+        if AtomType._parameters.get(attr, None) == float:
             return np.sum([getattr(atom, attr) for atom in self.atoms])
         return super().__getattribute__(attr)
 
     def name2atom(self, name):
         """
-This **function** convert an atom name to an AtomType object
+        This **function** convert an atom name to an AtomType object
         :param name:
         :return:
         """
@@ -759,7 +827,7 @@ This **function** convert an atom name to an AtomType object
 
     def atom2index(self, name):
         """
-This **function** convert an atom name to an AtomType object
+        This **function** convert an atom name to an AtomType object
         :param name:
         :return:
         """
@@ -767,7 +835,7 @@ This **function** convert an atom name to an AtomType object
 
     def name2index(self, name):
         """
-This **function** convert an atom name to an AtomType object
+        This **function** convert an atom name to an AtomType object
         :param name:
         :return:
         """
@@ -775,7 +843,7 @@ This **function** convert an atom name to an AtomType object
 
     def add_atom(self, name, atom_type=None, x=None, y=None, z=None):
         """
-This **function** is used to add an atom to the residue type.
+        This **function** is used to add an atom to the residue type.
         :param name:
         :param atom_type:
         :param x:
@@ -813,7 +881,7 @@ This **function** is used to add an atom to the residue type.
 
     def add_connectivity(self, atom0, atom1):
         """
-This **function** is used to add the connectivity between two atoms to the residue entity.
+        This **function** is used to add the connectivity between two atoms to the residue entity.
         :param atom0:
         :param atom1:
         :return:
@@ -829,17 +897,17 @@ This **function** is used to add the connectivity between two atoms to the resid
 
     def add_bonded_force(self, bonded_force_entity):
         """
-This **function** is used to add the bonded force to the residue entity.
+        This **function** is used to add the bonded force to the residue entity.
         :param bonded_force_entity:
         :return:
         """
-        if type(bonded_force_entity).name not in self.bonded_forces.keys():
-            self.bonded_forces[type(bonded_force_entity).name] = []
-        self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
+        if bonded_force_entity.get_class_name() not in self.bonded_forces.keys():
+            self.bonded_forces[bonded_force_entity.get_class_name()] = []
+        self.bonded_forces[bonded_force_entity.get_class_name()].append(bonded_force_entity)
 
     def add_missing_atoms(self):
         """
-This **function** is used to add the missing atoms from the ResidueType to the residue entity.
+        This **function** is used to add the missing atoms from the ResidueType to the residue entity.
         :return:
         """
         t = {atom.name for atom in self.atoms}
@@ -866,7 +934,7 @@ This **function** is used to add the missing atoms from the ResidueType to the r
 
     def deepcopy(self, forcopy=None):
         """
-This **function** is used to deep copy the instance
+        This **function** is used to deep copy the instance
         :param forcopy:
         :return:
         """
@@ -885,14 +953,14 @@ set_classmethod_alternative_names(Residue)
 
 class ResidueLink:
     """
-This **class** is a class for the link between residues
+    This **class** is a class for the link between residues
     """
 
     def __init__(self, atom1, atom2):
         self.atom1 = atom1
         self.atom2 = atom2
         self.built = False
-        self.bonded_forces = {frc.name: [] for frc in GlobalSetting.BondedForces}
+        self.bonded_forces = {frc._name: [] for frc in GlobalSetting.BondedForces}
         set_attribute_alternative_names(self)
 
     def __repr__(self):
@@ -903,17 +971,17 @@ This **class** is a class for the link between residues
 
     def add_bonded_force(self, bonded_force_entity):
         """
-This **function** is used to add the bonded force to the residue link
+        This **function** is used to add the bonded force to the residue link
         :param bonded_force_entity:
         :return:
         """
-        if type(bonded_force_entity).name not in self.bonded_forces.keys():
-            self.bonded_forces[type(bonded_force_entity).name] = []
-        self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
+        if bonded_force_entity.get_class_name() not in self.bonded_forces.keys():
+            self.bonded_forces[bonded_force_entity.get_class_name()] = []
+        self.bonded_forces[bonded_force_entity.get_class_name()].append(bonded_force_entity)
 
     def deepcopy(self, forcopy):
         """
-This **function** is used to deep copy the instance
+        This **function** is used to deep copy the instance
         :param forcopy:
         :return:
         """
@@ -924,22 +992,22 @@ This **function** is used to deep copy the instance
 
 class Molecule:
     """
-This **class** is a class for molecules
+    This **class** is a class for molecules
     """
-    all = {}
-    save_functions = {}
+    _all = Xdict()
+    _save_functions = Xdict()
 
     def __init__(self, name):
         if isinstance(name, ResidueType):
             self.name = name.name
         else:
             self.name = name
-        Molecule.all[self.name] = self
+        Molecule._all[self.name] = self
         self.residues = []
         self.atoms = []
         self.atom_index = []
         self.residue_links = []
-        self.bonded_forces = {}
+        self.bonded_forces = Xdict()
         self.built = False
         self.box_length = None
         self.box_angle = [90.0, 90.0, 90.0]
@@ -955,21 +1023,21 @@ This **class** is a class for molecules
         return "Entity of Molecule: " + self.name
 
     def __getattribute__(self, attr):
-        if attr in AtomType.parameters.keys() and AtomType.parameters[attr] == float:
+        if AtomType._parameters.get(attr, None) == float:
             return np.sum([getattr(atom, attr) for res in self.residues for atom in res.atoms])
         return super().__getattribute__(attr)
 
     @classmethod
     def set_save_sponge_input(cls, keyname):
         """
-This **function** is used to set the function when `Save_SPONGE_Input`.
-It is recommended used as a **decorator**.
+        This **function** is used to set the function when `Save_SPONGE_Input`.
+        It is recommended used as a **decorator**.
         :param keyname:
         :return:
         """
 
         def wrapper(func):
-            cls.save_functions[keyname] = func
+            cls._save_functions[keyname] = func
             return func
 
         return wrapper
@@ -977,11 +1045,11 @@ It is recommended used as a **decorator**.
     @classmethod
     def del_save_sponge_input(cls, keyname):
         """
-This **function** is used to delete the function when `Save_SPONGE_Input`.
+        This **function** is used to delete the function when `Save_SPONGE_Input`.
         :param keyname:
         :return:
         """
-        cls.save_functions.pop(keyname)
+        cls._save_functions.pop(keyname)
 
     @staticmethod
     def _set_friends_in_different_residue(molecule, atom1, atom2):
@@ -1018,19 +1086,19 @@ This **function** is used to delete the function when `Save_SPONGE_Input`.
         :return:
         """
         assert typeatom2 in restype.connectivity[typeatom1]
-        index_dict = {}.fromkeys(restype.connectivity[typeatom1], typeatom1)
+        index_dict = Xdict().fromkeys(restype.connectivity[typeatom1], typeatom1)
         if typeatom2 in index_dict.keys():
             index_dict.pop(typeatom2)
 
         while index_dict:
-            index_next = {}
+            index_next = Xdict()
             for atom0, from_atom in index_dict.items():
                 if atom0.name == restype.head:
                     head = toset
                 elif atom0.name == restype.tail:
                     tail = toset
                 atom1_friends.append(molecule.atom_index[resatom_(atom0)])
-                index_temp = {}.fromkeys(restype.connectivity[atom0], atom0)
+                index_temp = Xdict().fromkeys(restype.connectivity[atom0], atom0)
                 index_temp.pop(from_atom)
                 if typeatom2 in index_temp.keys():
                     index_temp.pop(typeatom2)
@@ -1040,7 +1108,7 @@ This **function** is used to delete the function when `Save_SPONGE_Input`.
 
     def add_residue(self, residue):
         """
-This **function** is used to add a residue to the molecule
+        This **function** is used to add a residue to the molecule
         :param residue:
         :return:
         """
@@ -1053,17 +1121,17 @@ This **function** is used to add a residue to the molecule
 
     def add_bonded_force(self, bonded_force_entity):
         """
-This **function** is used to add the bonded force to the molecule
+        This **function** is used to add the bonded force to the molecule
         :param bonded_force_entity:
         :return:
         """
-        if type(bonded_force_entity).name not in self.bonded_forces.keys():
-            self.bonded_forces[type(bonded_force_entity).name] = []
-        self.bonded_forces[type(bonded_force_entity).name].append(bonded_force_entity)
+        if bonded_force_entity.get_class_name() not in self.bonded_forces.keys():
+            self.bonded_forces[bonded_force_entity.get_class_name()] = []
+        self.bonded_forces[bonded_force_entity.get_class_name()].append(bonded_force_entity)
 
     def add_residue_link(self, atom1, atom2):
         """
-This **function** is used to add the connectivity between two atoms of two residues in the molecule.
+        This **function** is used to add the connectivity between two atoms of two residues in the molecule.
         :param atom1:
         :param atom2:
         :return:
@@ -1073,7 +1141,7 @@ This **function** is used to add the connectivity between two atoms of two resid
 
     def add_missing_atoms(self):
         """
-This **function** is used to add the missing atoms from the ResidueType instances to the residues in the molecule.
+        This **function** is used to add the missing atoms from the ResidueType instances to the molecule.
         :return:
         """
         for residue in self.residues:
@@ -1081,7 +1149,7 @@ This **function** is used to add the missing atoms from the ResidueType instance
 
     def deepcopy(self):
         """
-This **function** is used to deep copy the instance
+        This **function** is used to deep copy the instance
         :return:
         """
         new_molecule = Molecule(self.name)
@@ -1115,7 +1183,7 @@ This **function** is used to deep copy the instance
 
     def get_atom_coordinates(self):
         """
-This **function** is used to get the atom coordinates
+        This **function** is used to get the atom coordinates
         :return:
         """
         self.atoms = []
@@ -1127,13 +1195,13 @@ This **function** is used to get the atom coordinates
 
     def divide_into_two_parts(self, atom1, atom2):
         """
-This **function** is used to divide the molecule into two parts
+        This **function** is used to divide the molecule into two parts
         :param atom1:
         :param atom2:
         :return:
         """
         if atom1.residue != atom2.residue:
-            atom1_friends, atom2_friends = self._set_friends_in_different_residue(self, atom1, atom2)
+            atom1_friends_np, atom2_friends_np = self._set_friends_in_different_residue(self, atom1, atom2)
         else:
             atom1_friends = []
             atom2_friends = []
@@ -1571,7 +1639,7 @@ del _imolecule_or
 
 def generate_new_bonded_force_type(type_name, atoms, properties, is_compulsory, is_multiple=None):
     """
-This **function** is used to generate the subclasses of the Type and the Entity for the bonded force
+    This **function** is used to generate the subclasses of the Type and the Entity for the bonded force
     :param type_name:
     :param atoms:
     :param properties:
@@ -1582,10 +1650,10 @@ This **function** is used to generate the subclasses of the Type and the Entity 
 
     class BondedForceEntity(Entity):
         """
-This **class** is a subclass of Entity, for bonded forces
+        This **class** is a subclass of Entity, for bonded forces
         """
-        name = type_name
-        count = 0
+        _name = type_name
+        _count = 0
 
         def __init__(self, atoms, entity_type, name=None):
             super().__init__(entity_type, name)
@@ -1593,7 +1661,7 @@ This **class** is a subclass of Entity, for bonded forces
 
         def deepcopy(self, forcopy):
             """
-This **function** is used to deep copy the instance
+            This **function** is used to deep copy the instance
             :return:
             """
             atoms_ = [atom.copied[forcopy] for atom in self.atoms]
@@ -1605,27 +1673,27 @@ This **function** is used to deep copy the instance
 
     class BondedForceType(Type):
         """
-This **class** is a subclass of Type, for bonded force types
+        This **class** is a subclass of Type, for bonded force types
         """
-        name = type_name
+        _name = type_name
         topology_like = temp
         compulsory = is_compulsory
         multiple = is_multiple
         atom_numbers = len(atoms.split("-"))
         topology_matrix = [[temp[i] - j if i > j else 1 for i in range(len(atoms.split("-")))] for j in
                            range(len(atoms.split("-")))]
-        parameters = {
+        _parameters = {
             "name": str,
         }
         entity = BondedForceEntity
-        types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
-        types_different_name = Xdict(not_found_message="{} not found. Did you import the proper force field?")
+        _types = Xdict(not_found_message="Bonded Force Type {} not found. Did you import the proper force field?")
+        _types_different_name = Xdict(not_found_message="Bonded Force Type {} not found.\
+ Did you import the proper force field?")
 
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-
             for name in type(self).Same_Force(self.name):
-                type(self).types_different_name[name] = self
+                type(self)._types_different_name[name] = self
 
             if type(self).multiple:
                 for key in self.multiple:
@@ -1636,7 +1704,7 @@ This **class** is a subclass of Type, for bonded force types
         @classmethod
         def same_force(cls, atom_list):
             """
-This **function** receives a list of atoms and output all the same force permutations for the list
+            This **function** receives a list of atoms and output all the same force permutations for the list
             :param atom_list:
             :return:
             """
@@ -1677,7 +1745,7 @@ This **function** receives a list of atoms and output all the same force permuta
     UNKNOWNS""")
 
     GlobalSetting.BondedForces.append(BondedForceType)
-    GlobalSetting.BondedForcesMap[BondedForceType.name] = BondedForceType
+    GlobalSetting.BondedForcesMap[getattr(BondedForceType,"_name")] = BondedForceType
     for i in atoms.split("-"):
         if int(i) > GlobalSetting.farthest_bonded_force:
             GlobalSetting.farthest_bonded_force = int(i)
@@ -1687,7 +1755,7 @@ This **function** receives a list of atoms and output all the same force permuta
 
 def generate_new_pairwise_force_type(type_name, properties):
     """
-This **function** is used to generate the subclasses of the Type and the Entity for the pairwise force
+    This **function** is used to generate the subclasses of the Type and the Entity for the pairwise force
     :param type_name:
     :param properties:
     :return:
@@ -1695,13 +1763,13 @@ This **function** is used to generate the subclasses of the Type and the Entity 
 
     class PairwiseForceType(Type):
         """
-This **class** is a subclass of Type, for pairwise force types
+        This **class** is a subclass of Type, for pairwise force types
         """
-        name = type_name
-        parameters = {
+        _name = type_name
+        _parameters = {
             "name": str,
         }
-        types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
+        _types = Xdict(not_found_message="{} not found. Did you import the proper force field?")
 
     set_classmethod_alternative_names(PairwiseForceType)
     PairwiseForceType.Add_Property(properties)

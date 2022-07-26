@@ -14,7 +14,7 @@ BondType.Set_Property_Unit("b", "distance", "A")
 @Molecule.Set_Save_SPONGE_Input("bond")
 def write_bond(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

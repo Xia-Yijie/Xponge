@@ -27,7 +27,7 @@ ImproperType.Set_Property_Unit("phi0", "angle", "rad")
 @ImproperType.Set_Same_Force_Function
 def improper_same_force(_, atom_list):
     """
-This **function** is used to return the same force type for an atom list
+    This **function** is used to return the same force type for an atom list
     :param _:
     :param atom_list:
     :return:
@@ -41,7 +41,7 @@ This **function** is used to return the same force type for an atom list
             atom_permutation.insert(2, center_atom)
             temp.append("-".join(atom_permutation))
     else:
-        atom_list_temp = [atom for atom in atom_list]
+        atom_list_temp = list(atom_list)
         center_atom = atom_list_temp.pop(2)
         for atom_permutation in permutations(atom_list_temp):
             atom_permutation = list(atom_permutation)
@@ -53,7 +53,7 @@ This **function** is used to return the same force type for an atom list
 @Molecule.Set_Save_SPONGE_Input("dihedral")
 def write_dihedral(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

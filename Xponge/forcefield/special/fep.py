@@ -1,7 +1,7 @@
 """
 This **module** gives the basic functions for fep calculations
 """
-from ...helper import source, set_global_alternative_names
+from ...helper import source, set_global_alternative_names, Xdict
 from ..base import lj_base, exclude_base, bond_base, angle_base, dihedral_base, nb14_extra_base
 
 source("....")
@@ -26,8 +26,8 @@ def _find_common_forces(forcetype, aforces, bforces, mol_b2mol_a):
     :return:
     """
     toret = []
-    temp_map = {}
-    temp_map2 = {}
+    temp_map = Xdict()
+    temp_map2 = Xdict()
     for force in bforces:
         temp_map2[force] = True
         for fatoms in forcetype.Same_Force(force.atoms):
@@ -43,7 +43,7 @@ def _find_common_forces(forcetype, aforces, bforces, mol_b2mol_a):
     return toret
 
 
-FEP_BONDED_FORCE_MERGE_RULE = {}
+FEP_BONDED_FORCE_MERGE_RULE = Xdict()
 TINY = 1e-10 / 18.2223
 
 
@@ -238,7 +238,7 @@ def _dihedral_merge_rule(mol_r, mol_a, mol_b, forcetype, rforces, bforces, lambd
         else:
             sameforce = f_r.multiple_numbers == f_b.multiple_numbers
             if sameforce:
-                check_map = {}
+                check_map = Xdict()
                 for i in range(f_b.multiple_numbers):
                     check_map[f_b.periodicitys[i]] = f_b.phi0s[i]
                 for i in range(f_r.multiple_numbers):
@@ -340,9 +340,9 @@ def save_soft_core_lj():
         :return:
         """
         lj_types = []
-        lj_typemap = {}
+        lj_typemap = Xdict()
         lj_typeb = []
-        lj_typemapb = {}
+        lj_typemapb = Xdict()
         for atom in self.atoms:
             if atom.LJtype not in lj_typemap.keys():
                 lj_typemap[atom.LJtype] = len(lj_types)
@@ -427,7 +427,7 @@ def intramolecule_nb_to_nb14(mol_a, perturbing_residues):
                     if atom_a2 not in a_exclude[atom_a1]:
                         temp_a, temp_b = nb14_extra_base.Get_NB14EXTRA_AB(atom_a1, atom_a2)
                         new_force = nb14_extra_base.NB14Type.entity([atom_a1, atom_a2],
-                                                                    nb14_extra_base.NB14Type.types["UNKNOWNS"])
+                                                                    nb14_extra_base.NB14Type.get_type("UNKNOWNS"))
                         new_force.A = temp_a
                         new_force.B = temp_b
                         new_force.kee = 1
@@ -451,7 +451,7 @@ def get_free_molecule(mol_a, perturbing_residues, intra_fep=False):
     BUILD.Build_Bonded_Force(mol_a)
     nb14_extra_base.NB14_To_NB14EXTRA(mol_a)
     mol_b = mol_a.deepcopy()
-    mol_a2mol_b = {}
+    mol_a2mol_b = Xdict()
     for i, atom_a in enumerate(mol_a.atoms):
         mol_a2mol_b[atom_a] = mol_b.atoms[i]
 
@@ -475,7 +475,7 @@ def _correct_residueb_coordinates(residue_a, residue_b, matchmap):
     :return:
     """
     uncertified = set([])
-    certified = {}
+    certified = Xdict()
     for i, atom in enumerate(residue_b.atoms):
         if i in matchmap.keys():
             temp_atom = residue_a.atoms[matchmap[i]]
@@ -622,7 +622,7 @@ def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b, tmcs=60):
     rdmol_a = assign_to_rdmol(assign_a, True)
     rdmol_b = assign_to_rdmol(assign_b, True)
 
-    atom_type_dict = {}
+    atom_type_dict = Xdict()
     insert_atom_type_to_rdmol(rdmol_a, residue_a, assign_a, atom_type_dict)
     insert_atom_type_to_rdmol(rdmol_b, residue_b, assign_b, atom_type_dict)
     print("FINDING MAXIMUM COMMON SUBSTRUCTURE")
@@ -709,7 +709,7 @@ def merge_force_field(mol_a, mol_b, default_lambda, specific_lambda=None, intra_
     :return:
     """
     if specific_lambda is None:
-        specific_lambda = {}
+        specific_lambda = Xdict()
     BUILD.Build_Bonded_Force(mol_a)
     BUILD.Build_Bonded_Force(mol_b)
 
@@ -717,14 +717,14 @@ def merge_force_field(mol_a, mol_b, default_lambda, specific_lambda=None, intra_
     nb14_extra_base.NB14_To_NB14EXTRA(mol_b)
 
     assert len(mol_a.atoms) == len(mol_b.atoms)
-    mol_a2mol_b = {}
+    mol_a2mol_b = Xdict()
     for i, atom_a in enumerate(mol_a.atoms):
         mol_a2mol_b[atom_a] = mol_b.atoms[i]
 
     mol_r = mol_a.deepcopy()
 
-    mol_r2mol_a = {}
-    mol_r2mol_b = {}
+    mol_r2mol_a = Xdict()
+    mol_r2mol_b = Xdict()
     for i, atom_ret in enumerate(mol_r.atoms):
         mol_r2mol_a[atom_ret] = mol_a.atoms[i]
         mol_r2mol_b[atom_ret] = mol_b.atoms[i]
@@ -741,12 +741,13 @@ def merge_force_field(mol_a, mol_b, default_lambda, specific_lambda=None, intra_
 
     for forcename, rforces in mol_r.bond_baseed_forces.items():
         if forcename in FEP_BONDED_FORCE_MERGE_RULE.keys():
-            temp_lambda = specific_lambda.get(FEP_BONDED_FORCE_MERGE_RULE[forcename]["lambda_name"], default_lambda)
+            temp_lambda = specific_lambda.get(FEP_BONDED_FORCE_MERGE_RULE[forcename].get("lambda_name"),
+                                              default_lambda)
             bforces = mol_b.bond_baseed_forces.get(forcename, [])
-            FEP_BONDED_FORCE_MERGE_RULE[forcename]["merge_function"](mol_r, mol_a, mol_b,
-                                                                     GlobalSetting.BondedForcesMap[forcename],
-                                                                     rforces, bforces, temp_lambda, mol_r2mol_a,
-                                                                     mol_a2mol_r, mol_r2mol_b, mol_b2mol_r)
+            FEP_BONDED_FORCE_MERGE_RULE[forcename].get("merge_function")(mol_r, mol_a, mol_b,
+                                                                         GlobalSetting.BondedForcesMap[forcename],
+                                                                         rforces, bforces, temp_lambda, mol_r2mol_a,
+                                                                         mol_a2mol_r, mol_r2mol_b, mol_b2mol_r)
         elif rforces:
             raise NotImplementedError(forcename + " is not supported for FEP to merge force field yet.")
 

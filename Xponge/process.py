@@ -204,8 +204,8 @@ def solvent_replace(molecule, select, toreplace):
     :return:
     """
     solvents = []
-    for i in range(len(molecule.residues)):
-        if select(molecule.residues[i]):
+    for i, resi in enumerate(molecule.residues):
+        if select(resi):
             solvents.append(i)
 
     np.random.shuffle(solvents)

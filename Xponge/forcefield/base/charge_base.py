@@ -11,7 +11,7 @@ AtomType.Set_Property_Unit("charge", "charge", "e")
 @Molecule.Set_Save_SPONGE_Input("charge")
 def write_charge(self):
     """
-This **function** is used to write SPONGE input file
+    This **function** is used to write SPONGE input file
     :param self:
     :return:
     """

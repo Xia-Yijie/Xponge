@@ -25,7 +25,7 @@ HW-OW-HW  0   0
 OW-HW-HW  0   0
 """)
 
-lj_base.lj_type.New_From_String(r"""
+lj_base.LJType.New_From_String(r"""
 name    epsilon[kcal/mol]   rmin[A]
 OW-OW   0.1553              1.7767
 HW-HW   0                   0
@@ -72,3 +72,4 @@ Xprint("""Reference for spce:
     The Journal of Physical Chemistry B 2015 119 (3), 883-895
     DOI: 10.1021/jp505875v  
 """)
+# pylint:disable=undefined-variable
