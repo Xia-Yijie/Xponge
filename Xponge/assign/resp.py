@@ -8,7 +8,7 @@ except ModuleNotFoundError as exc:
         "To calculate RESP charge, 'pyscf' package needed. Maybe you need 'pip install pyscf'") from exc
 
 import numpy as np
-from ..helper import get_fibonacci_grid, Xprint, set_dict_value_alternative_name, Xdict
+from ..helper import get_fibonacci_grid, Xprint, Xdict, set_global_alternative_names
 
 # Pay Attention To !!!UNIT!!!
 default_radius = {"H": 1.2, "C": 1.5, "N": 1.5,
@@ -262,22 +262,22 @@ def resp_fit(assign, basis="6-31g*", opt=False, charge=None, spin=0, extra_equiv
              grid_density=6, grid_cell_layer=4,
              radius=None, a1=0.0005, a2=0.001, two_stage=True, only_esp=False):
     """
+    This **function** fits the RESP partial charge for an Assign instance
 
-    :param assign:
-    :param basis:
-    :param opt:
-    :param opt_params:
-    :param charge:
-    :param spin:
-    :param extra_equivalence:
-    :param grid_density:
-    :param grid_cell_layer:
-    :param radius:
-    :param a1:
-    :param a2:
-    :param two_stage:
-    :param only_esp:
-    :return:
+    :param assign: the Assign instance
+    :param basis: the basis for Hartree-Fock calculation
+    :param opt: whether do the geometry optimization
+    :param charge: total charge of the molecule. If None, it will use the sum of the assign.charge
+    :param spin: total spin of the molecule. ``S`` instead of ``2S+1``.
+    :param extra_equivalence: the extra equivalence to constrain the charge
+    :param grid_density: the density for grids to fit, in the unit of amgstrom^-3
+    :param grid_cell_layer: the cell layer for grids to fit
+    :param radius: the vdw radius for different elements. Default is ``default_radius`` in this module.
+    :param a1: the restrain factor in the first step
+    :param a2: the restrain factor in the second step
+    :param two_stage: whether do the second stage fitting. If set to False, the second stage fitting will not be done
+    :param only_esp: whether do the first stage fitting. If set to True, no restrained fitting will be done
+    :return: a list of charges
     """
     if extra_equivalence is None:
         extra_equivalence = []
@@ -378,7 +378,7 @@ def resp_fit(assign, basis="6-31g*", opt=False, charge=None, spin=0, extra_equiv
     return _force_equivalence_q(q, extra_equivalence)
 
 
-set_dict_value_alternative_name(globals(), resp_fit)
+set_global_alternative_names()
 
 Xprint("""Reference for resp.py:
 1. pyscf

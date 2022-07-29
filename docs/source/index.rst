@@ -23,10 +23,27 @@ How can I get Xponge?
  
 .. toctree::
     :maxdepth: 2
-    :caption: USAGE 
+    :caption: BASIC USAGE 
 
-    usage1
- 
+    usage11
+    usage12
+    usage13
+    usage14
+    usage15
+    
+.. toctree::
+    :maxdepth: 2
+    :caption: ADVANCE USAGE 
+
+    usage21
+    usage22
+
+.. toctree::
+    :maxdepth: 2
+    :caption: TUTORIAL
+    
+    tutorial1
+
 .. toctree::
     :maxdepth: 2
     :caption: API

@@ -35,10 +35,10 @@ Here are the list all the tests you can do:
 
 .. TIP::
     
-    You can do multiple tests at the same time. For example, 
-    
-    .. code-block:: bash
+    1. You can do multiple tests at the same time. For example::
 
         Xponge test -do base assign charmm27 -o test
     
+    2. You can set the verbose level to a negative value to disable the reference printing::
     
+        Xponge test -do base assign charmm27 -o test -v -1

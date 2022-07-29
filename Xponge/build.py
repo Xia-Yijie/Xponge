@@ -4,7 +4,8 @@ This **module** is used to build and save
 import os
 from itertools import product
 from . import assign
-from .helper import ResidueType, Molecule, Residue, ResidueLink, GlobalSetting, Xopen, Xdict
+from .helper import ResidueType, Molecule, Residue, ResidueLink, GlobalSetting, Xopen, Xdict, \
+    set_global_alternative_names
 
 
 def _analyze_connectivity(cls):
@@ -293,9 +294,10 @@ def _build_molecule(cls):
 
 def build_bonded_force(cls):
     """
+    This **function** build the bonded force for the input object
 
-    :param cls:
-    :return:
+    :param cls: the object to build
+    :return: None
     """
     if cls.built:
         return
@@ -321,11 +323,12 @@ def build_bonded_force(cls):
 
 def save_sponge_input(cls, prefix=None, dirname="."):
     """
+    This **function** saves the iput object as SPONGE inputs
 
-    :param cls:
-    :param prefix:
-    :param dirname:
-    :return:
+    :param cls: the object to save
+    :param prefix: the prefix of the output files
+    :param dirname: the directory to save the output files
+    :return: None
     """
     if isinstance(cls, Molecule):
         build_bonded_force(cls)
@@ -354,10 +357,11 @@ def save_sponge_input(cls, prefix=None, dirname="."):
 
 def save_pdb(cls, filename=None):
     """
+    This **function** saves the iput object as a pdb file
 
-    :param cls:
-    :param filename:
-    :return:
+    :param cls: the object to save
+    :param filename: the name of the output file
+    :return: None
     """
     if isinstance(cls, Molecule):
         cls.atoms = []
@@ -415,38 +419,39 @@ def save_pdb(cls, filename=None):
         raise NotImplementedError
 
 
-def save_mol2(molecule, filename=None):
+def save_mol2(cls, filename=None):
     """
+    This **function** saves the iput object as a mol2 file
 
-    :param molecule:
-    :param filename:
-    :return:
+    :param cls: the object to save
+    :param filename: the name of the output file
+    :return: None
     """
-    if isinstance(molecule, Molecule):
-        molecule.atoms = []
-        for res in molecule.residues:
-            molecule.atoms.extend(res.atoms)
-        molecule.atom_index = {molecule.atoms[i]: i for i in range(len(molecule.atoms))}
+    if isinstance(cls, Molecule):
+        cls.atoms = []
+        for res in cls.residues:
+            cls.atoms.extend(res.atoms)
+        cls.atom_index = {cls.atoms[i]: i for i in range(len(cls.atoms))}
         bonds = []
-        for res in molecule.residues:
+        for res in cls.residues:
             for atom1, atom1_con in res.type.connectivity.items():
-                atom1_index = molecule.atom_index[res.name2atom(atom1.name)] + 1
+                atom1_index = cls.atom_index[res.name2atom(atom1.name)] + 1
                 for atom2 in atom1_con:
-                    atom2_index = molecule.atom_index[res.name2atom(atom2.name)] + 1
+                    atom2_index = cls.atom_index[res.name2atom(atom2.name)] + 1
                     if atom1_index < atom2_index:
                         bonds.append("%6d %6d" % (atom1_index, atom2_index))
 
-        for link in molecule.residue_links:
-            atom1_index = molecule.atom_index[link.atom1] + 1
-            atom2_index = molecule.atom_index[link.atom2] + 1
+        for link in cls.residue_links:
+            atom1_index = cls.atom_index[link.atom1] + 1
+            atom2_index = cls.atom_index[link.atom2] + 1
             if atom1_index < atom2_index:
                 bonds.append("%6d %6d" % (atom1_index, atom2_index))
             else:
                 bonds.append("%6d %6d" % (atom2_index, atom1_index))
         bonds.sort(key=lambda x: list(map(int, x.split())))
         towrite = "@<TRIPOS>MOLECULE\n"
-        towrite += "%s\n" % (molecule.name)
-        towrite += " %d %d %d 0 1\n" % (len(molecule.atoms), len(bonds), len(molecule.residues))
+        towrite += "%s\n" % (cls.name)
+        towrite += " %d %d %d 0 1\n" % (len(cls.atoms), len(bonds), len(cls.residues))
         towrite += "SMALL\n"
         towrite += "USER_CHARGES\n"
 
@@ -454,7 +459,7 @@ def save_mol2(molecule, filename=None):
         count = 0
         res_count = 0
         residue_start = []
-        for atom in molecule.atoms:
+        for atom in cls.atoms:
             count += 1
             if atom == atom.residue.atoms[0]:
                 res_count += 1
@@ -467,47 +472,48 @@ def save_mol2(molecule, filename=None):
         for i, bond in enumerate(bonds):
             towrite += "%6d %s 1\n" % (i + 1, bond)
         towrite += "@<TRIPOS>SUBSTRUCTURE\n"
-        for i, residue in enumerate(molecule.residues):
+        for i, residue in enumerate(cls.residues):
             towrite += "%5d %8s %6d ****               0 ****  **** \n" % (i + 1, residue.name, residue_start[i])
 
         if not filename:
-            filename = molecule.name + ".mol2"
+            filename = cls.name + ".mol2"
 
         f = Xopen(filename, "w")
         f.write(towrite)
         f.close()
-    elif isinstance(molecule, Residue):
-        mol = Molecule(name=molecule.name)
-        mol.Add_Residue(molecule)
+    elif isinstance(cls, Residue):
+        mol = Molecule(name=cls.name)
+        mol.Add_Residue(cls)
         save_mol2(mol, filename)
-    elif isinstance(molecule, ResidueType):
-        residue = Residue(molecule, name=molecule.name)
-        for atom in molecule.atoms:
+    elif isinstance(cls, ResidueType):
+        residue = Residue(cls, name=cls.name)
+        for atom in cls.atoms:
             residue.Add_Atom(atom)
         save_mol2(residue, filename)
-    elif isinstance(molecule, assign.Assign):
-        molecule.Save_As_Mol2(filename)
+    elif isinstance(cls, assign.Assign):
+        cls.Save_As_Mol2(filename)
     else:
         raise NotImplementedError
 
 
-def save_gro(molecule, filename):
+def save_gro(cls, filename):
     """
+    This **function** saves the iput object as a gro file
 
-    :param molecule:
-    :param filename:
-    :return:
+    :param cls: the object to save
+    :param filename: the name of the output file
+    :return: None
     """
     towrite = "Generated By Xponge\n"
-    molecule.atoms = []
-    for res in molecule.residues:
-        molecule.atoms.extend(res.atoms)
-    molecule.residue_index = {molecule.residues[i]: i for i in range(len(molecule.residues))}
+    cls.atoms = []
+    for res in cls.residues:
+        cls.atoms.extend(res.atoms)
+    cls.residue_index = {cls.residues[i]: i for i in range(len(cls.residues))}
 
     boxlength = [0, 0, 0]
     maxi = [-float("inf"), -float("inf"), -float("inf")]
     mini = [float("inf"), float("inf"), float("inf")]
-    for atom in molecule.atoms:
+    for atom in cls.atoms:
         if atom.x > maxi[0]:
             maxi[0] = atom.x
         if atom.y > maxi[1]:
@@ -521,8 +527,8 @@ def save_gro(molecule, filename):
         if atom.z < mini[2]:
             mini[2] = atom.z
 
-    towrite += "%d\n" % len(molecule.atoms)
-    for i, atom in enumerate(molecule.atoms):
+    towrite += "%d\n" % len(cls.atoms)
+    for i, atom in enumerate(cls.atoms):
         residue = atom.residue
         if not GlobalSetting.nocenter:
             x = atom.x - mini[0] + GlobalSetting.boxspace
@@ -532,18 +538,20 @@ def save_gro(molecule, filename):
             x, y, z = atom.x, atom.y, atom.z
 
         towrite += "%5d%-5s%5s%5d%8.3f%8.3f%8.3f\n" % (
-            molecule.residue_index[residue] + 1, residue.name, atom.name, i + 1, x / 10, y / 10, z / 10)
-    if molecule.box_length is None:
+            cls.residue_index[residue] + 1, residue.name, atom.name, i + 1, x / 10, y / 10, z / 10)
+    if cls.box_length is None:
         boxlength[0] = maxi[0] - mini[0] + GlobalSetting.boxspace * 2
         boxlength[1] = maxi[1] - mini[1] + GlobalSetting.boxspace * 2
         boxlength[2] = maxi[2] - mini[2] + GlobalSetting.boxspace * 2
-        molecule.box_length = [boxlength[0], boxlength[1], boxlength[2]]
+        cls.box_length = [boxlength[0], boxlength[1], boxlength[2]]
     else:
-        boxlength[0] = molecule.box_length[0]
-        boxlength[1] = molecule.box_length[1]
-        boxlength[2] = molecule.box_length[2]
+        boxlength[0] = cls.box_length[0]
+        boxlength[1] = cls.box_length[1]
+        boxlength[2] = cls.box_length[2]
     towrite += "%8.3f %8.3f %8.3f" % (
-        molecule.box_length[0] / 10, molecule.box_length[1] / 10, molecule.box_length[2] / 10)
+        cls.box_length[0] / 10, cls.box_length[1] / 10, cls.box_length[2] / 10)
     f = Xopen(filename, "w")
     f.write(towrite)
     f.close()
+
+set_global_alternative_names()

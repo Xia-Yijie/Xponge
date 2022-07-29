@@ -2,8 +2,8 @@
 This **module** is used to load and read
 """
 import os
-from .helper import Molecule, Residue, ResidueType, AtomType, set_attribute_alternative_name, GlobalSetting, \
-    set_real_global_variable, Xdict, Xopen
+from .helper import Molecule, Residue, ResidueType, AtomType, GlobalSetting, Xdict, Xopen, \
+    set_real_global_variable, set_global_alternative_names
 
 
 ##########################################################################
@@ -80,10 +80,11 @@ def _mol2_bond(line, current_molecule, atom_residue_map):
 
 def load_mol2(filename, ignore_atom_type=False):
     """
+    This **function** is used to load a mol2 file
 
-    :param filename:
-    :param ignore_atom_type:
-    :return:
+    :param filename: the name of the file to load
+    :param ignore_atom_type: ignore the atom types in the mol2 file
+    :return: a Molecule instance
     """
     with open(filename) as f:
         # 存储读的时候的临时信息，key是编号
@@ -118,13 +119,12 @@ def load_mol2(filename, ignore_atom_type=False):
     return current_molecule
 
 
-def _pdb_ssbond(chain, residue_type_map, ssbonds, molecule):
+def _pdb_ssbond_before(chain, residue_type_map, ssbonds):
     """
 
     :param chain:
     :param residue_type_map:
     :param ssbonds:
-    :param molecule:
     :return:
     """
     for ssbond in ssbonds:
@@ -132,6 +132,19 @@ def _pdb_ssbond(chain, residue_type_map, ssbonds, molecule):
         residue_type_map[res_a_index] = "CYX"
         res_b_index = chain[ssbond[29]][int(ssbond[31:35])]
         residue_type_map[res_b_index] = "CYX"
+
+
+def _pdb_ssbond_after(chain, ssbonds, molecule):
+    """
+
+    :param chain:
+    :param ssbonds:
+    :param molecule:
+    :return:
+    """
+    for ssbond in ssbonds:
+        res_a_index = chain[ssbond[15]][int(ssbond[17:21])]
+        res_b_index = chain[ssbond[29]][int(ssbond[31:35])]
         if res_a_index > res_b_index:
             res_a_index, res_b_index = (res_b_index, res_a_index)
         res_a = molecule.residues[res_a_index]
@@ -170,10 +183,10 @@ def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore
                     current_residue_count += 1
                     if current_residue:
                         molecule.Add_Residue(current_residue)
-                        if current_residue_index is not None and current_residue.type.tail and ResidueType.types[
-                                residue_type_map[current_residue_count]].head:
+                        if current_residue_index is not None and current_residue.type.tail and ResidueType.get_type(
+                                residue_type_map[current_residue_count]).head:
                             links.append(len(molecule.residues))
-                    current_residue = Residue(ResidueType.types[residue_type_map[current_residue_count]])
+                    current_residue = Residue(ResidueType.get_type(residue_type_map[current_residue_count]))
                     current_residue_index = resindex
                     current_resname = resname
                 if extra not in (" ", position_need):
@@ -214,12 +227,13 @@ def _pdb_judge_histone(judge_histone, residue_type_map, current_histone_informat
 
 def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=False):
     """
+    This **function** is used to load a pdb file
 
-    :param filename:
-    :param judge_histone:
-    :param position_need:
-    :param ignore_hydrogen:
-    :return:
+    :param filename: the name of the file to load
+    :param judge_histone: judge the protonized state of the histone residues
+    :param position_need: the position character to read
+    :param ignore_hydrogen: do not read the atom with a name beginning with "H"
+    :return: a Molecule instance
     """
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
     chain = Xdict()
@@ -273,8 +287,9 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
     if residue_type_map[-1] in GlobalSetting.PDBResidueNameMap["tail"].keys():
         residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
 
+    _pdb_ssbond_before(chain, residue_type_map, ssbonds)
     _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore_hydrogen)
-    _pdb_ssbond(chain, residue_type_map, ssbonds, molecule)
+    _pdb_ssbond_after(chain, ssbonds, molecule)
 
     return molecule
 
@@ -326,10 +341,11 @@ def _frcmod_atoms_words(line, n):
 
 def load_frcmod(filename, nbtype="RE"):
     """
+    This **function** is used to load a frcmod file
 
-    :param filename:
-    :param nbtype:
-    :return:
+    :param filename: the name of the file to load
+    :param nbtype: the non-bonded interaction recording type in the frcmod file.
+    :return: a list of strings, including atoms, bonds, angles, propers, impropers, ljs, cmap information respectively
     """
     with open(filename) as f:
         f.readline()
@@ -409,9 +425,10 @@ def _parmdat_read_harmonic_bonds(f, bonds, n):
 
 def load_parmdat(filename):
     """
+    This **function** is used to load a parmdat file
 
-    :param filename:
-    :return:
+    :param filename: the name of the file to load
+    :return: a list of strings, including atoms, bonds, angles, propers, impropers, ljs information respectively
     """
     with open(filename) as f:
         f.readline()
@@ -493,10 +510,11 @@ def load_parmdat(filename):
 
 def load_rst7(filename, mol=None):
     """
+    This **function** is used to load a rst7 file
 
-    :param filename:
-    :param mol:
-    :return:
+    :param filename: the name of the file to load
+    :param mol: the molecule to load the coordinates
+    :return: a tuple including coordinates and box information
     """
     crds = []
     with open(filename) as f:
@@ -527,17 +545,20 @@ def load_rst7(filename, mol=None):
 ##########################################################################
 class GromacsTopologyIterator():
     """
-    This **class** is used to read GROMACS topology
+    This **class** is used to read a GROMACS topology file
+
+    usage example::
+
+        f = GromacsTopologyIterator("example.itp")
+        for line in f:
+            print(line)
+
+    :param filename: the name of the file to read
+    :param macros: the macros used to read the Gromacs topology file
+
     """
 
     def __init__(self, filename=None, macros=None):
-        """
-
-        :param filename:
-        :param macros:
-        """
-        set_attribute_alternative_name(self, self.add_iterator_file)
-
         self.files = []
         self.filenames = []
 
@@ -549,7 +570,7 @@ class GromacsTopologyIterator():
         else:
             self.defined_macros = {}
         if filename:
-            self.add_iterator_file(filename)
+            self._add_iterator_file(filename)
 
     def __iter__(self):
         self.flag = ""
@@ -579,7 +600,7 @@ class GromacsTopologyIterator():
 
         raise StopIteration
 
-    def add_iterator_file(self, filename):
+    def _add_iterator_file(self, filename):
         """
 
         :param filename:
@@ -638,7 +659,7 @@ class GromacsTopologyIterator():
             else:
                 self.defined_macros[words[1]] = ""
         elif words[0] == "#include":
-            self.add_iterator_file(words[1])
+            self._add_iterator_file(words[1])
         elif words[0] == "#undef":
             self.defined_macros.pop(words[1])
         elif words[0] == "#error":
@@ -674,10 +695,15 @@ def _ffitp_dihedrals(line, output):
 
 def load_ffitp(filename, macros=None):
     """
+    This **function** is used to load a fftip file
 
-    :param filename:
-    :param macros:
-    :return:
+    .. ATTENTION::
+
+        This is used to read a force field itp (ffitp) file instead of a simple itp file for a molecule.
+
+    :param filename: the name of the file to load
+    :param macros: the macros used to read the Gromacs topology file
+    :return: a dict, which stores the name of the forcefield term - the corresponding information mapping
     """
     iterator = GromacsTopologyIterator(filename, macros)
     output = Xdict()
@@ -756,3 +782,5 @@ def load_ffitp(filename, macros=None):
             output["LJ"] += "{type1}-{type2} {V} {W}\n".format(type1=words[0], type2=words[1], V=float(words[3]),
                                                                W=float(words[4]))
     return output
+
+set_global_alternative_names()

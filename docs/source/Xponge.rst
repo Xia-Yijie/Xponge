@@ -16,6 +16,7 @@ Subpackages
    Xponge.assign
    Xponge.forcefield
    Xponge.helper
+   Xponge.mdrun
    Xponge.tools
 
 Submodules

@@ -13,9 +13,10 @@ help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 API:
-	rm source/Xponge.*
-	rm source/modules.rst
-	sphinx-apidoc -o source ../Xponge -M -f --implicit-namespaces
+	rm -f source/Xponge.*
+	rm -f source/modules.rst
+	sphinx-apidoc -o source ../Xponge -M -f --implicit-namespace
+	make html
 
 .PHONY: help Makefile
 

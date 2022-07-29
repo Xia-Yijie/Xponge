@@ -3,7 +3,7 @@ This **module** is the basic setting for the force field non bonded exclusion
 """
 from functools import partial
 from ... import Molecule
-from ...helper import set_attribute_alternative_name, Xdict
+from ...helper import set_attribute_alternative_name, set_global_alternative_names, Xdict
 
 
 class Exclude:
@@ -11,6 +11,9 @@ class Exclude:
     This **class** is used to set non bonded exclusion generally
     """
     current = None
+    """
+    The current effective Exclude class
+    """
 
     def __init__(self, *args, **kwargs):
         n = 4
@@ -53,9 +56,10 @@ class Exclude:
 
     def get_excluded_atoms(self, molecule):
         """
+        This **function** gives the excluded atoms of a molecule
 
-        :param molecule:
-        :return:
+        :param molecule: a Molecule instance
+        :return: a dict, which stores the atom - excluded atoms mapping
         """
         temp_dict = Xdict()
         for atom in molecule.atoms:
@@ -66,3 +70,5 @@ class Exclude:
             for aton in atom.linked_atoms.get("v", []):
                 temp_dict[atom].add(aton)
         return temp_dict
+
+set_global_alternative_names()

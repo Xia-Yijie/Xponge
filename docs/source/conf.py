@@ -29,8 +29,13 @@ release = '1.2.6'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
-]
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.doctest',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.todo',
+              'sphinx.ext.coverage',
+              'sphinx.ext.mathjax',
+              'sphinx.ext.autosectionlabel']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -53,10 +58,17 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.doctest',
-              'sphinx.ext.intersphinx',
-              'sphinx.ext.todo',
-              'sphinx.ext.coverage',
-              'sphinx.ext.mathjax',
-              'sphinx.ext.autosectionlabel']
+
+              
+autodoc_member_order = 'bysource'
+
+def setup(app):
+    def mypreprocess(app, what, name, obj, options, lines):
+        if what not in ("function", "method"):
+            return
+        index = name.rfind(".") + 1
+        basic_name = name[index:]
+        module_name = name[:index]
+        if getattr(obj, "__name__", False) and basic_name != obj.__name__:
+            lines[:] = ["An alternative name for", f"``{module_name}{obj.__name__}``"]
+    app.connect('autodoc-process-docstring', mypreprocess)
