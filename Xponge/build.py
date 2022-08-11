@@ -343,6 +343,7 @@ def get_mindsponge_system_energy(cls, use_pbc=False):
     from mindsponge import set_global_units
     from mindsponge import Molecule as mMolecule
     from mindsponge import ForceFieldBase
+    #pylint: disable=deprecated-class
     from collections import Sequence
     if not isinstance(cls, Sequence):
         cls = [cls]

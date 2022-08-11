@@ -2,7 +2,7 @@ name: CI
 on: [push]
 
 jobs:
-    build-linux:
+    pylint:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
@@ -11,37 +11,60 @@ jobs:
               uses: actions/setup-python@v2
               with:
                 python-version: 3.8
+            - name: Install pylint
+              run: pip install pylint
             - name: Analyse the code with pylint
+              run: pylint Xponge
+
+    build-linux-macos:
+        name: build-${{ matrix.os }}
+        runs-on: ${{ matrix.os }}-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                os: ["ubuntu", "macos"]
+        defaults:
+             run:
+                 shell: bash -l {0}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - name: Initial conda
+              uses: conda-incubator/setup-miniconda@v2
+              with:
+                 auto-update-conda: true
+                 python-version: 3.8
+            - name: Install extras requirements
+              run: conda env create --file extras_requirements.yml
+            - name: Install Xponge
               run: |
-                pip install pylint
-                pylint Xponge
-            - name: Install extras-dependencies
-              run: $CONDA/bin/conda env update --file extras_requirements.yml --name base
+                conda activate Xponge
+                python setup.py install        
             - name: Run test
-              run: Xponge test --do all --verbose 1
+              run: |
+                  conda activate Xponge
+                  Xponge test --do all --verbose 1
+
     build-windows:
         runs-on: windows-latest
+        defaults:
+             run:
+                 shell: powershell
         steps:
             - name: Checkout
               uses: actions/checkout@v2
-            - name: Set up Python 3.8
-              uses: actions/setup-python@v2
+            - name: Initial conda
+              uses: conda-incubator/setup-miniconda@v2
               with:
-                python-version: 3.8
-            - name: Install extras-dependencies
-              run: $CONDA/bin/conda env update --file extras_requirements.yml --name base
+                 auto-update-conda: true
+                 python-version: 3.8
+            - name: Install install requirements
+              run: conda env create --file install_requirements.yml
+            - name: Install Xponge
+              run: |
+                conda activate Xponge
+                python setup.py install
             - name: Run test
-              run: Xponge test --do base --verbose 1
-    build-macOS:
-        runs-on: macOS-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v2
-            - name: Set up Python 3.8
-              uses: actions/setup-python@v2
-              with:
-                python-version: 3.8
-            - name: Install extras-dependencies
-              run: $CONDA/bin/conda env update --file extras_requirements.yml --name base
-            - name: Run test
-              run: Xponge test --do all --verbose 1
+              run: |
+                conda activate Xponge
+                Xponge test --do base charmm27 --verbose 1

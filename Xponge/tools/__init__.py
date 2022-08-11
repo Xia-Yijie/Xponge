@@ -8,6 +8,7 @@ import multiprocessing as mpc
 from ..helper import source, GlobalSetting, Xopen, Xprint
 from ..mdrun import run
 
+
 class TestMyPackage(unittest.TestCase):
     """
     This **class** does the unit tests for Xponge
@@ -123,13 +124,32 @@ class TestMyPackage(unittest.TestCase):
         Save_SPONGE_Input(wat, f"{args.o}")
 
         t = load_mol2(f"{args.o}_Residue.mol2")
-        WAT = t.residues[0]
-        diff = abs(WAT.O.charge + 0.8)
+        wat_ = t.residues[0]
+        diff = abs(wat_.O.charge + 0.8)
         self.assertLess(diff, 0.02)
-        diff = abs(WAT.H.charge - 0.4)
+        diff = abs(wat_.H.charge - 0.4)
         self.assertLess(diff, 0.02)
-        diff = abs(WAT.H.charge - WAT.H1.charge)
+        diff = abs(wat_.H.charge - wat_.H1.charge)
         self.assertLess(diff, 0.01)
+
+
+def _one_test(ccon, name, args):
+    """
+
+    :param ccon:
+    :param name:
+    :param args:
+    :return:
+    """
+    with open(os.devnull, 'w') as devnull:
+        sys.stdout = devnull
+        sys.stderr = devnull
+        runner = unittest.TextTestRunner(stream=devnull)
+        t = runner.run(TestMyPackage.get_test_suite(name, args))
+        ccon.send([t.errors, t.failures])
+    sys.stdout = sys.__stdout__
+    sys.stderr = sys.__stderr__
+
 
 def test(args):
     """
@@ -144,18 +164,13 @@ def test(args):
     args.do = args.do[0]
     if "all" in args.do:
         args.do = ["base", "charmm27", "assign"]
-    runner = unittest.TextTestRunner(stream=open(os.devnull, 'w'), verbosity=-999)
-    def one_test(ccon, name):
-        t = runner.run(TestMyPackage.get_test_suite(name, args))
-        ccon.send([t.errors, t.failures])
     fcon, ccon = mpc.Pipe()
     errors = []
     failures = []
-
-    sys.stdout = open(os.devnull, 'w')
-    sys.stderr = open(os.devnull, 'w')
+    Xprint("Test(s): " + " ".join(args.do), verbose=-1)
+    Xprint("======================================================", verbose=-1)
     for name in args.do:
-        p = mpc.Process(target=one_test, kwargs={"ccon": ccon, "name": name})
+        p = mpc.Process(target=_one_test, args=(ccon, name, args))
         p.start()
         p.join()
         new_errors, new_failures = fcon.recv()
@@ -163,21 +178,18 @@ def test(args):
         failures.extend(new_failures)
         this_correct = f"{len(new_errors)} error(s) and {len(new_failures)} failure(s)"
         for ei, error in enumerate(new_errors):
-            Xprint(f"Error {ei} for {name}", file=sys.__stdout__, verbose=1)
-            Xprint(f"{error[1]}", file=sys.__stdout__, verbose=1)
+            Xprint(f"Error {ei+1} for {name}", verbose=1)
+            Xprint(f"{error[1]}", verbose=1)
         for ei, error in enumerate(new_failures):
-            Xprint(f"Failure {ei} for {name}", file=sys.__stdout__, verbose=1)
-            Xprint(f"{error[1]}", file=sys.__stdout__, verbose=1)
-        Xprint(f"{name}: {this_correct}", file=sys.__stdout__, verbose=-1)
-    sys.stdout = sys.__stdout__
-    sys.stderr = sys.__stderr__
+            Xprint(f"Failure {ei+1} for {name}", verbose=1)
+            Xprint(f"{error[1]}", verbose=1)
+        Xprint(f"{name}: {this_correct}", verbose=-1)
     Xprint("======================================================", verbose=-1)
     if not errors and not failures:
-        Xprint("No error or failure in all tests", verbose=-1)
+        Xprint("No error or failure", verbose=-1)
     else:
         Xprint(f"{len(errors)} error(s) and {len(failures)} failure(s) found", verbose=-1)
-            
-        
+        sys.exit(1)
 
 
 def converter(args):
@@ -220,8 +232,6 @@ def maskgen(args):
     :param args: arguments from argparse
     :return: None
     """
-    import os
-
     s = input("Please Enter Your Selection Mask:\n")
 
     p = args.p.split(os.path.sep)
@@ -405,7 +415,6 @@ def _mol2rfe_build(args, merged_from, merged_to):
     :param merged_to:
     :return:
     """
-    import os
     source("..")
     fep = source("..forcefield.special.fep")
     min_ = source("..forcefield.special.min")
