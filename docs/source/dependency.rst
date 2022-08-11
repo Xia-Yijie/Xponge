@@ -17,6 +17,12 @@ Here is the list of all packages which may be used:
     * - package name
       - usage description
       - how to install
+    * - mindspore
+      - the basic package for mindsponge
+      - ``pip install mindspore-gpu``
+    * - mindsponge
+      - the basic package for mindsponge.toolkits
+      - ``pip install mindscience-sponge-gpu``
     * - XpongeLib
       - c/c++ compiled library for Xponge
       - ``pip install XpongeLib``

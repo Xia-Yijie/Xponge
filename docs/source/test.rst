@@ -1,5 +1,6 @@
 installation check
 --------------------
+.. include:: namespace.rst
 
 There are some unit tests in ``Xponge``. You can do the basic test to check whether the installation is successful like this:
 
@@ -7,7 +8,7 @@ There are some unit tests in ``Xponge``. You can do the basic test to check whet
 
     Xponge test -do base -o test
     
-Here, ``Xponge`` can be replaced to ``python -m Xponge``, ``python3 -m Xponge`` or ``python -m mindsponge/toolkits`` and so on accordind to your settings of the environmental variables.
+Here, ``Xponge`` can be replaced to ``python -m Xponge``, ``python3 -m Xponge`` or ``python -m mindsponge.toolkits`` and so on according to your settings of the environmental variables.
 
 You can use any visulization tool such as VMD or pymol to see the generated PDB file and the mol2 file to check the results. You can also compare all the files you get with the files in the test_standard directory in the gitee repository.
 

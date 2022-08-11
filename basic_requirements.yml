@@ -1,0 +1,4 @@
+name: Xponge
+dependencies:
+  - numpy
+

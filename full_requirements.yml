@@ -1,0 +1,17 @@
+name: Xponge
+channels:
+  - rdkit
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free
+  - http://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+  - http://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/linux-64
+dependencies:
+  - python=3.6.5
+  - numpy
+  - rdkit
+  - pip:
+    - mdanalysis
+    - xpongelib
+    - pyscf
+    - geometric
+

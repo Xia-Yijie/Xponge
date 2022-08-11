@@ -1,79 +1,135 @@
 """
 This **module** implements the terminal commands
 """
-from ..helper import source, GlobalSetting, Xopen
+import os
+import sys
+import unittest
+import multiprocessing as mpc
+from ..helper import source, GlobalSetting, Xopen, Xprint
+from ..mdrun import run
 
-
-def _basic_test(args):
+class TestMyPackage(unittest.TestCase):
     """
+    This **class** does the unit tests for Xponge
 
-    :param args:
-    :return:
+    :param methodName: the method name of the unit test
+    :param args: arguments from argparse
+    :return: None
     """
-    source("..")
-    source("..forcefield.amber.ff14sb")
-    source("..forcefield.amber.tip3p")
-    source("__main__")
+    def __init__(self, methodName='runTest', args=None):
+        super().__init__(methodName)
+        self.args = args
 
-    t = ACE + ALA * 10 + NME
+    @classmethod
+    def get_test_suite(cls, name, args):
+        suite = unittest.TestSuite()
+        test_name = "test_" + name
+        suite.addTest(cls(test_name, args))
+        return suite
 
-    for i in range(1, len(t.residues) - 1):
-        head = t.residues[i - 1]
-        res = t.residues[i]
-        tail = t.residues[i + 1]
-        Impose_Dihedral(t, head.C, res.N, res.CA, res.C, -3.1415926 / 3)
-        Impose_Dihedral(t, res.N, res.CA, res.C, tail.N, -3.1415926 / 3)
+    def test_base(self):
+        """
+        This **function** does the basic test for Xponge
 
-    Save_Mol2(t, f"{args.o}.mol2")
-    c = int(round(t.charge))
-    Add_Solvent_Box(t, WAT, 10)
-    Solvent_Replace(t, lambda res: res.type.name == "WAT", {CL: 30 + c, K: 30})
-    t.residues.sort(key=lambda residue: {"CL": 2, "K": 1, "WAT": 3}.get(residue.type.name, 0))
-    Save_PDB(t, f"{args.o}.pdb")
-    Save_SPONGE_Input(t, f"{args.o}")
+        :param args: arguments from argparse
+        :return: None
+        """
+        args = self.args
+        source("..")
+        source("..forcefield.amber.ff14sb")
+        source("..forcefield.amber.tip3p")
+        source("__main__")
 
+        t = ACE + ALA * 10 + NME
 
-def _assign_test(args):
-    """
+        for i in range(1, len(t.residues) - 1):
+            head = t.residues[i - 1]
+            res = t.residues[i]
+            tail = t.residues[i + 1]
+            Impose_Dihedral(t, head.C, res.N, res.CA, res.C, -3.1415926 / 3)
+            Impose_Dihedral(t, res.N, res.CA, res.C, tail.N, -3.1415926 / 3)
 
-    :param args:
-    :return:
-    """
-    source("..")
-    source("..forcefield.amber.gaff")
-    source("__main__")
+        Save_Mol2(t, f"{args.o}.mol2")
+        c = int(round(t.charge))
+        Add_Solvent_Box(t, WAT, 10)
+        Solvent_Replace(t, lambda res: res.type.name == "WAT", {CL: 30 + c, K: 30})
+        t.residues.sort(key=lambda residue: {"CL": 2, "K": 1, "WAT": 3}.get(residue.type.name, 0))
+        Save_PDB(t, f"{args.o}.pdb")
+        Save_SPONGE_Input(t, f"{args.o}")
 
-    t = assign.Assign()
-    t.add_atom("O", 0, 0, 0)
-    t.add_atom("H", 1, 0, 0)
-    t.add_atom("H", 0, 1, 0)
-    t.add_bond(0, 1, 1)
-    t.add_bond(0, 2, 1)
-    t.determine_ring_and_bond_type()
-    t.determine_atom_type("gaff")
-    equal_atoms = t.Determine_Equal_Atoms()
-    t.calculate_charge("resp", opt=True, extra_equivalence=equal_atoms)
-    Save_PDB(t, f"{args.o}.pdb")
-    Save_Mol2(t, f"{args.o}.mol2")
-    wat = t.to_residuetype("WAT")
-    Save_PDB(wat, f"{args.o}_Residue.pdb")
-    Save_Mol2(wat, f"{args.o}_Residue.pdb")
-    Save_SPONGE_Input(wat, f"{args.o}")
+        f = Xopen(f"{args.o}_LJ.txt", "r")
+        atom_number, lj_number = [int(i) for i in f.readline().split()]
+        self.assertEqual(atom_number, 4357, "LJ_in_file wrong")
+        self.assertEqual(lj_number, 11, "LJ_in_file wrong")
+        f.close()
 
+        f = Xopen(f"{args.o}_dihedral.txt", "r")
+        dihedral_number, = [int(i) for i in f.readline().split()]
+        self.assertEqual(dihedral_number, 303, "dihedral_in_file wrong")
+        f.close()
 
-def _charmm27_test(args):
-    """
+        f = Xopen(f"{args.o}_exclude.txt", "r")
+        atom_number, exclude_number = [int(i) for i in f.readline().split()]
+        self.assertEqual(atom_number, 4357, "exclude_in_file wrong")
+        self.assertEqual(exclude_number, 4760, "exclude_in_file wrong")
+        f.close()
 
-    :param args:
-    :return:
-    """
-    source("..")
-    source("..forcefield.charmm27.protein")
-    source("__main__")
+    def test_charmm27(self):
+        """
+        This **function** does the CHARMM27 test for Xponge
 
-    t = ACE + ALA * 10 + NME
-    Save_SPONGE_Input(t, f"{args.o}")
+        :param args: arguments from argparse
+        :return: None
+        """
+        args = self.args
+        source("..")
+        AtomType.clear_type()
+        ResidueType.clear_type()
+        for frc in GlobalSetting.BondedForces:
+            frc.clear_type()
+        source("..forcefield.charmm27.protein")
+        source("__main__")
 
+        t = ACE + ALA * 10 + NME
+        Save_SPONGE_Input(t, f"{args.o}")
+
+    def test_assign(self):
+        """
+        This **function** does the assignment test for Xponge
+
+        :param args: arguments from argparse
+        :return: None
+        """
+        args = self.args
+        source("..")
+        source("..forcefield.amber.gaff")
+        source("__main__")
+
+        t = assign.Assign()
+        t.add_atom("O", 0, 0, 0)
+        t.add_atom("H", 1, 0, 0)
+        t.add_atom("H", 0, 1, 0)
+        t.add_bond(0, 1, 1)
+        t.add_bond(0, 2, 1)
+        t.determine_ring_and_bond_type()
+        t.determine_atom_type("gaff")
+        equal_atoms = t.Determine_Equal_Atoms()
+        t.calculate_charge("resp", opt=True, extra_equivalence=equal_atoms)
+        Save_PDB(t, f"{args.o}.pdb")
+        Save_Mol2(t, f"{args.o}.mol2")
+        wat = t.to_residuetype("WAT")
+        Save_PDB(wat, f"{args.o}_Residue.pdb")
+        Save_Mol2(wat, f"{args.o}_Residue.mol2")
+        Save_SPONGE_Input(wat, f"{args.o}")
+
+        t = load_mol2(f"{args.o}_Residue.mol2")
+        WAT = t.residues[0]
+        diff = abs(WAT.O.charge + 0.8)
+        self.assertLess(diff, 0.02)
+        diff = abs(WAT.H.charge - 0.4)
+        self.assertLess(diff, 0.02)
+        diff = abs(WAT.H.charge - WAT.H1.charge)
+        self.assertLess(diff, 0.01)
 
 def test(args):
     """
@@ -86,14 +142,75 @@ def test(args):
     if not args.do:
         args.do = [["base"]]
     args.do = args.do[0]
-    if "base" in args.do:
-        _basic_test(args)
+    if "all" in args.do:
+        args.do = ["base", "charmm27", "assign"]
+    runner = unittest.TextTestRunner(stream=open(os.devnull, 'w'), verbosity=-999)
+    def one_test(ccon, name):
+        t = runner.run(TestMyPackage.get_test_suite(name, args))
+        ccon.send([t.errors, t.failures])
+    fcon, ccon = mpc.Pipe()
+    errors = []
+    failures = []
 
-    if "assign" in args.do:
-        _assign_test(args)
+    sys.stdout = open(os.devnull, 'w')
+    sys.stderr = open(os.devnull, 'w')
+    for name in args.do:
+        p = mpc.Process(target=one_test, kwargs={"ccon": ccon, "name": name})
+        p.start()
+        p.join()
+        new_errors, new_failures = fcon.recv()
+        errors.extend(new_errors)
+        failures.extend(new_failures)
+        this_correct = f"{len(new_errors)} error(s) and {len(new_failures)} failure(s)"
+        for ei, error in enumerate(new_errors):
+            Xprint(f"Error {ei} for {name}", file=sys.__stdout__, verbose=1)
+            Xprint(f"{error[1]}", file=sys.__stdout__, verbose=1)
+        for ei, error in enumerate(new_failures):
+            Xprint(f"Failure {ei} for {name}", file=sys.__stdout__, verbose=1)
+            Xprint(f"{error[1]}", file=sys.__stdout__, verbose=1)
+        Xprint(f"{name}: {this_correct}", file=sys.__stdout__, verbose=-1)
+    sys.stdout = sys.__stdout__
+    sys.stderr = sys.__stderr__
+    Xprint("======================================================", verbose=-1)
+    if not errors and not failures:
+        Xprint("No error or failure in all tests", verbose=-1)
+    else:
+        Xprint(f"{len(errors)} error(s) and {len(failures)} failure(s) found", verbose=-1)
+            
+        
 
-    if "charmm27" in args.do:
-        _charmm27_test(args)
+
+def converter(args):
+    """
+    This **function** converts the format of coordinate file
+
+    :param args: arguments from argparse
+    :return: None
+    """
+    from ..analysis import md_analysis as xmda
+    import MDAnalysis as mda
+
+    if args.c:
+        if args.cf == "guess":
+            u = mda.Universe(args.p, args.c)
+        elif args.cf == "sponge_crd":
+            u = mda.Universe(args.p, args.c, format=xmda.SpongeCoordinateReader)
+        elif args.cf == "sponge_traj":
+            u = mda.Universe(args.p, args.c, format=xmda.SpongeTrajectoryReader)
+    else:
+        u = mda.Universe(args.p)
+
+    if args.of == "sponge_crd":
+        with xmda.SpongeCoordinateWriter(args.o) as w:
+            w.write(u)
+    elif args.of == "sponge_traj":
+        with xmda.SpongeTrajectoryWriter(args.o) as w:
+            for _ in u.trajectory:
+                w.write(u)
+    else:
+        with mda.Writer(args.o, n_atoms=len(u.coord.positions)) as w:
+            for _ in u.trajectory:
+                w.write(u)
 
 
 def maskgen(args):
@@ -250,8 +367,8 @@ def name2name(args):
         from_ = assign.Get_Assignment_From_PDB(args.from_file, determine_bond_order=False,
                                                only_residue=args.from_residue)
 
-    rdmol_a = rdktool.Assign2RDKitMol(to_, True)
-    rdmol_b = rdktool.Assign2RDKitMol(from_, True)
+    rdmol_a = rdktool.assign_to_rdmol(to_, True)
+    rdmol_b = rdktool.assign_to_rdmol(from_, True)
 
     result = rdFMCS.FindMCS([rdmol_a, rdmol_b], completeRingsOnly=True, timeout=args.tmcs)
     rdmol_mcs = Chem.MolFromSmarts(result.smartsString)
@@ -294,7 +411,7 @@ def _mol2rfe_build(args, merged_from, merged_to):
     min_ = source("..forcefield.special.min")
 
     if "build" in args.do:
-        print("\nBUILDING TOPOLOGY\n")
+        Xprint("\nBUILDING TOPOLOGY\n", verbose=-1)
         fep.Save_Soft_Core_LJ()
 
         for i in range(args.nl + 1):
@@ -306,7 +423,7 @@ def _mol2rfe_build(args, merged_from, merged_to):
                 min_.save_min_bonded_parameters()
             elif i == 1:
                 min_.do_not_save_min_bonded_parameters()
-            Xponge.BUILD.Save_SPONGE_Input(tt, "%d/%s" % (i, args.temp))
+            build.Save_SPONGE_Input(tt, "%d/%s" % (i, args.temp))
 
 
 def _mol2rfe_output_path(subdir, workdir, tempname):
@@ -335,33 +452,29 @@ def _mol2rfe_min(args):
             if os.path.exists("%d/min" % i):
                 os.system("rm -rf %d/min" % i)
             os.mkdir("%d/min" % i)
-            basic = f"{args.sponge} -default_in_file_prefix {i}/{args.temp}"
+            basic = f"SPONGE -default_in_file_prefix {i}/{args.temp}"
             lambda_ = i / args.nl
             basic += f" -mode minimization -lambda_lj {lambda_}"
             basic += _mol2rfe_output_path("min", i, args.temp)
-            if i != 0 and args.mlast:
-                cif = " -coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i - 1)
-                cif += " -constrain_mode SHAKE"
-            else:
-                cif = f" -mass_in_file 0/{args.temp}_fake_mass.txt"
-                os.system(f"{basic} {cif} -minimization_dynamic_dt 1 -step_limit {args.m1steps[0]}")
+            if not args.mi:
+                cif = " -constrain_mode SHAKE"
+                run(f"{basic} {cif} -dt 1e-8 -step_limit {args.msteps[0]}")
                 cif += " -coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i)
-                os.system(f"{basic} {cif} -dt 1e-7 -step_limit {args.m1steps[1]}")
-                os.system(f"{basic} {cif} -dt 1e-6 -step_limit {args.m1steps[2]}")
-                os.system(f"{basic} {cif} -dt 1e-5 -step_limit {args.m1steps[3]}")
-                os.system(f"{basic} {cif} -dt 1e-4 -step_limit {args.m1steps[4]}")
-                cif = " -coordinate_in_file {1}/min/{0}_coordinate.txt -constrain_mode SHAKE".format(args.temp, i)
-                os.system(f"{basic} {cif} -minimization_dynamic_dt 1 -step_limit {args.m2steps[0]}")
-                os.system(f"{basic} {cif} -dt 1e-7 -step_limit {args.m2steps[1]}")
-                os.system(f"{basic} {cif} -dt 1e-6 -step_limit {args.m2steps[2]}")
-                os.system(f"{basic} {cif} -dt 1e-5 -step_limit {args.m2steps[3]}")
-                os.system(f"{basic} {cif} -dt 1e-4 -step_limit {args.m2steps[4]}")
+                run(f"{basic} {cif} -dt 1e-7 -step_limit {args.msteps[1]}")
+                run(f"{basic} {cif} -dt 1e-6 -step_limit {args.msteps[2]}")
+                run(f"{basic} {cif} -dt 1e-5 -step_limit {args.msteps[3]}")
+                run(f"{basic} {cif} -dt 1e-4 -step_limit {args.msteps[4]}")
+                run(f"{basic} {cif} -dt 1e-3 -step_limit {args.msteps[5]}")
+            else:
+                mdin = args.mi.pop(0)
+                cif = ""
+                run(f"{basic} {cif} -mdin {mdin}")
+                cif += " -coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i)
+                for mdin in args.mi:
+                    run(f"{basic} {cif} -mdin {mdin}")
 
-            os.system(f"{basic} {cif} -minimization_dynamic_dt 1 -step_limit {args.msteps[0]}")
-            os.system(f"{basic} {cif} -minimization_dynamic_dt 1e-3 -step_limit {args.msteps[1]}")
 
-
-def _mol2rfe_prebalance(args):
+def _mol2rfe_pre_equilibrium(args):
     """
 
     :param args:
@@ -369,26 +482,26 @@ def _mol2rfe_prebalance(args):
     """
     source("..")
 
-    if "prebalance" in args.do:
+    if "pre_equilibrium" in args.do:
         for i in range(args.nl + 1):
-            if os.path.exists("%d/prebalance" % i):
-                os.system("rm -rf %d/prebalance" % i)
-            os.mkdir("%d/prebalance" % i)
-            command = f"{args.sponge} -default_in_file_prefix {i}/{args.temp}"
+            if os.path.exists("%d/pre_equilibrium" % i):
+                os.system("rm -rf %d/pre_equilibrium" % i)
+            os.mkdir("%d/pre_equilibrium" % i)
+            command = f"SPONGE -default_in_file_prefix {i}/{args.temp}"
             lambda_ = i / args.nl
             command += f" -lambda_lj {lambda_}"
-            command += _mol2rfe_output_path("prebalance", i, args.temp)
+            command += _mol2rfe_output_path("pre_equilibrium", i, args.temp)
             command += f" -coordinate_in_file {i}/min/{args.temp}_coordinate.txt"
             if not args.pi:
-                command += f" -mode NPT -step_limit {args.prebalance_step} -dt {args.dt} -constrain_mode SHAKE"
+                command += f" -mode NPT -step_limit {args.pre_equilibrium_step} -dt {args.dt} -constrain_mode SHAKE"
                 command += f" -barostat {args.barostat} -thermostat {args.thermostat}"
-                os.system(command)
+                run(command)
             else:
                 command += f" -mdin {args.pi}"
-                os.system(command)
+                run(command)
 
 
-def _mol2rfe_balance(args):
+def _mol2rfe_equilibrium(args):
     """
 
     :param args:
@@ -396,23 +509,23 @@ def _mol2rfe_balance(args):
     """
     source("..")
 
-    if "balance" in args.do:
+    if "equilibrium" in args.do:
         for i in range(args.nl + 1):
-            if os.path.exists("%d/balance" % i):
-                os.system("rm -rf %d/balance" % i)
-            os.mkdir("%d/balance" % i)
-            command = f"{args.sponge} -default_in_file_prefix {i}/{args.temp}"
+            if os.path.exists("%d/equilibrium" % i):
+                os.system("rm -rf %d/equilibrium" % i)
+            os.mkdir("%d/equilibrium" % i)
+            command = f"SPONGE -default_in_file_prefix {i}/{args.temp}"
             lambda_ = i / args.nl
             command += f" -lambda_lj {lambda_}"
-            command += _mol2rfe_output_path("balance", i, args.temp)
-            command += f" -coordinate_in_file {i}/prebalance/{args.temp}_coordinate.txt"
+            command += _mol2rfe_output_path("equilibrium", i, args.temp)
+            command += f" -coordinate_in_file {i}/pre_equilibrium/{args.temp}_coordinate.txt"
             if not args.bi:
-                command += f" -mode NPT -step_limit {args.balance_step} -dt {args.dt} -constrain_mode SHAKE"
+                command += f" -mode NPT -step_limit {args.equilibrium_step} -dt {args.dt} -constrain_mode SHAKE"
                 command += f" -barostat {args.barostat} -thermostat {args.thermostat}"
-                os.system(command)
+                run(command)
             else:
                 command += f" -mdin {args.pi}"
-                os.system(command)
+                run(command)
 
 
 def _mol2rfe_analysis(args, merged_from):
@@ -434,7 +547,7 @@ def _mol2rfe_analysis(args, merged_from):
                     os.system("rm -rf %d/ti" % i)
                 os.mkdir("%d/ti" % i)
                 inprefix = f"{i}/{args.temp}"
-                command = f"{args.sponge_ti} -LJ_soft_core_in_file {inprefix}_LJ_soft_core.txt"
+                command = f"SPONGE_TI -LJ_soft_core_in_file {inprefix}_LJ_soft_core.txt"
                 command += " -exclude_in_file {0}_exclude.txt -charge_in_file {0}_charge.txt".format(inprefix)
                 command += f" -chargeA_in_file 0/{args.temp}_charge.txt"
                 command += f" -chargeB_in_file {args.nl}/{args.temp}_charge.txt"
@@ -443,15 +556,15 @@ def _mol2rfe_analysis(args, merged_from):
                 command += f" -subsys_division_in_file {inprefix}_subsys_division.txt  -charge_pertubated 1"
                 inprefix = f"{i}/ti/{args.temp}"
                 command += f" -mdinfo {inprefix}.mdinfo -mdout {inprefix}.mdout"
-                inprefix = f"{i}/balance/{args.temp}"
+                inprefix = f"{i}/equilibrium/{args.temp}"
                 command += f" -crd {inprefix}.dat -box {inprefix}.box -TI dh_dlambda.txt"
                 command += f" -atom_numbers {len(merged_from.atoms)}"
-                command += f" -frame_numbers {args.balance_step // 100}"
+                command += f" -frame_numbers {args.equilibrium // 100}"
                 if not args.ai:
-                    os.system(command)
+                    run(command)
                 else:
                     command += f" -mdin {args.ai}"
-                    os.system(command)
+                    run(command)
             dh_dlambda = np.loadtxt("dh_dlambda.txt")
             dh = []
             dh_int = []
@@ -493,7 +606,7 @@ def mol2rfe(args):
         __import__(ipy)
 
     if not args.do:
-        args.do = [["build", "min", "prebalance", "balance", "analysis"]]
+        args.do = [["build", "min", "pre_equilibrium", "equilibrium", "analysis"]]
     args.do = args.do[0]
 
     from_res_type_ = load_mol2(args.r1).residues[0]
@@ -501,8 +614,8 @@ def mol2rfe(args):
     if not args.ff:
         parmchk2_gaff(args.r1, args.temp + "_TMP1.frcmod")
 
-    to_res_type_ = Xponge.load_mol2(args.r2).residues[0]
-    to_ = Xponge.assign.Get_Assignment_From_ResidueType(to_res_type_)
+    to_res_type_ = load_mol2(args.r2).residues[0]
+    to_ = assign.Get_Assignment_From_ResidueType(to_res_type_)
     if not args.ff:
         parmchk2_gaff(args.r2, args.temp + "_TMP2.frcmod")
 
@@ -517,12 +630,12 @@ def mol2rfe(args):
         H_Mass_Repartition(merged_from)
         H_Mass_Repartition(merged_to)
 
-    mol2rfe_build(args, merged_from, merged_to)
+    _mol2rfe_build(args, merged_from, merged_to)
 
-    mol2rfe_min(args)
+    _mol2rfe_min(args)
 
-    mol2rfe_prebalance(args)
+    _mol2rfe_pre_equilibrium(args)
 
-    mol2rfe_balance(args)
+    _mol2rfe_equilibrium(args)
 
-    mol2rfe_analysis(args, merged_from)
+    _mol2rfe_analysis(args, merged_from)

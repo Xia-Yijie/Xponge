@@ -1,6 +1,8 @@
+
 .. TIP::
     
     You may need to change the commands and codes according to your environmental variables.
+
     For example, you may change this if you use Xponge as a part of mindscience::
     
         import Xponge
@@ -9,4 +11,4 @@
     to::
     
         import mindsponge.toolkits as Xponge
-        import mindsponge.toolkits.forcefield.amber.ff14sb
+        Xponge.source("mindsponge.toolkits.forcefield.amber.ff14sb")

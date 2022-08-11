@@ -42,8 +42,10 @@ How can I get Xponge?
     :maxdepth: 2
     :caption: TUTORIAL
     
-    tutorial1
-
+    covid_bound_to_b6 <https://gitee.com/mindspore/mindscience/blob/master/MindSPONGE/applications/traditional_molecular_dynamics/covid_bound_to_b6/covid_bound_to_b6.ipynb>
+    the folding of ALA12 <https://gitee.com/mindspore/mindscience/blob/master/MindSPONGE/applications/traditional_molecular_dynamics/the_folding_of_ala12/the_folding_of_ala12.ipynb>
+    building_of_KALP15 <https://gitee.com/xiayijie/mindscience/blob/master/MindSPONGE/applications/molecular_dynamics/building_of_KALP15/building_of_KALP15-Copy1.ipynb>
+    
 .. toctree::
     :maxdepth: 2
     :caption: API

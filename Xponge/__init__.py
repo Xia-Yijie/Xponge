@@ -71,7 +71,7 @@ The atoms in a ``Residue`` or a ``ResidueType`` can be obtained by their names. 
     print(ALA.CA)
 
 """
-__version__ = "stable-1.2.6"
+__version__ = "1.2.6"
 
 import os
 import time
@@ -147,7 +147,7 @@ def _initialize():
     Molecule.Set_Save_SPONGE_Input("coordinate")(write_coordinate)
 
     #pylint: disable=unused-argument
-    def _do_initial(self, sys_kwarg, ene_kwarg):
+    def _do_initial(self, sys_kwarg, ene_kwarg, use_pbc):
         if "coordinate" not in sys_kwarg:
             sys_kwarg["coordinate"] = [self.get_atom_coordinates().tolist()]
             sys_kwarg["atoms"] = [[atom.name for atom in self.atoms]]

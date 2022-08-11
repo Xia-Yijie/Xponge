@@ -7,10 +7,10 @@ f.close()
 #for formal
 setuptools.setup(
     name="Xponge",
-    version="1.2.6.0",
+    version="1.2.6.2",
     author="Yijie Xia",  
     author_email="yijiexia@pku.edu.cn", 
-    description="A package for building molecular dynamics inputs for SPONGE",
+    description="A Python package to perform pre- and post-processing of molecular simulations",
     long_description=long_description, 
     long_description_content_type="text/markdown",
     url="https://gitee.com/gao_hyp_xyj_admin/xponge",
