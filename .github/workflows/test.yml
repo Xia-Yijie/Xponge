@@ -1,0 +1,47 @@
+name: CI
+on: [push]
+
+jobs:
+    build-linux:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - name: Set up Python 3.8
+              uses: actions/setup-python@v2
+              with:
+                python-version: 3.8
+            - name: Analyse the code with pylint
+              run: |
+                pip install pylint
+                pylint Xponge
+            - name: Install extras-dependencies
+              run: $CONDA/bin/conda env update --file extras_requirements.yml --name base
+            - name: Run test
+              run: Xponge test --do all --verbose 1
+    build-windows:
+        runs-on: windows-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - name: Set up Python 3.8
+              uses: actions/setup-python@v2
+              with:
+                python-version: 3.8
+            - name: Install extras-dependencies
+              run: $CONDA/bin/conda env update --file extras_requirements.yml --name base
+            - name: Run test
+              run: Xponge test --do base --verbose 1
+    build-macOS:
+        runs-on: macOS-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - name: Set up Python 3.8
+              uses: actions/setup-python@v2
+              with:
+                python-version: 3.8
+            - name: Install extras-dependencies
+              run: $CONDA/bin/conda env update --file extras_requirements.yml --name base
+            - name: Run test
+              run: Xponge test --do all --verbose 1

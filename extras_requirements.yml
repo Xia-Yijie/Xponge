@@ -1,0 +1,13 @@
+name: Xponge
+channels:
+  - rdkit
+dependencies:
+  - rdkit
+  - pip
+  - pip:
+    - numpy
+    - mdanalysis
+    - xpongelib
+    - pyscf
+    - geometric
+
