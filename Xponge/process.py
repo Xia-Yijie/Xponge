@@ -259,6 +259,7 @@ which the residues to be replaced have the same name
         if isinstance(select, Molecule):
             select = select.residues[0]
         resname = select.name
+        # pylint: disable=unnecessary-lambda-assignment
         select = lambda res: res.name == resname
     for i, resi in enumerate(molecule.residues):
         if select(resi):
