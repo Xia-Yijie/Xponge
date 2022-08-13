@@ -112,6 +112,11 @@ All of the residue type will be stored in the main dict too (which means you can
     # this sets the periodic conditions 
     protein.box_length = [50.0, 50.0, 50.0]
 
+New in 1.2.16, we can get a peptide molecule from its sequence now::
+
+    protein = get_peptide_from_sequence("AAAAA")
+    # protein = NALA + ALA * 3 + CALA
+
 Now what you need to do is just to save your ``protein`` in a format you like. The functions to save are  ``Save_PDB``, ``Save_SPONGE_Input`` and ``Save_Mol2`` now::
 
     Save_Mol2(protein, "protein.mol2")
@@ -148,6 +153,8 @@ Write a "mdin.txt" file of SPONGE::
 Run SPONGE::
 
     SPONGE -mdin mdin.txt
+    #Or you can use according to your environment setting
+    #Xponge.mdrun SPONGE -mdin mdin.txt
 
 Then we can get::
 

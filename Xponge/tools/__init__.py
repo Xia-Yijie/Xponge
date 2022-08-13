@@ -208,7 +208,16 @@ def converter(args):
         elif args.cf == "sponge_crd":
             u = mda.Universe(args.p, args.c, format=xmda.SpongeCoordinateReader)
         elif args.cf == "sponge_traj":
-            u = mda.Universe(args.p, args.c, format=xmda.SpongeTrajectoryReader)
+            dirname, basename = os.path.split(args.c)
+            if basename == "mdcrd.dat":
+                box = "mdbox.txt"
+            else:
+                box = basename.replace(".dat", ".box")
+            box = os.path.join(dirname, box)
+            if box and os.path.exists(box):
+                u = mda.Universe(args.p, args.c, box=box, format=xmda.SpongeTrajectoryReader)
+            else:
+                u = mda.Universe(args.p, args.c, format=xmda.SpongeTrajectoryReader)
     else:
         u = mda.Universe(args.p)
 

@@ -46,7 +46,7 @@ Xponge test --do base -o test --verbose 1
 
 Here, ``Xponge`` can be replaced to ``python -m Xponge``, ``python3 -m Xponge`` and so on according to your settings of the environmental variables. Some files will be generated after the test is finished.
 
-## Usage example
+## Quickstart
 
 Here is a simple example.
 

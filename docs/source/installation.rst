@@ -14,21 +14,15 @@ To install ``Xponge``, the version of Python should be not less than 3.6.0
     - ``Xponge`` installed from ``pip`` is a more stable version
     - ``Xponge`` in gitee or github Xponge repository is usually under development, it may have more functions but less stable.
 
-I. Xponge as part of MindScience
+I. Xponge as mindsponge.toolkits
 ========================================
 
-Xponge now is part of MindScience as mindsponge.toolkits. It can only be used in Linux at the moment, but you can install the MD package at the same time, which is very useful.
+Xponge now is part of MindScience as ``mindsponge.toolkits``. It can only be used in Linux at the moment, but you can install the MD package at the same time, which is very useful.
 
 1. pip install
 ############################
 
-.. code-block:: bash
-
-    pip install mindscience-sponge-gpu
-
-.. TIP::
-
-    ``pip`` can be replaced by ``python -m pip`` or ``python3 -m pip``, according to your settings of environmental variables for Python.
+Not Implemented yet, but coming soon!
 
 2. source setup
 ############################

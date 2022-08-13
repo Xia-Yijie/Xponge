@@ -8,7 +8,21 @@
         import Xponge
         import Xponge.forcefield.amber.ff14sb
     
+    and
+
+    .. code-block:: bash
+
+        Xponge test --do base
+        Xponge.mdrun SPONGE -mdin mdin.txt
+
     to::
     
         import mindsponge.toolkits as Xponge
         Xponge.source("mindsponge.toolkits.forcefield.amber.ff14sb")
+        
+    and
+
+    .. code-block:: bash
+        
+        python -m mindsponge.toolkits test --do base
+        python -m mindsponge.toolkits.mdrun SPONGE -mdin mdin.txt

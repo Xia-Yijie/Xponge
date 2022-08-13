@@ -7,7 +7,7 @@ f.close()
 #for formal
 setuptools.setup(
     name="Xponge",
-    version="1.2.6.2",
+    version="1.2.6.3",
     author="Yijie Xia",  
     author_email="yijiexia@pku.edu.cn", 
     description="A Python package to perform pre- and post-processing of molecular simulations",
@@ -18,7 +18,7 @@ setuptools.setup(
     package_data = {"":['*.mol2', '*.frcmod', '*.dat', '*.itp']},
     install_requires = ["numpy"],
     entry_points = {
-        "console_scripts": ["Xponge = Xponge.__main__:main"] },
+        "console_scripts": ["Xponge = Xponge.__main__:main", "Xponge.mdrun = Xponge.mdrun.__main__:main"] },
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
         'Development Status :: 5 - Production/Stable',

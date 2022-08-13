@@ -6,7 +6,7 @@ There are some unit tests in ``Xponge``. You can do the basic test to check whet
 
 .. code-block:: bash
 
-    Xponge test -do base -o test
+    Xponge test --do base -o test
     
 Here, ``Xponge`` can be replaced to ``python -m Xponge``, ``python3 -m Xponge`` or ``python -m mindsponge.toolkits`` and so on according to your settings of the environmental variables.
 
@@ -16,7 +16,7 @@ If you want to check the installation of the dependent packages, you can do the 
 
 .. code-block:: bash
 
-    Xponge test -do assign -o test
+    Xponge test --do assign -o test --verbose 1
     
 Here are the list all the tests you can do:
 
@@ -33,13 +33,12 @@ Here are the list all the tests you can do:
       - the assignment functions and dependency
     * - charmm27
       - the forcefield of charmm27
+    * - all
+      - all above
 
 .. TIP::
     
-    1. You can do multiple tests at the same time. For example::
+    You can do multiple tests at the same time. For example::
 
-        Xponge test -do base assign charmm27 -o test
+        Xponge test --do base charmm27 -o test
     
-    2. You can set the verbose level to a negative value to disable the reference printing::
-    
-        Xponge test -do base assign charmm27 -o test -v -1

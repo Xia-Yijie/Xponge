@@ -15,6 +15,7 @@ help:
 API:
 	rm -f source/Xponge.*
 	rm -f source/modules.rst
+	rm -rf build/*
 	sphinx-apidoc -o source ../Xponge -M -f --implicit-namespace
 	make html
 
