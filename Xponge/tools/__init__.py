@@ -141,12 +141,13 @@ def _one_test(ccon, name, args):
     :param args:
     :return:
     """
-    with open(os.devnull, 'w') as devnull:
-        sys.stdout = devnull
-        sys.stderr = devnull
-        runner = unittest.TextTestRunner(stream=devnull)
-        t = runner.run(TestMyPackage.get_test_suite(name, args))
-        ccon.send([t.errors, t.failures])
+    devnull = Xopen(os.devnull, 'w')
+    sys.stdout = devnull
+    sys.stderr = devnull
+    runner = unittest.TextTestRunner(stream=devnull)
+    t = runner.run(TestMyPackage.get_test_suite(name, args))
+    ccon.send([t.errors, t.failures])
+    devnull.close()
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
 
@@ -208,7 +209,16 @@ def converter(args):
         elif args.cf == "sponge_crd":
             u = mda.Universe(args.p, args.c, format=xmda.SpongeCoordinateReader)
         elif args.cf == "sponge_traj":
-            u = mda.Universe(args.p, args.c, format=xmda.SpongeTrajectoryReader)
+            dirname, basename = os.path.split(args.c)
+            if basename == "mdcrd.dat":
+                box = "mdbox.txt"
+            else:
+                box = basename.replace(".dat", ".box")
+            box = os.path.join(dirname, box)
+            if box and os.path.exists(box):
+                u = mda.Universe(args.p, args.c, box=box, format=xmda.SpongeTrajectoryReader)
+            else:
+                u = mda.Universe(args.p, args.c, format=xmda.SpongeTrajectoryReader)
     else:
         u = mda.Universe(args.p)
 

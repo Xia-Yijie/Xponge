@@ -2,6 +2,9 @@
 This **module** is used to load and read
 """
 import os
+
+import numpy as np
+
 from .helper import Molecule, Residue, ResidueType, AtomType, GlobalSetting, Xdict, Xopen, \
     set_real_global_variable, set_global_alternative_names
 
@@ -292,6 +295,34 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
     _pdb_ssbond_after(chain, ssbonds, molecule)
 
     return molecule
+
+
+##########################################################################
+# SPONGE Format
+##########################################################################
+def load_coordinate(filename, mol=None):
+    """
+    This **function** is used to read the SPONGE coordinate in file
+
+    :param filename: the coordinate file to load
+    :param mol: the molecule or residue to load the coordinate into
+    :return: two numpy arrays, representing the coordinates and the box information respectively
+    """
+    with Xopen(filename, "r") as f:
+        atom_numbers = int(f.readline().split()[0])
+        crd = np.zeros((atom_numbers,3), dtype=np.float32)
+        box = np.zeros(6, dtype=np.float32)
+        for i in range(atom_numbers):
+            crd[i][:] = np.array([float(x) for x in f.readline().split()])
+        box = np.array(f.readline().split(), dtype=np.float32)
+    if mol:
+        for i, atom in enumerate(mol.atoms):
+            atom.x = crd[i][0]
+            atom.y = crd[i][1]
+            atom.z = crd[i][2]
+        if isinstance(mol, Molecule):
+            mol.box_length = box
+    return crd, box
 
 
 ##########################################################################

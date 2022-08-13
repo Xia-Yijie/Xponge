@@ -1,7 +1,7 @@
 *.pyc
 build/*
 dist/*
-Xponge.egg-info/*
+*egg-info/*.txt
 lib/dist/*
 lib/XpongeLib.egg-info/*
 Xponge/.idea

@@ -1162,7 +1162,7 @@ class Molecule:
         Molecule._all[self.name] = self
         self.residues = []
         """the residues in the molecule"""
-        self.atoms = []
+        #self.atoms = []
         """the atoms in the molecule
 
         .. NOTE::
@@ -1197,6 +1197,13 @@ class Molecule:
         if getattr(AtomType, "_parameters").get(attr, None) == float:
             return np.sum([getattr(atom, attr) for res in self.residues for atom in res.atoms])
         return super().__getattribute__(attr)
+
+    @property
+    def atoms(self):
+        """
+        the atoms in the molecule
+        """
+        return [atom for residue in self.residues for atom in residue]
 
     @classmethod
     def set_save_sponge_input(cls, keyname):

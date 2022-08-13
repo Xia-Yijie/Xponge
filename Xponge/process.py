@@ -1,9 +1,12 @@
 """
 This **module** is used to process topology and conformations
 """
+import os.path
+
 import numpy as np
 from .helper import get_rotate_matrix, ResidueType, Molecule, Residue, set_global_alternative_names, Xdict
-
+from .build import save_sponge_input
+from .mdrun import run
 
 def impose_bond(molecule, atom1, atom2, length):
     """
@@ -364,6 +367,17 @@ def get_peptide_from_sequence(sequence, charged_terminal=True):
         toret = toret + temp_dict2[i]
     toret += ResidueType.get_type(tail)
     return toret
+
+
+def optimize(mol):
+    from tempfile import TemporaryDirectory
+    with TemporaryDirectory(ignore_cleanup_errors=True) as tempdir:
+        temp_prefix = os.path.join(tempdir, "temp")
+        temp_out = os.path.join(tempdir, "min")
+        save_sponge_input(mol, temp_prefix)
+        all_to_use = f"""SPONGE_NOPBC -default_in_file_prefix {temp_prefix} -rst {temp_out} -crd {temp_prefix}.dat 
+        -box {temp_prefix}.box -out {temp_out}.out -info {temp_out}.info -mode minimization """
+        run(all_to_use + "-minimization_dynamic_dt 1 -step_limit 2000")
 
 
 set_global_alternative_names()
