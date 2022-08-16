@@ -534,6 +534,8 @@ class ResidueType(Type):
         self._name2index = Xdict()
 
         super().__init__(**kwargs)
+
+        self._name2atom.not_found_message= "There is no atom named {} in %s"%self.name
         # 连接功能
         self.link = {"head": None, "tail": None, "head_next": None, "tail_next": None,
                      "head_length": 1.5, "tail_length": 1.5, "head_link_conditions": [], "tail_link_conditions": []}
@@ -834,7 +836,7 @@ class Atom(Entity):
         """the coordinate y of the Atom instance"""
         self.z = None
         """the coordinate z of the Atom instance"""
-
+        self.bad_coordinate = False
         # 父信息
         self.residue = None
         """the residue which the atom belongs to, maybe a Residue instance or a ResidueType instance"""
@@ -1070,6 +1072,7 @@ class Residue(Entity):
                         t.add(atom_name)
                         movedlist.append(atom_name)
                         self.Add_Atom(atom_name, x=x_, y=y_, z=z_)
+                        self.atoms[-1].bad_coordinate = True
                         break
             for atom_name in movedlist:
                 uncertified.remove(atom_name)
@@ -1162,7 +1165,7 @@ class Molecule:
         Molecule._all[self.name] = self
         self.residues = []
         """the residues in the molecule"""
-        #self.atoms = []
+        self.atoms = []
         """the atoms in the molecule
 
         .. NOTE::
@@ -1197,13 +1200,6 @@ class Molecule:
         if getattr(AtomType, "_parameters").get(attr, None) == float:
             return np.sum([getattr(atom, attr) for res in self.residues for atom in res.atoms])
         return super().__getattribute__(attr)
-
-    @property
-    def atoms(self):
-        """
-        the atoms in the molecule
-        """
-        return [atom for residue in self.residues for atom in residue]
 
     @classmethod
     def set_save_sponge_input(cls, keyname):

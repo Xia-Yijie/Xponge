@@ -156,7 +156,7 @@ def _pdb_ssbond_after(chain, ssbonds, molecule):
                                   res_b.name2atom(res_b.type.connect_atoms["ssbond"]))
 
 
-def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore_hydrogen):
+def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore_hydrogen, ignore_unknown_name):
     """
 
     :param filename:
@@ -164,6 +164,7 @@ def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore
     :param position_need:
     :param residue_type_map:
     :param ignore_hydrogen:
+    :param ignore_unknown_name:
     :return:
     """
     current_residue_count = -1
@@ -196,7 +197,12 @@ def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore
                     continue
                 if ignore_hydrogen and atomname.startswith("H"):
                     continue
-                current_residue.Add_Atom(atomname, x=x, y=y, z=z)
+                try:
+                    current_residue.Add_Atom(atomname, x=x, y=y, z=z)
+                except KeyError as ke:
+                    if ignore_unknown_name:
+                        continue
+                    raise ke
             elif line.startswith("TER"):
                 current_residue_index = None
                 current_resname = None
@@ -228,7 +234,7 @@ def _pdb_judge_histone(judge_histone, residue_type_map, current_histone_informat
         current_histone_information = {"DeltaH": False, "EpsilonH": False}
 
 
-def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=False):
+def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=False, ignore_unknown_name=False):
     """
     This **function** is used to load a pdb file
 
@@ -236,6 +242,7 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
     :param judge_histone: judge the protonized state of the histone residues
     :param position_need: the position character to read
     :param ignore_hydrogen: do not read the atom with a name beginning with "H"
+    :param ignore_unknown_name: do not read the atom with an unknow name **New From 1.2.6.4**
     :return: a Molecule instance
     """
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
@@ -291,7 +298,7 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
         residue_type_map[-1] = GlobalSetting.PDBResidueNameMap["tail"][residue_type_map[-1]]
 
     _pdb_ssbond_before(chain, residue_type_map, ssbonds)
-    _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore_hydrogen)
+    _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore_hydrogen, ignore_unknown_name)
     _pdb_ssbond_after(chain, ssbonds, molecule)
 
     return molecule

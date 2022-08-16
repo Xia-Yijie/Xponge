@@ -2,10 +2,14 @@
 This **module** is used to process topology and conformations
 """
 import os.path
+import sys
 
 import numpy as np
-from .helper import get_rotate_matrix, ResidueType, Molecule, Residue, set_global_alternative_names, Xdict
+from .helper import get_rotate_matrix, ResidueType, Molecule, Residue, set_global_alternative_names, Xdict, \
+    GlobalSetting
 from .build import save_sponge_input
+from .load import load_coordinate
+from .forcefield.special.min import save_min_bonded_parameters, do_not_save_min_bonded_parameters
 from .mdrun import run
 
 def impose_bond(molecule, atom1, atom2, length):
@@ -369,15 +373,37 @@ def get_peptide_from_sequence(sequence, charged_terminal=True):
     return toret
 
 
-def optimize(mol):
+def optimize(mol, step=5000, only_bad_coordinate=True):
+    """
+    This **function** is used to optimize the structure of the Molecule instance
+
+    :param mol: the molecule to optimize
+    :param step: the step to minimize
+    :param only_bad_coordinate: whether to optimize all the atoms or the atoms whose coordinates are bad
+    :return:
+    """
     from tempfile import TemporaryDirectory
-    with TemporaryDirectory(ignore_cleanup_errors=True) as tempdir:
+    with TemporaryDirectory() as tempdir:
         temp_prefix = os.path.join(tempdir, "temp")
         temp_out = os.path.join(tempdir, "min")
+        save_min_bonded_parameters()
         save_sponge_input(mol, temp_prefix)
-        all_to_use = f"""SPONGE_NOPBC -default_in_file_prefix {temp_prefix} -rst {temp_out} -crd {temp_prefix}.dat 
-        -box {temp_prefix}.box -out {temp_out}.out -info {temp_out}.info -mode minimization """
-        run(all_to_use + "-minimization_dynamic_dt 1 -step_limit 2000")
+        do_not_save_min_bonded_parameters()
+        all_to_use = f"""SPONGE_NOPBC -default_in_file_prefix {temp_prefix} -rst {temp_out} -crd {temp_prefix}.dat
+        -box {temp_prefix}.box -mdout {temp_out}.out -mdinfo {temp_out}.info -mode minimization 
+        -step_limit {step} """
+        if only_bad_coordinate:
+            all_to_use += f"-mass_in_file {temp_prefix + '_fake_mass.txt'} "
+        if GlobalSetting.verbose < 2:
+            print_to = f" > {os.devnull}"
+        else:
+            print_to = ""
+        run(all_to_use + "-dt 1e-8" + print_to)
+
+        all_to_use += f"-coordinate_in_file {temp_out+'_coordinate.txt'} "
+        for i in [7,6,5,4,3]:
+            run(all_to_use + f"-dt 1e-{i} {print_to}")
+        load_coordinate(temp_out+"_coordinate.txt", mol)
 
 
 set_global_alternative_names()
