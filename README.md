@@ -67,6 +67,37 @@ Xponge.save_mol2(peptide2, "ala12.mol2")
 Xponge.save_sponge_input(peptide3, "ala5")
 ```
 
+Then we can see `ala12.mol2` in VMD:
+
+![pic2](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/2.jpg)
+
+Here is another simple example.
+
+```python
+import Xponge
+import Xponge.forcefield.amber.tip3p
+
+box = BlockRegion(0, 0, 0, 60, 60, 60)
+region_1 = BlockRegion(0, 0, 20, 20, 20, 40)
+region_2 = BlockRegion(0, 0, 40, 20, 20, 60)
+region_3 = BlockRegion(0, 0, 0, 20, 20, 20)
+region_4 = SphereRegion(20, 10, 30, 10)
+region_5 = BlockRegion(20, 0, 20, 60, 60, 60)
+region_2or3 = Region(region_2, region_3, do="union")
+region_4and5 = Region(region_4, region_5, do="intersect")
+t = Lattice("bcc", basis_molecule=CL, scale=4)
+t2 = Lattice("fcc", basis_molecule=K, scale=3)
+t3 = Lattice("sc", basis_molecule=NA, scale=3)
+mol = t.Create(box, region_1)
+mol = t2.create(box, region_2or3, mol)
+mol = t3.create(box, region_4and5, mol)
+Save_PDB(mol, "out.pdb")
+```
+
+Then we can see `out.pdb` in VMD:
+
+![pic1](https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/1.jpg)
+
 ## Detailed usage and API documentation
 
 All can be seen [here](https://spongemm.cn/xponge_doc/index.html).

@@ -67,4 +67,4 @@ jobs:
             - name: Run test
               run: |
                 conda activate Xponge
-                Xponge test --do base charmm27 --verbose 1
+                Xponge test --do base charmm27 lattice --verbose 1

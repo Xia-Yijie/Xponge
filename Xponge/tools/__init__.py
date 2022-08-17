@@ -132,6 +132,39 @@ class TestMyPackage(unittest.TestCase):
         diff = abs(wat_.H.charge - wat_.H1.charge)
         self.assertLess(diff, 0.01)
 
+    def test_lattice(self):
+        """
+        This **function** does the assignment test for the lattice functions
+
+        :param args: arguments from argparse
+        :return: None
+        """
+        args = self.args
+        source("..")
+        source("..forcefield.amber.tip3p")
+        source("__main__")
+        box = BlockRegion(0, 0, 0, 60, 60, 60)
+        region_1 = BlockRegion(0, 0, 20, 20, 20, 40)
+        region_2 = BlockRegion(0, 0, 40, 20, 20, 60)
+        region_3 = BlockRegion(0, 0, 0, 20, 20, 20)
+        region_4 = SphereRegion(20, 10, 30, 10)
+        region_5 = BlockRegion(0, 0, 0, 20, 20, 40, side="out")
+        region_2or3 = UnionRegion(region_2, region_3)
+        region_4and5 = IntersectRegion(region_4, region_5)
+        region_6 = FrustumRegion(10, 40, 0, 15, 10, 40, 60, 1)
+        region_7 = PrismRegion(30, 30, 0, 20, 0, 0, 0, 20, 0, 10, 10, 20)
+        t = Lattice("bcc", basis_molecule=CL, scale=4)
+        t2 = Lattice("fcc", basis_molecule=K, scale=3)
+        t3 = Lattice("sc", basis_molecule=NA, scale=3)
+        t4 = Lattice("hcp", basis_molecule=MG2, scale=4)
+        t5 = Lattice("diamond", basis_molecule=AL3, scale=5)
+        mol = t.Create(box, region_1)
+        mol = t2.create(box, region_2or3, mol)
+        mol = t3.create(box, region_4and5, mol)
+        mol = t4.create(box, region_6, mol)
+        mol = t5.create(box, region_7, mol)
+        Save_PDB(mol, f"{args.o}.pdb")
+
 
 def _one_test(ccon, name, args):
     """
@@ -164,7 +197,7 @@ def test(args):
         args.do = [["base"]]
     args.do = args.do[0]
     if "all" in args.do:
-        args.do = ["base", "charmm27", "assign"]
+        args.do = ["base", "charmm27", "assign", "lattice"]
     fcon, ccon = mpc.Pipe()
     errors = []
     failures = []

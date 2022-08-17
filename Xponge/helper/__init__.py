@@ -535,7 +535,7 @@ class ResidueType(Type):
 
         super().__init__(**kwargs)
 
-        self._name2atom.not_found_message= "There is no atom named {} in %s"%self.name
+        self._name2atom.not_found_message = "There is no atom named {} in %s"%self.name
         # 连接功能
         self.link = {"head": None, "tail": None, "head_next": None, "tail_next": None,
                      "head_length": 1.5, "tail_length": 1.5, "head_link_conditions": [], "tail_link_conditions": []}
@@ -1586,6 +1586,20 @@ def _residuetype_add(self, other):
     :param other:
     :return:
     """
+    if isinstance(other, Residue):
+        new_molecule = Molecule(self.name)
+        res_a = Residue(self)
+        res_b = other.deepcopy()
+        for atom in self.atoms:
+            res_a.Add_Atom(atom)
+        new_molecule.Add_Residue(res_a)
+        new_molecule.Add_Residue(res_b)
+        if res_a.type.tail and res_b.type.head:
+            atom1 = res_a.name2atom(self.tail)
+            atom2 = res_b.name2atom(res_b.type.head)
+            new_molecule.Add_Residue_Link(atom1, atom2)
+            _link_residue_process_coordinate(new_molecule, atom1, atom2)
+        return new_molecule
     if isinstance(other, ResidueType):
         new_molecule = Molecule(self.name)
         res_a = Residue(self)
@@ -1628,6 +1642,17 @@ def _molecule_add(self, other):
     :param other:
     :return:
     """
+    if isinstance(other, Residue):
+        new_molecule = self.deepcopy()
+        res_a = new_molecule.residues[-1]
+        res_b = other.deepcopy()
+        new_molecule.Add_Residue(res_b)
+        if res_a.type.tail and res_b.type.head:
+            atom1 = res_a.name2atom(res_a.type.tail)
+            atom2 = res_b.name2atom(res_b.type.head)
+            new_molecule.Add_Residue_Link(atom1, atom2)
+            _link_residue_process_coordinate(new_molecule, atom1, atom2)
+        return new_molecule
     if isinstance(other, ResidueType):
         new_molecule = self.deepcopy()
         res_a = new_molecule.residues[-1]
@@ -1668,6 +1693,16 @@ def _imolecule_add(self, other):
     :param other:
     :return:
     """
+    if isinstance(other, Residue):
+        res_a = self.residues[-1]
+        res_b = other.deepcopy()
+        self.Add_Residue(res_b)
+        if res_a.type.tail and res_b.type.head:
+            atom1 = res_a.name2atom(res_a.type.tail)
+            atom2 = res_b.name2atom(res_b.type.head)
+            self.Add_Residue_Link(atom1, atom2)
+            _link_residue_process_coordinate(self, atom1, atom2)
+        return self
     if isinstance(other, ResidueType):
         res_a = self.residues[-1]
         res_b = Residue(other)
@@ -1758,6 +1793,15 @@ def _residuetype_or(self, other):
     :param other:
     :return:
     """
+    if isinstance(other, Residue):
+        new_molecule = Molecule(self.name)
+        res_a = Residue(self)
+        res_b = other.deepcopy()
+        for atom in self.atoms:
+            res_a.Add_Atom(atom)
+        new_molecule.Add_Residue(res_a)
+        new_molecule.Add_Residue(res_b)
+        return new_molecule
     if isinstance(other, ResidueType):
         new_molecule = Molecule(self.name)
         res_a = Residue(self)
@@ -1789,6 +1833,10 @@ def _molecule_or(self, other):
     :param other:
     :return:
     """
+    if isinstance(other, Residue):
+        new_molecule = self.deepcopy()
+        new_molecule.Add_Residue(other.deepcopy())
+        return new_molecule
     if isinstance(other, ResidueType):
         new_molecule = self.deepcopy()
         res_b = Residue(other)
@@ -1816,6 +1864,9 @@ def _imolecule_or(self, other):
     :param other:
     :return:
     """
+    if isinstance(other, Residue):
+        self.Add_Residue(other.deepcopy())
+        return self
     if isinstance(other, ResidueType):
         res_b = Residue(other)
         for atom in other.atoms:
