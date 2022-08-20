@@ -200,6 +200,34 @@ The complete python script is::
     Save_PDB(protein, "protein.pdb")
     Save_SPONGE_Input(protein, "protein")
 
+another example from a python script
+################################################
+
+Here is another way to build the system using ``Region`` and ``Lattice``, mainly for the periodic conditional system::
+
+    import Xponge
+    import Xponge.forcefield.amber.tip3p
+    
+    box = BlockRegion(0, 0, 0, 60, 60, 60)
+    region_1 = BlockRegion(0, 0, 20, 20, 20, 40)
+    region_2 = BlockRegion(0, 0, 40, 20, 20, 60)
+    region_3 = BlockRegion(0, 0, 0, 20, 20, 20)
+    region_4 = SphereRegion(20, 10, 30, 10)
+    region_5 = BlockRegion(20, 0, 20, 60, 60, 60)
+    region_2or3 = Region(region_2, region_3, do="union")
+    region_4and5 = Region(region_4, region_5, do="intersect")
+    t = Lattice("bcc", basis_molecule=CL, scale=4)
+    t2 = Lattice("fcc", basis_molecule=K, scale=3)
+    t3 = Lattice("sc", basis_molecule=NA, scale=3)
+    mol = t.Create(box, region_1)
+    mol = t2.create(box, region_2or3, mol)
+    mol = t3.create(box, region_4and5, mol)
+    Save_PDB(mol, "out.pdb")
+
+The file ``out.pdb`` looks like this:
+
+    .. image:: https://gitee.com/gao_hyp_xyj_admin/xponge/raw/master/README_PICTURE/1.jpg
+
 from a pdb file
 ################
 

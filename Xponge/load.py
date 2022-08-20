@@ -242,7 +242,7 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
     :param judge_histone: judge the protonized state of the histone residues
     :param position_need: the position character to read
     :param ignore_hydrogen: do not read the atom with a name beginning with "H"
-    :param ignore_unknown_name: do not read the atom with an unknow name **New From 1.2.6.4**
+    :param ignore_unknown_name: do not read the atom with an unknown name **New From 1.2.6.4**
     :return: a Molecule instance
     """
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
@@ -317,7 +317,7 @@ def load_coordinate(filename, mol=None):
     """
     with Xopen(filename, "r") as f:
         atom_numbers = int(f.readline().split()[0])
-        crd = np.zeros((atom_numbers,3), dtype=np.float32)
+        crd = np.zeros((atom_numbers, 3), dtype=np.float32)
         box = np.zeros(6, dtype=np.float32)
         for i in range(atom_numbers):
             crd[i][:] = np.array([float(x) for x in f.readline().split()])
