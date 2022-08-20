@@ -9,9 +9,10 @@ import os
 import time
 import stat
 from types import MethodType, FunctionType
-from functools import partial, wraps
+from functools import partial, partialmethod, wraps
 from collections import OrderedDict
 from itertools import product
+from abc import ABC
 
 import numpy as np
 
@@ -199,7 +200,7 @@ class _GlobalSetting():
 globals()["GlobalSetting"] = _GlobalSetting()
 
 
-class Type:
+class Type(ABC):
     """
     This **class** is the abstract class of the types (atom types, bonded force types and so on).
 
@@ -483,6 +484,10 @@ class Type:
         type(self)._unit_transfer(self)
 
 
+class AbstractMolecule(ABC):
+    """This abstract **class** is used to judge whether a class can be treated as a molecule """
+
+
 class AtomType(Type):
     """
     This **class** is a subclass of Type, for atom types
@@ -754,7 +759,7 @@ class ResidueType(Type):
         return new_restype
 
 
-class Entity:
+class Entity(ABC):
     """
     This **class** is the abstract class of the entities (atoms, bonded forces, residues and so on).
 
@@ -1114,13 +1119,35 @@ class ResidueLink:
         """indicates the instance built or not"""
         self.bonded_forces = {frc.get_class_name(): [] for frc in GlobalSetting.BondedForces}
         """the bonded forces after building"""
+        self.tohash = self.get_hash(atom1, atom2)
+        self.residue_tohash = self.get_hash(atom1, atom2, True)
         set_attribute_alternative_names(self)
 
     def __repr__(self):
         return "Entity of ResidueLink: " + repr(self.atom1) + "-" + repr(self.atom2)
 
     def __hash__(self):
-        return hash(repr(self))
+        return hash(self.tohash)
+
+    def __eq__(self, other):
+        return isinstance(other, ResidueLink) and self.tohash == other.tohash
+
+    @staticmethod
+    def get_hash(atom1, atom2, residue=False):
+        """
+        This **function** is used to get the hash value of the ResidueLink between atom0 and atom1
+
+        :param atom1: the first atom to link
+        :param atom2: the second atom to link
+        :param residue: whether to hash the residue of the atoms or atoms themselves
+        :return: the hash value
+        """
+        if residue:
+            tohash = [f"{atom1}-{atom2}", f"{atom2}-{atom1}"]
+        else:
+            tohash = [f"{atom1.residue}-{atom2.residue}", f"{atom2.residue}-{atom1.residue}"]
+        tohash.sort()
+        return tohash[0]
 
     def add_bonded_force(self, bonded_force_entity):
         """
@@ -1145,7 +1172,7 @@ class ResidueLink:
         raise Exception("Not Right forcopy")
 
 
-class Molecule:
+class Molecule():
     """
     This **class** is a class for molecules
 
@@ -1175,7 +1202,7 @@ class Molecule:
         """
         self.atom_index = []
         """the atom index"""
-        self.residue_links = []
+        self.residue_links = set()
         """the residue links in the molecule"""
         self.bonded_forces = Xdict()
         """the bonded forces after building"""
@@ -1200,6 +1227,34 @@ class Molecule:
         if getattr(AtomType, "_parameters").get(attr, None) == float:
             return np.sum([getattr(atom, attr) for res in self.residues for atom in res.atoms])
         return super().__getattribute__(attr)
+
+    @classmethod
+    def cast(cls, other, deepcopy=False):
+        """
+        This **function** casts a Residue, a ResidueType or a Molecule to a Molecule
+
+        :param other: a Residue, a ResidueType or a Molecule instance
+        :param deepcopy: whether to deepcopy the other instance
+        :return: a Molecule instance
+        """
+        if isinstance(other, Molecule):
+            if deepcopy:
+                return other.deepcopy()
+            return other
+        if isinstance(other, Residue):
+            new_molecule = Molecule(other.name)
+            if deepcopy:
+                other = other.deepcopy()
+            new_molecule.Add_Residue(other)
+            return new_molecule
+        if isinstance(other, ResidueType):
+            new_molecule = Molecule(other.name)
+            res_b = Residue(other)
+            for atom in other.atoms:
+                res_b.Add_Atom(atom)
+            new_molecule.Add_Residue(res_b)
+            return new_molecule
+        raise TypeError(f"Only Residue, ResidueType or Molecule can be cast to Molecule, but {type(other)} found")
 
     @classmethod
     def set_save_sponge_input(cls, keyname):
@@ -1288,24 +1343,22 @@ class Molecule:
         :return:
         """
         assert typeatom2 in restype.connectivity[typeatom1]
-        index_dict = Xdict().fromkeys(restype.connectivity[typeatom1], typeatom1)
-        if typeatom2 in index_dict.keys():
-            index_dict.pop(typeatom2)
+        to_search = set(restype.connectivity[typeatom1])
+        to_search.remove(typeatom2)
 
-        while index_dict:
-            index_next = Xdict()
-            for atom0, from_atom in index_dict.items():
-                if atom0.name == restype.head:
-                    head = toset
-                elif atom0.name == restype.tail:
-                    tail = toset
-                atom1_friends.append(molecule.atom_index[resatom_(atom0)])
-                index_temp = Xdict().fromkeys(restype.connectivity[atom0], atom0)
-                index_temp.pop(from_atom)
-                if typeatom2 in index_temp.keys():
-                    index_temp.pop(typeatom2)
-                index_next.update(index_temp)
-            index_dict = index_next
+        searched = set()
+        searched.add(typeatom2)
+        while to_search:
+            atom0 = to_search.pop()
+            if atom0 in searched:
+                continue
+            if atom0.name == restype.head:
+                head = toset
+            elif atom0.name == restype.tail:
+                tail = toset
+            searched.add(atom0)
+            atom1_friends.append(molecule.atom_index[resatom_(atom0)])
+            to_search |= set(restype.connectivity[atom0]) - searched
         return head, tail
 
     def add_residue(self, residue):
@@ -1342,7 +1395,7 @@ class Molecule:
         :return: None
         """
         self.built = False
-        self.residue_links.append(ResidueLink(atom1, atom2))
+        self.residue_links.add(ResidueLink(atom1, atom2))
 
     def add_missing_atoms(self):
         """
@@ -1365,7 +1418,7 @@ class Molecule:
             new_molecule.Add_Residue(res.deepcopy(forcopy))
 
         for link in self.residue_links:
-            new_molecule.residue_links.append(link.deepcopy(forcopy))
+            new_molecule.residue_links.add(link.deepcopy(forcopy))
 
         for res in self.residues:
             for atom in res.atoms:
@@ -1476,6 +1529,8 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
     :param atom2:
     :return:
     """
+    molecule.atoms = [atom for residue in molecule.residues for atom in residue.atoms]
+    molecule.atom_index = {atom:i for i, atom in enumerate(molecule.atoms)}
     res_a = atom1.residue
     res_b = atom2.residue
     crd = molecule.get_atom_coordinates()
@@ -1579,51 +1634,31 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
         atom.z = crd[i][2]
 
 
-def _residuetype_add(self, other):
+Entity.register(ResidueLink)
+Entity.register(Molecule)
+AbstractMolecule.register(Residue)
+AbstractMolecule.register(ResidueType)
+AbstractMolecule.register(Molecule)
+
+def _add(self, other, deepcopy, link):
     """
 
     :param self:
     :param other:
     :return:
     """
-    if isinstance(other, Residue):
-        new_molecule = Molecule(self.name)
-        res_a = Residue(self)
-        res_b = other.deepcopy()
-        for atom in self.atoms:
-            res_a.Add_Atom(atom)
-        new_molecule.Add_Residue(res_a)
-        new_molecule.Add_Residue(res_b)
-        if res_a.type.tail and res_b.type.head:
-            atom1 = res_a.name2atom(self.tail)
-            atom2 = res_b.name2atom(res_b.type.head)
-            new_molecule.Add_Residue_Link(atom1, atom2)
-            _link_residue_process_coordinate(new_molecule, atom1, atom2)
-        return new_molecule
-    if isinstance(other, ResidueType):
-        new_molecule = Molecule(self.name)
-        res_a = Residue(self)
-        res_b = Residue(other)
-        for atom in self.atoms:
-            res_a.Add_Atom(atom)
-        for atom in other.atoms:
-            res_b.Add_Atom(atom)
-        new_molecule.Add_Residue(res_a)
-        new_molecule.Add_Residue(res_b)
-        if res_a.type.tail and res_b.type.head:
-            atom1 = res_a.name2atom(self.tail)
-            atom2 = res_b.name2atom(other.head)
-            new_molecule.Add_Residue_Link(atom1, atom2)
-            _link_residue_process_coordinate(new_molecule, atom1, atom2)
-        return new_molecule
-    if isinstance(other, Molecule):
-        new_molecule = other.deepcopy()
-        res_a = Residue(self)
-        res_b = new_molecule.residues[0]
-        for atom in self.atoms:
-            res_a.Add_Atom(atom)
-        new_molecule.residues.insert(0, res_a)
-        if res_a.type.tail and res_b.type.head:
+    if isinstance(other, AbstractMolecule):
+        new_molecule = Molecule.cast(self, deepcopy=deepcopy)
+        new_molecule.built = False
+        other_molecule = Molecule.cast(other, deepcopy=True)
+        try:
+            res_a = new_molecule.residues[-1]
+        except IndexError:
+            res_a = None
+        res_b = other_molecule.residues[0]
+        new_molecule.residues += other_molecule.residues
+        new_molecule.residue_links |= other_molecule.residue_links
+        if link and res_a and res_a.type.tail and res_b.type.head:
             atom1 = res_a.name2atom(res_a.type.tail)
             atom2 = res_b.name2atom(res_b.type.head)
             new_molecule.Add_Residue_Link(atom1, atom2)
@@ -1635,106 +1670,7 @@ def _residuetype_add(self, other):
     raise TypeError("unsupported operand type(s) for +: '%s' and '%s'" % (type(self), type(other)))
 
 
-def _molecule_add(self, other):
-    """
-
-    :param self:
-    :param other:
-    :return:
-    """
-    if isinstance(other, Residue):
-        new_molecule = self.deepcopy()
-        res_a = new_molecule.residues[-1]
-        res_b = other.deepcopy()
-        new_molecule.Add_Residue(res_b)
-        if res_a.type.tail and res_b.type.head:
-            atom1 = res_a.name2atom(res_a.type.tail)
-            atom2 = res_b.name2atom(res_b.type.head)
-            new_molecule.Add_Residue_Link(atom1, atom2)
-            _link_residue_process_coordinate(new_molecule, atom1, atom2)
-        return new_molecule
-    if isinstance(other, ResidueType):
-        new_molecule = self.deepcopy()
-        res_a = new_molecule.residues[-1]
-        res_b = Residue(other)
-        for atom in other.atoms:
-            res_b.Add_Atom(atom)
-        new_molecule.Add_Residue(res_b)
-        if res_a.type.tail and res_b.type.head:
-            atom1 = res_a.name2atom(res_a.type.tail)
-            atom2 = res_b.name2atom(res_b.type.head)
-            new_molecule.Add_Residue_Link(atom1, atom2)
-            _link_residue_process_coordinate(new_molecule, atom1, atom2)
-        return new_molecule
-    if isinstance(other, Molecule):
-        new_molecule = self.deepcopy()
-        new_molecule2 = other.deepcopy()
-        res_a = new_molecule.residues[-1]
-        res_b = new_molecule2.residues[0]
-        for res in new_molecule2.residues:
-            new_molecule.Add_Residue(res)
-        for reslink in new_molecule2.residue_links:
-            new_molecule.Add_Residue_Link(reslink.atom1, reslink.atom2)
-        if res_a.type.tail and res_b.type.head:
-            atom1 = res_a.name2atom(res_a.type.tail)
-            atom2 = res_b.name2atom(res_b.type.head)
-            new_molecule.Add_Residue_Link(atom1, atom2)
-            _link_residue_process_coordinate(new_molecule, atom1, atom2)
-        return new_molecule
-    if other is None:
-        return self
-    raise TypeError("unsupported operand type(s) for +: '%s' and '%s'" % (type(self), type(other)))
-
-
-def _imolecule_add(self, other):
-    """
-
-    :param self:
-    :param other:
-    :return:
-    """
-    if isinstance(other, Residue):
-        res_a = self.residues[-1]
-        res_b = other.deepcopy()
-        self.Add_Residue(res_b)
-        if res_a.type.tail and res_b.type.head:
-            atom1 = res_a.name2atom(res_a.type.tail)
-            atom2 = res_b.name2atom(res_b.type.head)
-            self.Add_Residue_Link(atom1, atom2)
-            _link_residue_process_coordinate(self, atom1, atom2)
-        return self
-    if isinstance(other, ResidueType):
-        res_a = self.residues[-1]
-        res_b = Residue(other)
-        for atom in other.atoms:
-            res_b.Add_Atom(atom)
-        self.Add_Residue(res_b)
-        if res_a.type.tail and res_b.type.head:
-            atom1 = res_a.name2atom(res_a.type.tail)
-            atom2 = res_b.name2atom(other.head)
-            self.Add_Residue_Link(atom1, atom2)
-            _link_residue_process_coordinate(self, atom1, atom2)
-        return self
-    if isinstance(other, Molecule):
-        new_molecule2 = other.deepcopy()
-        res_a = self.residues[-1]
-        res_b = new_molecule2.residues[0]
-        for res in new_molecule2.residues:
-            self.Add_Residue(res)
-        for reslink in new_molecule2.residue_links:
-            self.Add_Residue_Link(reslink.atom1, reslink.atom2)
-        if res_a.type.tail and res_b.type.head:
-            atom1 = res_a.name2atom(res_a.type.tail)
-            atom2 = res_b.name2atom(res_b.type.head)
-            self.Add_Residue_Link(atom1, atom2)
-            _link_residue_process_coordinate(self, atom1, atom2)
-        return self
-    if other is None:
-        return self
-    raise TypeError("unsupported operand type(s) for +: '%s' and '%s'" % (type(self), type(other)))
-
-
-def _muls(self, other):
+def _mul(self, other, deepcopy):
     """
 
     :param self:
@@ -1742,8 +1678,9 @@ def _muls(self, other):
     :return:
     """
     if isinstance(other, int):
-        assert other >= 1
-        if isinstance(self, ResidueType):
+        if other < 1:
+            raise ValueError("multiple should be not less than 1")
+        if isinstance(self, ResidueType) or deepcopy:
             t = self
         else:
             t = self.deepcopy()
@@ -1753,148 +1690,21 @@ def _muls(self, other):
     raise TypeError("unsupported operand type(s) for *: '%s' and '%s'" % (type(self), type(other)))
 
 
-def _imuls(self, other):
-    """
-
-    :param self:
-    :param other:
-    :return:
-    """
-    if isinstance(other, int):
-        assert other >= 1
-        for _ in range(other - 1):
-            self += self
-        return self
-    raise TypeError("unsupported operand type(s) for *: '%s' and '%s'" % (type(self), type(other)))
-
-
-ResidueType.__add__ = _residuetype_add
-ResidueType.__radd__ = _residuetype_add
-ResidueType.__mul__ = _muls
-ResidueType.__rmul__ = _muls
-Molecule.__add__ = _molecule_add
-Molecule.__radd__ = _molecule_add
-Molecule.__iadd__ = _imolecule_add
-Molecule.__mul__ = _muls
-Molecule.__rmul__ = _muls
-Molecule.__imul__ = _imuls
-
-del _residuetype_add
-del _molecule_add
-del _muls
-del _imuls
-del _imolecule_add
-
-
-def _residuetype_or(self, other):
-    """
-
-    :param self:
-    :param other:
-    :return:
-    """
-    if isinstance(other, Residue):
-        new_molecule = Molecule(self.name)
-        res_a = Residue(self)
-        res_b = other.deepcopy()
-        for atom in self.atoms:
-            res_a.Add_Atom(atom)
-        new_molecule.Add_Residue(res_a)
-        new_molecule.Add_Residue(res_b)
-        return new_molecule
-    if isinstance(other, ResidueType):
-        new_molecule = Molecule(self.name)
-        res_a = Residue(self)
-        res_b = Residue(other)
-        for atom in self.atoms:
-            res_a.Add_Atom(atom)
-        for atom in other.atoms:
-            res_b.Add_Atom(atom)
-        new_molecule.Add_Residue(res_a)
-        new_molecule.Add_Residue(res_b)
-        return new_molecule
-    if isinstance(other, Molecule):
-        new_molecule = other.deepcopy()
-        res_a = Residue(self)
-        res_b = new_molecule.residues[0]
-        for atom in self.atoms:
-            res_a.Add_Atom(atom)
-        new_molecule.residues.insert(0, res_a)
-        return new_molecule
-    if other is None:
-        return self
-    raise TypeError("unsupported operand type(s) for |: '%s' and '%s'" % (type(self), type(other)))
-
-
-def _molecule_or(self, other):
-    """
-
-    :param self:
-    :param other:
-    :return:
-    """
-    if isinstance(other, Residue):
-        new_molecule = self.deepcopy()
-        new_molecule.Add_Residue(other.deepcopy())
-        return new_molecule
-    if isinstance(other, ResidueType):
-        new_molecule = self.deepcopy()
-        res_b = Residue(other)
-        for atom in other.atoms:
-            res_b.Add_Atom(atom)
-        new_molecule.Add_Residue(res_b)
-        return new_molecule
-    if isinstance(other, Molecule):
-        new_molecule = self.deepcopy()
-        new_molecule2 = other.deepcopy()
-        res_b = new_molecule2.residues[0]
-        for res in new_molecule2.residues:
-            new_molecule.Add_Residue(res)
-        new_molecule.residue_links.extend(new_molecule2.residue_links)
-        return new_molecule
-    if other is None:
-        return self
-    raise TypeError("unsupported operand type(s) for +: '%s' and '%s'" % (type(self), type(other)))
-
-
-def _imolecule_or(self, other):
-    """
-
-    :param self:
-    :param other:
-    :return:
-    """
-    if isinstance(other, Residue):
-        self.Add_Residue(other.deepcopy())
-        return self
-    if isinstance(other, ResidueType):
-        res_b = Residue(other)
-        for atom in other.atoms:
-            res_b.Add_Atom(atom)
-        self.Add_Residue(res_b)
-        return self
-    if isinstance(other, Molecule):
-        new_molecule2 = other.deepcopy()
-        res_b = new_molecule2.residues[0]
-        for res in new_molecule2.residues:
-            self.Add_Residue(res)
-        self.residue_links.extend(new_molecule2.residue_links)
-        return self
-    if other is None:
-        return self
-    raise TypeError("unsupported operand type(s) for +: '%s' and '%s'" % (type(self), type(other)))
-
-
-ResidueType.__or__ = _residuetype_or
-ResidueType.__ror__ = _residuetype_or
-
-Molecule.__or__ = _molecule_or
-Molecule.__ror__ = _molecule_or
-Molecule.__ior__ = _imolecule_or
-
-del _residuetype_or
-del _molecule_or
-del _imolecule_or
+ResidueType.__add__ = partialmethod(_add, deepcopy=True, link=True)
+ResidueType.__radd__ = partialmethod(_add, deepcopy=True, link=True)
+ResidueType.__or__ = partialmethod(_add, deepcopy=True, link=False)
+ResidueType.__ror__ = partialmethod(_add, deepcopy=True, link=False)
+ResidueType.__mul__ = partialmethod(_mul, deepcopy=True)
+ResidueType.__rmul__ = partialmethod(_mul, deepcopy=True)
+Molecule.__add__ = partialmethod(_add, deepcopy=True, link=True)
+Molecule.__radd__ = partialmethod(_add, deepcopy=True, link=True)
+Molecule.__iadd__ = partialmethod(_add, deepcopy=False, link=True)
+Molecule.__mul__ = partialmethod(_mul, deepcopy=True)
+Molecule.__rmul__ = partialmethod(_mul, deepcopy=True)
+Molecule.__imul__ = partialmethod(_mul, deepcopy=False)
+Molecule.__or__ = partialmethod(_add, deepcopy=True, link=False)
+Molecule.__ror__ = partialmethod(_add, deepcopy=True, link=False)
+Molecule.__ior__ = partialmethod(_add, deepcopy=False, link=False)
 
 
 def generate_new_bonded_force_type(type_name, atoms, properties, is_compulsory, is_multiple=False):
