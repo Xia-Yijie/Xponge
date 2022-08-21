@@ -84,8 +84,8 @@ import numpy as np
 from . import assign
 from .assign import Assign, get_assignment_from_pdb, get_assignment_from_mol2, get_assignment_from_pubchem, \
     get_assignment_from_residuetype
-from .helper import GlobalSetting, Type, ResidueType, Entity, Atom, Residue, ResidueLink, Molecule, AtomType, \
-    set_global_alternative_names, generate_new_pairwise_force_type, generate_new_bonded_force_type, source
+from .helper import GlobalSetting, Type, AbstractMolecule, ResidueType, Entity, Atom, Residue, ResidueLink, Molecule, \
+    AtomType, set_global_alternative_names, generate_new_pairwise_force_type, generate_new_bonded_force_type, source
 from .load import load_ffitp, load_mol2, load_rst7, load_frcmod, load_pdb, load_parmdat, load_coordinate
 from .build import save_mol2, save_pdb, save_sponge_input, save_gro, build_bonded_force, get_mindsponge_system_energy
 from .process import impose_bond, impose_angle, impose_dihedral, add_solvent_box, h_mass_repartition, solvent_replace, \
