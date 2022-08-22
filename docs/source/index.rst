@@ -2,7 +2,7 @@ Xponge 1.2.6.6 Documentation
 ------------------------------------
 
 What is Xponge?
-    ``Xponge`` is a lightweight and easy-customizing python package to perform pre- and post-processing of molecular simulations. 
+    ``Xponge`` is a lightweight and easy to customize python package to perform pre- and post-processing of molecular simulations. 
 
 What can Xponge do?
     ``Xponge`` is mainly designed for the molecular dynamics (MD) program `SPONGE <https://onlinelibrary.wiley.com/doi/epdf/10.1002/cjoc.202100456>`_, but it can also output some general format files such as mol2 and PDB, so it may help the other molecular modelling programs too.
