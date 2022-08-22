@@ -2,7 +2,7 @@
 
 ## Introduction
 
-``Xponge`` is a lightweight and easy-customizing python package to perform pre- and post-processing of molecular simulations.
+``Xponge`` is a lightweight and easy to customize python package to perform pre- and post-processing of molecular simulations.
 
 ### What can Xponge do?
 
