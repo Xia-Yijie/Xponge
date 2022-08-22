@@ -1,4 +1,4 @@
-Xponge 1.2.6.5 Documentation
+Xponge 1.2.6.6 Documentation
 ------------------------------------
 
 What is Xponge?
@@ -52,6 +52,16 @@ How can I get Xponge?
     :caption: API
     
     modules
+
+.. toctree::
+    :maxdepth: 2
+    :caption: OTHERS
+    
+    contribution_guide
+    official website of SPONGE <https://spongemm.cn>
+    github repository of Xponge <https://github.com/Xia-Yijie/xponge>
+    gitee repository of Xponge <https://gitee.com/gao_hyp_xyj_admin/xponge>
+    gitee repository of MindScience <https://gitee.com/mindspore/mindscience>
 
 Indices and tables
 ------------------------------------

@@ -408,9 +408,6 @@ class Region(ABC):
     """
     This **abstract class** is used to define a region
     **New From 1.2.6.4**
-
-    :param *regions: the regions
-    :param do: eigher 'union' or 'intersect'
     """
     def __init__(self):
         self.side = "in"

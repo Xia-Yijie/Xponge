@@ -102,6 +102,10 @@ Then we can see `out.pdb` in VMD:
 
 All can be seen [here](https://spongemm.cn/xponge_doc/index.html).
 
+## Contribution Guideline
+
+If you want to contribute to the main codebase or report some issues, see [here](https://spongemm.cn/xponge_doc/contribution_guideline.index) for the guides.
+
 ## Dependencies
 
 `Xponge` does not depend on other packages except numpy for its basic use.
