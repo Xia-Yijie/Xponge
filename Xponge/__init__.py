@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """
-Xponge, a lightweight and easy-customizing python package for pre- and post- process of molecular modelling
+Xponge, a lightweight and easy to customize python package for pre- and post- process of molecular modelling
 
 .. TIP::
 
