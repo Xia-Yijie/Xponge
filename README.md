@@ -104,7 +104,7 @@ All can be seen [here](https://spongemm.cn/xponge_doc/index.html).
 
 ## Contribution Guideline
 
-If you want to contribute to the main codebase or report some issues, see [here](file:///D:/xyj_summer/xponge/docs/build/html/contribution_guide.html) for the guides.
+If you want to contribute to the main codebase or report some issues, see [here](https://spongemm.cn/xponge_doc/contribution_guide.html) for the guides.
 
 ## Dependencies
 
