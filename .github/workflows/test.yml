@@ -1,5 +1,8 @@
 name: CI
-on: [push]
+on:
+  push:
+    paths:
+      - '**.py'
 
 jobs:
     pylint:
