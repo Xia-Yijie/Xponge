@@ -95,14 +95,14 @@ Here is another simple example.
 import Xponge
 import Xponge.forcefield.amber.tip3p
 
-box = BlockRegion(0, 0, 0, 60, 60, 60)
-region_1 = BlockRegion(0, 0, 20, 20, 20, 40)
-region_2 = BlockRegion(0, 0, 40, 20, 20, 60)
-region_3 = BlockRegion(0, 0, 0, 20, 20, 20)
-region_4 = SphereRegion(20, 10, 30, 10)
-region_5 = BlockRegion(20, 0, 20, 60, 60, 60)
-region_2or3 = UnionRegion(region_2, region_3)
-region_4and5 = IntersectRegion(region_4, region_5)
+box = Xponge.BlockRegion(0, 0, 0, 60, 60, 60)
+region_1 = Xponge.BlockRegion(0, 0, 20, 20, 20, 40)
+region_2 = Xponge.BlockRegion(0, 0, 40, 20, 20, 60)
+region_3 = Xponge.BlockRegion(0, 0, 0, 20, 20, 20)
+region_4 = Xponge.SphereRegion(20, 10, 30, 10)
+region_5 = Xponge.BlockRegion(20, 0, 20, 60, 60, 60)
+region_2or3 = Xponge.UnionRegion(region_2, region_3)
+region_4and5 = Xponge.IntersectRegion(region_4, region_5)
 t = Lattice("bcc", basis_molecule=CL, scale=4)
 t2 = Lattice("fcc", basis_molecule=K, scale=3)
 t3 = Lattice("sc", basis_molecule=NA, scale=3)
