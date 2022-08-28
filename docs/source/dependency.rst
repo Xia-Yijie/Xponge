@@ -7,6 +7,18 @@ When an ``ImportError`` or a ``ModuleNotFoundError`` is raised, you need to inst
 
 Most of the module can be installed via ``pip``, while the ``RDKit`` package should be installed via ``conda``.
 
+It is recommended to use `conda` to configure the environment. Two `yml` files named `install_requirements.yml` and `extras_requirements.yml` are provided in the repository.
+
+If you only need the basic functionality of Xponge, use the following command to configure the environment::
+
+    conda env create -f install_requirements.yml
+    conda activate Xponge
+
+If you want to experience all the features of Xponge, use the following command to configure the environment::
+
+    conda env create -f extras_requirements.yml
+    conda activate Xponge
+
 Here is the list of all packages which may be used:
 
 .. list-table:: Xponge Dependency
