@@ -62,14 +62,28 @@ Xponge can be an independent package. With the independent package, you can use 
 2. source setup
 ############################
 
-- 2.1 download or clone the source of the gitee or github repository
+- 2.1 Download or clone the source from the gitee or github repository
 
     The gitee repository is `Xponge <https://gitee.com/gao_hyp_xyj_admin/xponge>`_
     The github repository is `here <https://github.com/xia-yijie/xponge>`_.
     
-- 2.2 open the directory where you download or clone the repository
+- 2.2 Open the directory where you download or clone the repository
 
-- 2.3 run the command
+- 2.3 (Optional) Configure the environment
+
+    It is recommended to use `conda` to configure the environment. Two `yml` files named `install_requirements.yml` and `extras_requirements.yml` are provided in the repository.
+
+    If you only need the basic functionality of Xponge, use the following command to configure the environment::
+
+        conda env create -f install_requirements.yml
+        conda activate Xponge
+
+    If you want to experience all the features of Xponge, use the following command to configure the environment::
+
+        conda env create -f extras_requirements.yml
+        conda activate Xponge
+
+- 2.4 run the command
 
 .. code-block:: bash
 
