@@ -109,7 +109,7 @@ t3 = Xponge.Lattice("sc", basis_molecule=NA, scale=3)
 mol = t.Create(box, region_1)
 mol = t2.create(box, region_2or3, mol)
 mol = t3.create(box, region_4and5, mol)
-Save_PDB(mol, "out.pdb")
+Xponge.Save_PDB(mol, "out.pdb")
 ```
 
 Then we can see `out.pdb` in VMD:
