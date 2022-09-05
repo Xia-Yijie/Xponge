@@ -10,7 +10,7 @@ Xponge includes three major categories of functionality, namely, the simulation 
 
 ## Installation
 
-Xponge can be used on all operating systems (Windows/Linux/MacOS).
+Xponge can be used on all operating systems (Windows/Linux/MacOS). Some functions to do the quantum chemistry calculations can not be used on Windows because `pyscf` is not available on Windows.
 
 ### 1. pip install
 
@@ -34,19 +34,21 @@ pip install Xponge
 
     It is recommended to use `conda` to configure the environment. Two `yml` files named `install_requirements.yml` and `extras_requirements.yml` are provided in the repository.
 
-    If you only need the basic functionality of Xponge, use the following command to configure the environment.
+    It is recommanded to use the file `install_requirements.yml` to configure the environment. The file will only install the basic dependent packages. If a `ModuleNotFoundError` is raised when you are using `Xponge`, then install the module. This allows you to avoid installing many modules that you will never use, and also makes `Xponge` more cross-platform compatible. Here are the commands to use `install_requirements.yml`.
 
     ```bash
     conda env create -f install_requirements.yml
     conda activate Xponge
     ```
 
-    If you want to experience all the features of Xponge, use the following command to configure the environment.
+    All the dependent packages are listed in the [dependencies](#dependencies) section. If you don't want to install the dependent packages one by one (which can be really annoying), the file `extras_requirements.yml` can help you with the environment configuration except the packages `mindspore` and `mindsponge`. The two packages should be installed according to your device (e.g. whether the backend is CPU, GPU or Huawei Ascend Processors) and can not be simply installed by conda. Here are the commands to use `extras_requirements.yml`.
 
     ```bash
     conda env create -f extras_requirements.yml
     conda activate Xponge
     ```
+
+     It is worth noting that `extras_requirements.yml` can not be used on Windows because `pyscf` is not available on Windows.
 
 - 2.4 Run the command
 
@@ -128,7 +130,7 @@ If you want to contribute to the main codebase or report some issues, see [here]
 
 `Xponge` does not depend on other packages except numpy for its basic use.
 
-However, there are some complicated functions rely on some other packages. If you do not install the dependent package, you can not use the related functions.
+However, there are some complicated functions that depend on some other packages. If you do not install the dependent package, you can not use the related functions.
 
 Here is the list of all packages which may be uesd:
 
