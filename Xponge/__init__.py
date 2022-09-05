@@ -71,7 +71,7 @@ The atoms in a ``Residue`` or a ``ResidueType`` can be obtained by their names. 
     print(ALA.CA)
 
 """
-__version__ = "1.2.6.6"
+__version__ = "1.2.6.7"
 
 import os
 import time
@@ -149,12 +149,19 @@ def _initialize():
 
     #pylint: disable=unused-argument
     def _do_initial(self, sys_kwarg, ene_kwarg, use_pbc):
+        if self.box_length is not None:
+            box_length = self.box_length
+        else:
+            crd = self.get_atom_coordinates()
+            box_length = list(np.max(crd, axis=0) - np.min(crd, axis=0) + 6)
         if "coordinate" not in sys_kwarg:
             sys_kwarg["coordinate"] = [self.get_atom_coordinates().tolist()]
             sys_kwarg["atoms"] = [[atom.name for atom in self.atoms]]
+            sys_kwarg["pbc_box"] = [box_length]
         else:
             sys_kwarg["coordinate"].append(self.get_atom_coordinates().tolist())
             sys_kwarg["atoms"].append([atom.name for atom in self.atoms])
+            sys_kwarg["pbc_box"].append(box_length)
 
     Molecule.Set_MindSponge_Todo("coordinate")(_do_initial)
 

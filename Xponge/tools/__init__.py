@@ -176,12 +176,13 @@ class TestMyPackage(unittest.TestCase):
         source("..forcefield.amber.ff14sb")
         source("__main__")
         args = self.args
-        Save_PDB(ALA,f"{args.o}.pdb")
+        Save_PDB(ALA, f"{args.o}.pdb")
         Save_Mol2(ALA, f"{args.o}_r1.mol2")
-        Save_Mol2(NALA,f"{args.o}_r2.mol2")
+        Save_Mol2(NALA, f"{args.o}_r2.mol2")
         error = os.system(f"Xponge mol2rfe -nl 1 -pdb {args.o}.pdb -r1 {args.o}_r1.mol2 \
 -r2 {args.o}_r2.mol2 > {os.devnull}")
         self.assertEqual(error, 0)
+
 
 def _one_test(ccon, name, args):
     """

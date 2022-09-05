@@ -356,13 +356,30 @@ def get_mindsponge_system_energy(cls, use_pbc=False):
         else:
             raise TypeError(f"The type should be a Molecule, Residue, ResidueType, but we get {str(type(scls))}")
     set_global_units("A", "kcal/mol")
+    toremove = []
+    for key, value in sys_kwarg.items():
+        if not value[0]:
+            toremove.append(key)
+    for key in toremove:
+        sys_kwarg.pop(key)
     system = mMolecule(**sys_kwarg)
     system.multi_system = len(cls)
     energies = []
-    exclude = ene_kwarg.pop("exclude")
+    sys_kwarg["exclude"] = ene_kwarg.pop("exclude")
     for todo in ene_kwarg.values():
-        energies.append(todo["function"](system, ene_kwarg))
-    energy = ForceFieldBase(energy=energies, exclude_index=exclude)
+        try:
+            energies.append(todo["function"](system, ene_kwarg))
+        except (TypeError, ValueError) as e:
+            if 'NoneType' not in e.args[0] and 'zero dimension' not in e.args[0]:
+                raise e
+
+    try:
+        energy = ForceFieldBase(energy=energies, exclude_index=sys_kwarg["exclude"])
+    except ValueError as e:
+        if 'zero dimension' not in e.args[0]:
+            raise e
+        energy = ForceFieldBase(energy=energies)
+
     return system, energy
 
 

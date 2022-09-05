@@ -1445,7 +1445,7 @@ class Molecule():
         """
         This **function** is used to get the atom coordinates
 
-        :return: a numpy array, the coordinates or atoms
+        :return: a numpy array, the coordinates of atoms
         """
         self.atoms = []
         for res in self.residues:
@@ -1530,7 +1530,7 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
     :return:
     """
     molecule.atoms = [atom for residue in molecule.residues for atom in residue.atoms]
-    molecule.atom_index = {atom:i for i, atom in enumerate(molecule.atoms)}
+    molecule.atom_index = {atom: i for i, atom in enumerate(molecule.atoms)}
     res_a = atom1.residue
     res_b = atom2.residue
     crd = molecule.get_atom_coordinates()
@@ -1639,6 +1639,7 @@ Entity.register(Molecule)
 AbstractMolecule.register(Residue)
 AbstractMolecule.register(ResidueType)
 AbstractMolecule.register(Molecule)
+
 
 def _add(self, other, deepcopy, link):
     """
