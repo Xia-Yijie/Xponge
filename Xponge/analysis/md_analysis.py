@@ -21,8 +21,9 @@ class SpongeTrajectoryReader(base.ReaderBase):
 representing the 3 box lengths and 3 box angles.
     :param n_atoms: the number of atoms
     """
-    def __init__(self, dat_file_name, box, n_atoms, **kwargs):
+    def __init__(self, dat_file_name, n_atoms, **kwargs):
         super().__init__(dat_file_name, **kwargs)
+        box = kwargs.get("box", None)
         if isinstance(box, str):
             self.boxname = box
             self.box = None
@@ -50,6 +51,21 @@ representing the 3 box lengths and 3 box angles.
         The total number of atoms in the trajectory file
         """
         return self._n_atoms
+
+    @classmethod
+    def with_arguments(cls, **kwargs):
+        """
+        This **function** binds the arguments to the reader to initialize
+        **New From 1.2.6.8**
+
+        :param kwargs: the arguments
+        :return: a subclass of SpongeTrajectoryReader
+        """
+        class SpongeTrajectoryReaderWithArguments(cls):
+            def __init__(self, dat_file_name, n_atoms, **kwargs_):
+                kwargs_.update(kwargs)
+                super().__init__(dat_file_name, n_atoms, **kwargs_)
+        return SpongeTrajectoryReaderWithArguments
 
     def close(self):
         """
