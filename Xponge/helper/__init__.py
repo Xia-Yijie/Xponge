@@ -8,6 +8,7 @@ This **module** is used to provide help functions and classes
 import os
 import time
 import stat
+import copy
 from types import MethodType, FunctionType
 from functools import partial, partialmethod, wraps
 from collections import OrderedDict
@@ -698,6 +699,41 @@ class ResidueType(Type):
         self._name2index[name] = len(self.atoms) - 1
         self.connectivity[new_atom] = set([])
 
+    def omit_atoms(self, atoms, charge):
+        """
+        This **function** omits some atoms from the ResidueType
+
+        :param atoms: the atom(s) to omit
+        :param charge: the total charge of the residue type after the omission. \
+None to use the charge sum of the unomitted atoms
+        :return: None
+        """
+        if not isinstance(atoms, Iterable):
+            atoms = [atoms]
+        atoms = set(getattr(self, atom) if isinstance(atom, str) else atom for atom in atoms)
+
+        charges = np.array([atom.charge for atom in self.atoms])
+        positive_charge = np.sum(charges[charges > 0])
+        negative_charge = np.sum(charges[charges < 0])
+        if charge is None:
+            charge = positive_charge + negative_charge - np.sum([atom.charge for atom in atoms])
+        factor = (charge - positive_charge - negative_charge) / (positive_charge - negative_charge)
+        for atom in atoms:
+            self.atoms.remove(atom)
+            atom.residue = None
+            self.connectivity.pop(atom)
+        self._name2atom.clear()
+        self._atom2name.clear()
+        self._atom2index.clear()
+        self._name2index.clear()
+        for index, atom in enumerate(self.atoms):
+            self._name2atom[atom.name] = atom
+            self._atom2name[atom] = atom.name
+            self._atom2index[atom] = index
+            self._name2index[atom.name] = index
+            self.connectivity[atom] -= atoms
+            self.charge += np.sign(self.charge) * factor
+
     def add_connectivity(self, atom0, atom1):
         """
         This **function** is used to add the connectivity between two atoms to the residue type.
@@ -736,6 +772,7 @@ class ResidueType(Type):
         :return: the new instance
         """
         new_restype = ResidueType(name=name)
+        new_restype.link = copy.deepcopy(self.link)
         donot_delete = True
         if forcopy is None:
             donot_delete = False
