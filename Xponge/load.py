@@ -182,6 +182,25 @@ def _pdb_link_after(chain, links, molecule):
                                   res_b.name2atom(link[42:46].strip()))
 
 
+def _pdb_add_atom(current_residue, atomname, x, y, z,
+                  ignore_hydrogen, ignore_unknown_name, atom_map, atom_index):
+    """
+    add the atom to the residue
+    """
+    if ignore_hydrogen and (atomname.startswith("H") or
+                            (len(atomname) > 1 and atomname[0] in "123" and atomname[1] == "H")):
+        return False
+    try:
+        current_residue.Add_Atom(atomname, x=x, y=y, z=z)
+        if atom_index not in atom_map:
+            atom_map[atom_index] = current_residue.atoms[-1]
+        return True
+    except KeyError as ke:
+        if ignore_unknown_name:
+            return False
+        raise ke
+
+
 def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore_hydrogen, ignore_unknown_name):
     """
 
@@ -226,17 +245,8 @@ def _pdb_add_residue(filename, molecule, position_need, residue_type_map, ignore
                     current_resname = resname
                 if extra not in (" ", position_need):
                     continue
-                if ignore_hydrogen and (atomname.startswith("H") or
-                                        (len(atomname) > 1 and atomname[0] in "123" and atomname[1] == "H")):
-                    continue
-                try:
-                    current_residue.Add_Atom(atomname, x=x, y=y, z=z)
-                    if atom_index not in atom_map:
-                        atom_map[atom_index] = current_residue.atoms[-1]
-                except KeyError as ke:
-                    if ignore_unknown_name:
-                        continue
-                    raise ke
+                _pdb_add_atom(current_residue, atomname, x, y, z,
+                              ignore_hydrogen, ignore_unknown_name, atom_map, atom_index)
             elif line.startswith("TER"):
                 current_residue_index = None
                 current_resname = None

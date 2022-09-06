@@ -71,7 +71,7 @@ The atoms in a ``Residue`` or a ``ResidueType`` can be obtained by their names. 
     print(ALA.CA)
 
 """
-__version__ = "1.2.6.7"
+__version__ = "1.2.6.7.1"
 
 import os
 import time
