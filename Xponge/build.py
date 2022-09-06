@@ -501,7 +501,7 @@ def _pdb_residue_link(cls: Molecule, chain_ids: Xdict, chains: Xdict):
     :return:
     """
     towrite = ""
-    connects = Xdict(not_found_method=lambda key:[])
+    connects = Xdict(not_found_method=lambda key: [])
     ssbonds = []
     links = []
     chains_inverse = Xdict({chain_id: Xdict({value: key for key, value in chains[chain_id].items()})
@@ -532,8 +532,8 @@ def _pdb_residue_link(cls: Molecule, chain_ids: Xdict, chains: Xdict):
             name_b = save_names[res_b.name] if res_b.name in save_names else res_b.name
             links.append("LINK        {0:^4s} {1:3s} {2:1s}{3:4d}                \
 {4:^4s} {5:3s} {6:1s}{7:4d}\n".format(
-                a.name, name_a, chain_a, chains_inverse[chain_a][res_index_a],
-                b.name, name_b, chain_b, chains_inverse[chain_b][res_index_b]))
+    a.name, name_a, chain_a, chains_inverse[chain_a][res_index_a],
+    b.name, name_b, chain_b, chains_inverse[chain_b][res_index_b]))
     if ssbonds:
         ssbonds.sort()
         towrite += "".join(["SSBOND {0:3d} ".format(i + 1) + ssbond for i, ssbond in enumerate(ssbonds)])
@@ -579,7 +579,7 @@ def save_pdb(cls, filename=None):
             if resname in GlobalSetting.PDBResidueNameMap["save"].keys():
                 resname = GlobalSetting.PDBResidueNameMap["save"][resname]
             towrite += "ATOM  %5d %4s %3s %1s%4d    %8.3f%8.3f%8.3f%17s%2s\n" % (
-                (cls.atom_index[atom] + 1 ) % 100000, atom.name,
+                (cls.atom_index[atom] + 1) % 100000, atom.name,
                 resname, chain_ids[cls.residue_index[atom.residue]],
                 (cls.residue_index[atom.residue] - chain_residue0) % 10000,
                 atom.x, atom.y, atom.z, " ", " ")

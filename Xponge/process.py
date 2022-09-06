@@ -434,10 +434,9 @@ write_information_interval = {step}
                 frc = np.fromfile(f"{temp_out}.frc", dtype=np.float32).reshape(-1, 3)
                 frc = np.linalg.norm(frc, axis=1)
                 Xprint("{0:5d}{1:>24.4f}{2:15.4f}{3:15d}".format(epoch,
-                                 np.max(np.abs(frc - last_frc)),
-                                 force_limit,
-                                 epoch_limit),
-                       verbose=0)
+                                                                 np.max(np.abs(frc - last_frc)),
+                                                                 force_limit,
+                                                                 epoch_limit), verbose=0)
         load_coordinate(temp_out+'_coordinate.txt', mol)
         Xprint("Optimization Finished", verbose=0)
 

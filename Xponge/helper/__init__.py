@@ -1263,7 +1263,7 @@ class Molecule():
         """the atom index"""
         self.residue_links = set()
         """the residue links in the molecule"""
-        self._residue_links_map = Xdict(atom = Xdict(), residue = Xdict(),
+        self._residue_links_map = Xdict(atom=Xdict(), residue=Xdict(),
                                         not_found_message='key should be "atom" or "residue", but got {}')
 
         self.bonded_forces = Xdict()
@@ -1447,7 +1447,7 @@ in this Molecule
         filter_ = distance > 1
         displace = displace[np.broadcast_to(filter_, (len(filter_), 3))].reshape(-1, 3)
         distance = distance[distance > 1]
-        direction -= np.sum(displace * np.power(distance, -4).reshape(-1,1))
+        direction -= np.sum(displace * np.power(distance, -4).reshape(-1, 1))
         direction /= np.linalg.norm(direction)
         return direction
 
@@ -1533,7 +1533,7 @@ in this Molecule
 
         :param start: the residue or the residue index where the missing residues start. `None` for no starting residue.
         :param end: the residue  or the residue index where the missing residues end. `None` for no ending residue.
-        :param missing_residues: the missing residues. The parameter can be a string seperated by space, \
+        :param missing_residues: the missing residues. The parameter can be a string separated by space, \
 or a list of residue names, or a list of ResidueType or None. \
 If None, the information will be deleted between start and end
         :return: True for success, False for failure to set
@@ -1623,36 +1623,8 @@ If None, the information will be deleted between start and end
                 loop_direction = np.zeros_like(end_position)
             else:
                 raise ValueError("starting and ending residues can not be None at the same time")
-            distance = np.linalg.norm(start_position - end_position)
-            height = np.max((0, len(to_insert) * 3 - distance)) / 2
-            ref_res = Xdict({atom.name : [atom.x, atom.y, atom.z] for atom in ref_res.atoms})
-            for i, restype in enumerate(to_insert):
-                res = Residue(restype, directly_copy=True)
-                positions = [[getattr(atom, j) for j in "xyz" ] for atom in res.atoms ]
-                p1, p2 = [], []
-                for j, atom in enumerate(res.atoms):
-                    if atom.name in ref_res:
-                        p1.append(ref_res[atom.name])
-                        p2.append(positions[j])
-                rotate_matrix, _, res_center = kabsch(p1, p2)
-                fraction = i / len(to_insert)
-                translate = start_position + (end_position - start_position) * fraction + \
-                            height * np.sin(fraction * np.pi) * loop_direction - res_center
-                positions = np.dot(rotate_matrix, np.array(positions).transpose()).transpose() + translate
-                for j, atom in enumerate(res.atoms):
-                    atom.x = positions[j][0]
-                    atom.y = positions[j][1]
-                    atom.z = positions[j][2]
-                    atom.bad_coordinate = True
-                self.residues.insert(insert_index + i, res)
-                if tail is not None:
-                    self.add_residue_link(tail, res.name2atom(restype.head))
-                if restype.tail is not None:
-                    tail = res.name2atom(restype.tail)
-                else:
-                    tail = None
-            if link_to_tail is not None and tail is not None:
-                self.add_residue_link(tail, link_to_tail)
+            self._add_one_missing_residue(start_position, end_position, to_insert, ref_res,
+                                          loop_direction, insert_index, tail, link_to_tail)
 
     def deepcopy(self):
         """
@@ -1765,6 +1737,42 @@ If None, the information will be deleted between start and end
             atom2_friends_set.add(self.atom_index[atom2])
             atom2_friends_np = np.array(list(atom2_friends_set))
         return atom1_friends_np, atom2_friends_np
+
+    def _add_one_missing_residue(self, start_position, end_position, to_insert,
+                                 ref_res, loop_direction, insert_index, tail, link_to_tail):
+        """
+        add one missing residue
+        """
+        distance = np.linalg.norm(start_position - end_position)
+        height = np.max((0, len(to_insert) * 3 - distance)) / 2
+        ref_res = Xdict({atom.name: [atom.x, atom.y, atom.z] for atom in ref_res.atoms})
+        for i, restype in enumerate(to_insert):
+            res = Residue(restype, directly_copy=True)
+            positions = [[getattr(atom, j) for j in "xyz"] for atom in res.atoms]
+            p1, p2 = [], []
+            for j, atom in enumerate(res.atoms):
+                if atom.name in ref_res:
+                    p1.append(ref_res[atom.name])
+                    p2.append(positions[j])
+            rotate_matrix, _, res_center = kabsch(p1, p2)
+            fraction = i / len(to_insert)
+            translate = start_position + (end_position - start_position) * fraction + \
+                        height * np.sin(fraction * np.pi) * loop_direction - res_center
+            positions = np.dot(rotate_matrix, np.array(positions).transpose()).transpose() + translate
+            for j, atom in enumerate(res.atoms):
+                atom.x = positions[j][0]
+                atom.y = positions[j][1]
+                atom.z = positions[j][2]
+                atom.bad_coordinate = True
+            self.residues.insert(insert_index + i, res)
+            if tail is not None:
+                self.add_residue_link(tail, res.name2atom(restype.head))
+            if restype.tail is not None:
+                tail = res.name2atom(restype.tail)
+            else:
+                tail = None
+        if link_to_tail is not None and tail is not None:
+            self.add_residue_link(tail, link_to_tail)
 
 
 def _link_residue_process_coordinate(molecule, atom1, atom2):
