@@ -8,7 +8,7 @@ What can Xponge do?
     ``Xponge`` is mainly designed for the molecular dynamics (MD) program `SPONGE <https://onlinelibrary.wiley.com/doi/epdf/10.1002/cjoc.202100456>`_, but it can also output some general format files such as mol2 and PDB, so it may help the other molecular modelling programs too.
 
 How can I get Xponge?
-    Xponge is available on all oerating systems (Windows/Linux/MacOS). See :ref:`installation` for detailed instructions.
+    Xponge is available on all operating systems (Windows/Linux/MacOS). See :ref:`installation` for detailed instructions.
 
     ``Xponge`` now is also a part of `MindSponge <https://gitee.com/mindspore/mindscience>`_ as toolkits. You can download and use ``Xponge`` with MindSponge.
 

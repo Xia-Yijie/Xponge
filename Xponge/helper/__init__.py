@@ -11,6 +11,7 @@ import stat
 from types import MethodType, FunctionType
 from functools import partial, partialmethod, wraps
 from collections import OrderedDict
+from collections.abc import Iterable
 from itertools import product
 from abc import ABC
 
@@ -20,16 +21,22 @@ from .namespace import set_real_global_variable, remove_real_global_variable, se
     set_attribute_alternative_name, set_classmethod_alternative_names, set_attribute_alternative_names, \
     set_dict_value_alternative_name, set_global_alternative_names, source
 
-from .math import get_rotate_matrix, get_fibonacci_grid, guess_element_from_mass
+from .math import get_rotate_matrix, get_fibonacci_grid, guess_element_from_mass, kabsch
 
 
 class Xdict(dict):
     """
     This **class** is used to be a dict which can give not_found_message
 
+    :param not_found_method: the method (function) which will accept the key and return the value \
+when the key is not found. **New From 1.2.6.7**
     :param not_found_message: the string to print when the key is not found
     """
     def __init__(self, *args, **kwargs):
+        if "not_found_method" in kwargs:
+            self.not_found_method = kwargs.pop("not_found_method")
+        else:
+            self.not_found_method = None
         if "not_found_message" in kwargs:
             self.not_found_message = kwargs.pop("not_found_message")
         else:
@@ -41,6 +48,10 @@ class Xdict(dict):
         toget = self.get(key, self.id)
         if toget != self.id:
             return toget
+        if self.not_found_method:
+            value = self.not_found_method(key)
+            self[key] = value
+            return self[key]
         if self.not_found_message:
             raise KeyError(self.not_found_message.format(key))
         raise KeyError(f"{key}")
@@ -959,6 +970,41 @@ class Residue(Entity):
             return np.sum([getattr(atom, attr) for atom in self.atoms])
         return super().__getattribute__(attr)
 
+    def unterminal(self, add_missing_atoms=False):
+        """
+        This **function** is used to turn the terminal residue to be unterminal
+        **New From 1.2.6.7**
+
+        :param add_missing_atoms: whether to add missing atoms after deleting the terminal atoms
+        :return: 1 for success, 0 for failure
+        """
+        if self.type.name in GlobalSetting.PDBResidueNameMap["save"]:
+            new_type = ResidueType.get_type(GlobalSetting.PDBResidueNameMap["save"][self.type.name])
+        else:
+            return 0
+        new_type_atom = Xdict({atom.name: atom for atom in new_type.atoms})
+        to_remove = set()
+        for atom in self.atoms:
+            if atom.name not in new_type_atom:
+                to_remove.add(atom)
+            else:
+                atom.type = new_type_atom[atom.name].type
+                atom.charge = new_type_atom[atom.name].charge
+                self._name2index[atom.name] -= len(to_remove)
+                self._atom2index[atom] -= len(to_remove)
+        for atom in to_remove:
+            self._name2index.pop(atom.name)
+            self._atom2index.pop(atom)
+            self._atom2name.pop(atom)
+            self._name2atom.pop(atom.name)
+            self.atoms.remove(atom)
+            atom.residue = None
+        self.type = new_type
+        self.name = new_type.name
+        if add_missing_atoms:
+            self.add_missing_atoms()
+        return 1
+
     def name2atom(self, name):
         """
         This **function** convert an atom name to an Atom instance
@@ -1061,19 +1107,30 @@ class Residue(Entity):
         """
         t = {atom.name for atom in self.atoms}
         uncertified = {atom.name for atom in self.type.atoms}
+        certified_positions = []
+        template_positions = []
         for atom in self.type.atoms:
             if atom.name in t:
                 uncertified.remove(atom.name)
+                template_positions.append([atom.x, atom.y, atom.z])
+                self_atom = self.name2atom(atom.name)
+                certified_positions.append([self_atom.x, self_atom.y, self_atom.z])
+        rotation, center1, center2 = kabsch(template_positions, certified_positions)
+
         while uncertified:
             movedlist = []
             for atom_name in uncertified:
                 temp_atom = getattr(self.type, atom_name)
+                self_position = np.array([getattr(temp_atom, i) for i in "xyz"])
+                self_position = np.dot(rotation, (self_position - center1)) + center2
                 for connected_atom in self.type.connectivity[temp_atom]:
                     if connected_atom.name in t:
+                        connected_position = np.array([getattr(connected_atom, i) for i in "xyz"])
+                        connected_position = np.dot(rotation, (connected_position - center1)) + center2
                         fact_connected_atom = self._name2atom[connected_atom.name]
-                        x_ = temp_atom.x - connected_atom.x + fact_connected_atom.x
-                        y_ = temp_atom.y - connected_atom.y + fact_connected_atom.y
-                        z_ = temp_atom.z - connected_atom.z + fact_connected_atom.z
+                        x_ = self_position[0] - connected_position[0] + fact_connected_atom.x
+                        y_ = self_position[1] - connected_position[1] + fact_connected_atom.y
+                        z_ = self_position[2] - connected_position[2] + fact_connected_atom.z
                         t.add(atom_name)
                         movedlist.append(atom_name)
                         self.Add_Atom(atom_name, x=x_, y=y_, z=z_)
@@ -1119,35 +1176,37 @@ class ResidueLink:
         """indicates the instance built or not"""
         self.bonded_forces = {frc.get_class_name(): [] for frc in GlobalSetting.BondedForces}
         """the bonded forces after building"""
-        self.tohash = self.get_hash(atom1, atom2)
-        self.residue_tohash = self.get_hash(atom1, atom2, True)
+        self.tohash = ResidueLink.get_hash(atom1, atom2, "atom")
+        self.residue_tohash = ResidueLink.get_hash(atom1.residue, atom2.residue, "residue")
         set_attribute_alternative_names(self)
 
     def __repr__(self):
         return "Entity of ResidueLink: " + repr(self.atom1) + "-" + repr(self.atom2)
 
     def __hash__(self):
-        return hash(self.tohash)
+        return self.tohash
 
     def __eq__(self, other):
         return isinstance(other, ResidueLink) and self.tohash == other.tohash
 
     @staticmethod
-    def get_hash(atom1, atom2, residue=False):
+    def get_hash(one, other, key="atom"):
         """
-        This **function** is used to get the hash value of the ResidueLink between atom0 and atom1
+        This **function** is used to get the hash value of the ResidueLink
 
-        :param atom1: the first atom to link
-        :param atom2: the second atom to link
-        :param residue: whether to hash the residue of the atoms or atoms themselves
+        :param one: one Atom or Residue of the link
+        :param other: the other Atom or Residue of the link
+        :param key: "atom" or "residue", to specify the key
         :return: the hash value
         """
-        if residue:
-            tohash = [f"{atom1}-{atom2}", f"{atom2}-{atom1}"]
+        if key == "atom":
+            tohash = [f"{one}-{other}", f"{other}-{one}"]
+        elif key == "residue":
+            tohash = [f"{one}-{other}", f"{other}-{one}"]
         else:
-            tohash = [f"{atom1.residue}-{atom2.residue}", f"{atom2.residue}-{atom1.residue}"]
+            raise ValueError(f'key should be "atom" or "residue", but got {key}')
         tohash.sort()
-        return tohash[0]
+        return hash(tohash[0])
 
     def add_bonded_force(self, bonded_force_entity):
         """
@@ -1204,6 +1263,9 @@ class Molecule():
         """the atom index"""
         self.residue_links = set()
         """the residue links in the molecule"""
+        self._residue_links_map = Xdict(atom = Xdict(), residue = Xdict(),
+                                        not_found_message='key should be "atom" or "residue", but got {}')
+
         self.bonded_forces = Xdict()
         """the bonded forces after building"""
         self.built = False
@@ -1212,6 +1274,7 @@ class Molecule():
         """the box length of the molecule"""
         self.box_angle = [90.0, 90.0, 90.0]
         """the box angle of the molecule"""
+        self._missing_residues = Xdict(not_found_message="These are no missing residues between {}")
         if isinstance(name, ResidueType):
             new_residue = Residue(name)
             for i in name.atoms:
@@ -1232,6 +1295,7 @@ class Molecule():
     def cast(cls, other, deepcopy=False):
         """
         This **function** casts a Residue, a ResidueType or a Molecule to a Molecule
+        **New From 1.2.6.6**
 
         :param other: a Residue, a ResidueType or a Molecule instance
         :param deepcopy: whether to deepcopy the other instance
@@ -1361,6 +1425,32 @@ class Molecule():
             to_search |= set(restype.connectivity[atom0]) - searched
         return head, tail
 
+    def find_spacious_direction(self, point, atom_positions=None):
+        """
+        This **function** is used to find the most spacious (lowest atom density) direction of \
+the givin point around the atom positions
+        **New From 1.2.6.7**
+
+        :param point: a list of 3 numbers, the point to find the most spacious direction
+        :param atom_positions: the atom positions around the point. If None, this will use the positions of the atoms \
+in this Molecule
+        :return: a numpy array with the shape (3,), the most spacious direction
+        """
+        point = np.array(point, dtype=np.float32).reshape(3)
+        direction = np.zeros_like(point)
+        if atom_positions is None:
+            atom_positions = np.array([[getattr(atom, i) for i in "xyz"]
+                                       for residue in self.residues for atom in residue.atoms],
+                                      dtype=np.float32)
+        displace = atom_positions - point
+        distance = np.linalg.norm(displace, axis=1, keepdims=True)
+        filter_ = distance > 1
+        displace = displace[np.broadcast_to(filter_, (len(filter_), 3))].reshape(-1, 3)
+        distance = distance[distance > 1]
+        direction -= np.sum(displace * np.power(distance, -4).reshape(-1,1))
+        direction /= np.linalg.norm(direction)
+        return direction
+
     def add_residue(self, residue):
         """
         This **function** is used to add a residue to the molecule
@@ -1395,7 +1485,37 @@ class Molecule():
         :return: None
         """
         self.built = False
-        self.residue_links.add(ResidueLink(atom1, atom2))
+        reslink = ResidueLink(atom1, atom2)
+        self.residue_links.add(reslink)
+        self._residue_links_map["atom"][reslink.tohash] = reslink
+        self._residue_links_map["residue"][reslink.residue_tohash] = reslink
+
+    def get_residue_link(self, one, other, key="atom"):
+        """
+        This **function** is used to get the ResidueLink between two residues
+
+        :param one: one Atom or Residue of the ResidueLink
+        :param other: the other Atom or Residue of the ResidueLink
+        :param key: "atom" or "residue", to specify the key
+        :return: the ResidueLink or None if not found
+        """
+        tohash = ResidueLink.get_hash(one, other, key)
+        return self._residue_links_map[key].get(tohash, None)
+
+    def del_residue_link(self, one, other, key="atom"):
+        """
+        This **function** is used to delete the ResidueLink between two residues
+
+        :param one: one Atom or Residue of the ResidueLink
+        :param other: the other Atom or Residue of the ResidueLink
+        :param key: "atom" or "residue", to specify the key
+        :return: None
+        """
+        tohash = ResidueLink.get_hash(one, other, key)
+        reslink = self._residue_links_map[key][tohash]
+        self.residue_links.remove(reslink)
+        self._residue_links_map["atom"].pop(reslink.tohash)
+        self._residue_links_map["residue"].pop(reslink.residue_tohash)
 
     def add_missing_atoms(self):
         """
@@ -1405,6 +1525,134 @@ class Molecule():
         """
         for residue in self.residues:
             residue.Add_Missing_Atoms()
+
+    def set_missing_residues_info(self, start, end, missing_residues):
+        """
+        This **function** is used to set the information about the missing residues
+        **New From 1.2.6.7**
+
+        :param start: the residue or the residue index where the missing residues start. `None` for no starting residue.
+        :param end: the residue  or the residue index where the missing residues end. `None` for no ending residue.
+        :param missing_residues: the missing residues. The parameter can be a string seperated by space, \
+or a list of residue names, or a list of ResidueType or None. \
+If None, the information will be deleted between start and end
+        :return: True for success, False for failure to set
+        """
+        if start is not None and isinstance(start, int):
+            start = self.residues[start]
+        if end is not None and isinstance(end, int):
+            end = self.residues[end]
+        if start is None and end is None:
+            raise ValueError("starting and ending residues can not be None at the same time")
+        key = (start, end)
+        if missing_residues is None:
+            if key in self._missing_residues:
+                self._missing_residues.pop(key)
+                return True
+            return False
+        if isinstance(missing_residues, str):
+            missing_residues = [ResidueType.get_type(res) for res in missing_residues.split()]
+        elif isinstance(missing_residues, Iterable):
+            for i, res in enumerate(missing_residues):
+                if isinstance(res, str):
+                    res = ResidueType.get_type(res)
+                missing_residues[i] = res
+        res = missing_residues[0]
+        if start is None and res.name in GlobalSetting.PDBResidueNameMap["head"]:
+            missing_residues[0] = ResidueType.get_type(GlobalSetting.PDBResidueNameMap["head"][res.name])
+        res = missing_residues[-1]
+        if end is None and res.name in GlobalSetting.PDBResidueNameMap["tail"]:
+            missing_residues[-1] = ResidueType.get_type(GlobalSetting.PDBResidueNameMap["tail"][res.name])
+        self._missing_residues[key] = missing_residues
+        return True
+
+    def clear_missing_residues_info(self):
+        """
+        This **function** is used to clear the information about the missing residues
+        **New From 1.2.6.7**
+
+        :return: None
+        """
+        self._missing_residues.clear()
+
+    def add_missing_residues(self):
+        """
+        This **function** is used to add the missing residues according to the information of the missing residues.
+        The information of the missing residues may be set by `set_missing_residues_info` or `load_pdb`
+        **New From 1.2.6.7**
+
+        :return: None
+        """
+        for (start, end), to_insert in self._missing_residues.items():
+            if start is not None and end is not None:
+                ref_res = start
+                tail = start.name2atom(start.type.tail)
+                link_to_tail = end.name2atom(end.type.head)
+                insert_index = self.residues.index(start) + 1
+                start_position = np.array([getattr(tail, i) for i in "xyz"])
+                end_position = np.array([getattr(link_to_tail, i) for i in "xyz"])
+                loop_direction = self.find_spacious_direction(start_position)
+                self.del_residue_link(tail, link_to_tail)
+            elif start is not None and end is None:
+                ref_res = start
+                start.unterminal()
+                tail = start.name2atom(start.type.tail)
+                link_to_tail = None
+                insert_index = self.residues.index(start) + 1
+                start_position = np.array([getattr(tail, i) for i in "xyz"])
+                end_position = self.find_spacious_direction(start_position)
+                norm = np.linalg.norm(end_position)
+                if norm != 0:
+                    end_position /= norm
+                end_position *= len(to_insert) * 5
+                end_position += start_position
+                loop_direction = np.zeros_like(start_position)
+            elif start is None and end is not None:
+                tail = None
+                ref_res = end
+                end.unterminal()
+                link_to_tail = end.name2atom(end.type.head)
+                insert_index = 0
+                end_position = np.array([getattr(link_to_tail, i) for i in "xyz"])
+                start_position = self.find_spacious_direction(end_position)
+                norm = np.linalg.norm(start_position)
+                if norm != 0:
+                    start_position /= norm
+                start_position *= len(to_insert) * 5
+                start_position += end_position
+                loop_direction = np.zeros_like(end_position)
+            else:
+                raise ValueError("starting and ending residues can not be None at the same time")
+            distance = np.linalg.norm(start_position - end_position)
+            height = np.max((0, len(to_insert) * 3 - distance)) / 2
+            ref_res = Xdict({atom.name : [atom.x, atom.y, atom.z] for atom in ref_res.atoms})
+            for i, restype in enumerate(to_insert):
+                res = Residue(restype, directly_copy=True)
+                positions = [[getattr(atom, j) for j in "xyz" ] for atom in res.atoms ]
+                p1, p2 = [], []
+                for j, atom in enumerate(res.atoms):
+                    if atom.name in ref_res:
+                        p1.append(ref_res[atom.name])
+                        p2.append(positions[j])
+                rotate_matrix, _, res_center = kabsch(p1, p2)
+                fraction = i / len(to_insert)
+                translate = start_position + (end_position - start_position) * fraction + \
+                            height * np.sin(fraction * np.pi) * loop_direction - res_center
+                positions = np.dot(rotate_matrix, np.array(positions).transpose()).transpose() + translate
+                for j, atom in enumerate(res.atoms):
+                    atom.x = positions[j][0]
+                    atom.y = positions[j][1]
+                    atom.z = positions[j][2]
+                    atom.bad_coordinate = True
+                self.residues.insert(insert_index + i, res)
+                if tail is not None:
+                    self.add_residue_link(tail, res.name2atom(restype.head))
+                if restype.tail is not None:
+                    tail = res.name2atom(restype.tail)
+                else:
+                    tail = None
+            if link_to_tail is not None and tail is not None:
+                self.add_residue_link(tail, link_to_tail)
 
     def deepcopy(self):
         """
@@ -1418,7 +1666,8 @@ class Molecule():
             new_molecule.Add_Residue(res.deepcopy(forcopy))
 
         for link in self.residue_links:
-            new_molecule.residue_links.add(link.deepcopy(forcopy))
+            new_link = link.deepcopy(forcopy)
+            new_molecule.add_residue_link(new_link.atom1, new_link.atom2)
 
         for res in self.residues:
             for atom in res.atoms:
@@ -1516,9 +1765,6 @@ class Molecule():
             atom2_friends_set.add(self.atom_index[atom2])
             atom2_friends_np = np.array(list(atom2_friends_set))
         return atom1_friends_np, atom2_friends_np
-
-
-set_classmethod_alternative_names(Molecule)
 
 
 def _link_residue_process_coordinate(molecule, atom1, atom2):
@@ -1634,6 +1880,8 @@ def _link_residue_process_coordinate(molecule, atom1, atom2):
         atom.z = crd[i][2]
 
 
+set_classmethod_alternative_names(Molecule)
+set_classmethod_alternative_names(ResidueLink)
 Entity.register(ResidueLink)
 Entity.register(Molecule)
 AbstractMolecule.register(Residue)
