@@ -60,7 +60,7 @@ class TestMyPackage(unittest.TestCase):
 
         f = Xopen(f"{args.o}_LJ.txt", "r")
         atom_number, lj_number = [int(i) for i in f.readline().split()]
-        self.assertEqual(atom_number, 4357, "LJ_in_file wrong")
+        self.assertEqual(atom_number, 2923, "LJ_in_file wrong")
         self.assertEqual(lj_number, 11, "LJ_in_file wrong")
         f.close()
 
@@ -71,8 +71,8 @@ class TestMyPackage(unittest.TestCase):
 
         f = Xopen(f"{args.o}_exclude.txt", "r")
         atom_number, exclude_number = [int(i) for i in f.readline().split()]
-        self.assertEqual(atom_number, 4357, "exclude_in_file wrong")
-        self.assertEqual(exclude_number, 4760, "exclude_in_file wrong")
+        self.assertEqual(atom_number, 2923, "exclude_in_file wrong")
+        self.assertEqual(exclude_number, 3326, "exclude_in_file wrong")
         f.close()
 
     def test_charmm27(self):
