@@ -1054,7 +1054,7 @@ class Residue(Entity):
             new_type = GlobalSetting.PDBResidueNameMap["save"][self.type.name]
         else:
             return 0
-        return self.set_type(new_type)
+        return self.set_type(new_type, add_missing_atoms)
 
     def name2atom(self, name):
         """
