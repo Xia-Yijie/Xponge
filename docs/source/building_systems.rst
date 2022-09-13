@@ -37,6 +37,38 @@ Here are the existing force fields in ``Xponge`` now:
       - lipid17
       - Xponge.forcefield.amber.lipid17
     * - 
+      - carbohydrates (D-Pyranose)
+      - glycam-06j
+      - Xponge.forcefield.amber.glycam_06j.d_pyranose
+    * - 
+      - carbohydrates (L-Pyranose)
+      - glycam-06j
+      - Xponge.forcefield.amber.glycam_06j.l_pyranose
+    * - 
+      - carbohydrates (D-Furanose)
+      - glycam-06j
+      - Xponge.forcefield.amber.glycam_06j.d_furanose
+    * - 
+      - carbohydrates (L-Furanose)
+      - glycam-06j
+      - Xponge.forcefield.amber.glycam_06j.l_furanose
+    * - 
+      - glycoprotein
+      - glycam-06j
+      - Xponge.forcefield.amber.glycam_06j.glycoprotein
+    * - 
+      - DNA
+      - bsc1
+      - Xponge.forcefield.amber.bsc1
+    * - 
+      - DNA
+      - OL15
+      - Xponge.forcefield.amber.ol15
+    * - 
+      - RNA
+      - OL3
+      - Xponge.forcefield.amber.ol3
+    * - 
       - organic molecules
       - gaff
       - Xponge.forcefield.amber.gaff

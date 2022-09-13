@@ -10,7 +10,7 @@ Xponge includes three major categories of functionality, namely, the simulation 
 
 ## Installation
 
-Xponge can be used on all operating systems (Windows/Linux/MacOS). Some functions to do the quantum chemistry calculations can not be used on Windows because `pyscf` is not available on Windows.
+Xponge can be used on all operating systems (Windows/Linux/MacOS). Some functions (See [here](https://spongemm.cn/xponge_doc/dependency.html#unavalable-functions-on-windows) for the detailed list)to do the quantum chemistry calculations can not be used on Windows because `pyscf` is not available on Windows.
 
 ### 1. pip install
 

@@ -49,6 +49,8 @@ You can use ``SpongeCoordinateReader`` or ``SpongeTrajectoryReader`` in ``Xponge
     u = mda.Universe(topology_file, trajectory_file, format=xmda.SpongeTrajectoryReader)
     ...
 
+You can use ``SpongeTrajectoryReader.with_arguments(box=box_file)`` to add the box file.
+
 You can use ``SpongeCoordinateWriter`` or ``SpongeTrajectoryWriter`` in ``Xponge.analysis.md_analysis`` to write the coordinates or trajectory File::
 
     import Xponge.analysis.md_analysis as xmda

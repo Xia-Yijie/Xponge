@@ -1,4 +1,4 @@
-Xponge 1.2.6.7 Documentation
+Xponge 1.2.6.8 Documentation
 ------------------------------------
 
 What is Xponge?
@@ -41,16 +41,17 @@ How can I get Xponge?
 .. toctree::
     :maxdepth: 2
     :caption: TUTORIAL
-    
+
     covid bound to b6 <https://gitee.com/mindspore/mindscience/blob/master/MindSPONGE/applications/molecular_dynamics/tradition/covid_bound_to_b6/covid_bound_to_b6.ipynb>
     the folding of ALA12 <https://gitee.com/mindspore/mindscience/blob/master/MindSPONGE/applications/molecular_dynamics/tradition/the_folding_of_ala12/the_folding_of_ala12.ipynb>
     building of KALP15 <https://gitee.com/xiayijie/mindscience/blob/master/MindSPONGE/applications/molecular_dynamics/building_of_KALP15/building_of_KALP15-Copy1.ipynb>
     relative binding energy of FXR <https://gitee.com/mindspore/mindscience/blob/master/MindSPONGE/applications/molecular_dynamics/tradition/relative_binding_energy_of_FXR/relative_binding_energy_of_FXR.ipynb>
-    
+    tutorials on Gitee (in Chinese) <https://gitee.com/gao_hyp_xyj_admin/sponge_tutorial>
+
 .. toctree::
     :maxdepth: 2
     :caption: API
-    
+
     modules
 
 .. toctree::
