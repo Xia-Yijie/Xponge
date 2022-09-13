@@ -46,8 +46,6 @@ amber.load_parameters_from_frcmod("ions234lm_126_tip4pew.frcmod")
 
 load_mol2(os.path.join(AMBER_DATA_DIR, "atomic_ions.mol2"), as_template=True)
 
-set_real_global_variable("WAT", TIP4P)
-
 Xprint("""Reference for tip4pew:
 1. Water:
   Hans W. Horn, William C. Swope, and Jed W. Pitera

@@ -7,17 +7,31 @@ When an ``ImportError`` or a ``ModuleNotFoundError`` is raised, you need to inst
 
 Most of the module can be installed via ``pip``, while the ``RDKit`` package should be installed via ``conda``.
 
-It is recommended to use `conda` to configure the environment. Two `yml` files named `install_requirements.yml` and `extras_requirements.yml` are provided in the repository.
+It is recommended to use ``conda`` to configure the environment. Two ``yml`` files named ``install_requirements.yml`` and ``extras_requirements.yml`` are provided in the repository.
 
-If you only need the basic functionality of Xponge, use the following command to configure the environment::
+It is recommanded to use the file `install_requirements.yml` to configure the environment. The file will only install the basic dependent packages. If a ``ModuleNotFoundError`` is raised when you are using ``Xponge``, then install the module. This allows you to avoid installing many modules that you will never use, and also makes `Xponge` more cross-platform compatible. Here are the commands to use ``install_requirements.yml``::
 
     conda env create -f install_requirements.yml
     conda activate Xponge
 
-If you want to experience all the features of Xponge, use the following command to configure the environment::
+If you don't want to install the dependent packages one by one (which can be really annoying), the file ``extras_requirements.yml`` can help you with the environment configuration except the packages ``mindspore`` and ``mindsponge``. The two packages should be installed according to your device (e.g. whether the backend is CPU, GPU or Huawei Ascend Processors) and can not be simply installed by conda. Here are the commands to use ``extras_requirements.yml``::
 
     conda env create -f extras_requirements.yml
     conda activate Xponge
+
+It is worth noting that ``extras_requirements.yml`` can not be used on Windows because ``pyscf`` is not available on Windows.
+
+Unavalable functions on Windows
+=================================
+
+Here is the list of functions which are not available on Windows.
+
+- Xponge.assign.calculate_charge(method="RESP")
+- Xponge.assign.resp
+- Xponge.assign.resp.resp_fit
+
+The list of dependent packages
+=================================
 
 Here is the list of all packages which may be used:
 

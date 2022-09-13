@@ -57,6 +57,18 @@ Here are the existing force fields in ``Xponge`` now:
       - glycam-06j
       - Xponge.forcefield.amber.glycam_06j.glycoprotein
     * - 
+      - DNA
+      - bsc1
+      - Xponge.forcefield.amber.bsc1
+    * - 
+      - DNA
+      - OL15
+      - Xponge.forcefield.amber.ol15
+    * - 
+      - RNA
+      - OL3
+      - Xponge.forcefield.amber.ol3
+    * - 
       - organic molecules
       - gaff
       - Xponge.forcefield.amber.gaff

@@ -6,8 +6,24 @@ Xponge.forcefield.amber package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   Xponge.forcefield.amber.glycam_06j
+
 Submodules
 ----------
+
+Xponge.forcefield.amber.bsc1 module
+-----------------------------------
+
+.. automodule:: Xponge.forcefield.amber.bsc1
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Xponge.forcefield.amber.ff14sb module
 -------------------------------------
@@ -45,6 +61,22 @@ Xponge.forcefield.amber.lipid17 module
 --------------------------------------
 
 .. automodule:: Xponge.forcefield.amber.lipid17
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.amber.ol15 module
+-----------------------------------
+
+.. automodule:: Xponge.forcefield.amber.ol15
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Xponge.forcefield.amber.ol3 module
+----------------------------------
+
+.. automodule:: Xponge.forcefield.amber.ol3
    :members:
    :undoc-members:
    :show-inheritance:
