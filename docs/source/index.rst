@@ -1,4 +1,4 @@
-Xponge 1.2.6.8 Documentation
+Xponge 1.2.7.0 Documentation
 ------------------------------------
 
 What is Xponge?

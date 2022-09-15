@@ -21,7 +21,7 @@ copyright = '2022, Yijie Xia'
 author = 'Yijie Xia'
 
 # The full version, including alpha/beta/rc tags
-release = '1.2.6'
+release = '1.2.7'
 
 
 # -- General configuration ---------------------------------------------------

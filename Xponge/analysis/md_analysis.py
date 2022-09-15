@@ -2,9 +2,11 @@
 This **module** gives functions and classes to use MDAnalysis to analyze the trajectories
 """
 import os.path
+
 import numpy as np
 from ..helper import Xopen, set_global_alternative_names, set_attribute_alternative_name
 try:
+    import MDAnalysis as mda
     from MDAnalysis.coordinates import base
     from MDAnalysis.lib import util
 except ModuleNotFoundError as exc:
@@ -162,8 +164,10 @@ class SpongeTrajectoryWriter():
                 W.write(u)
 
     :param prefix: the prefix of the output files
+    :param write_box: whether to write the box file **New From 1.2.7.0**
     """
-    def __init__(self, prefix):
+    def __init__(self, prefix, write_box=True):
+        self.write_box = write_box
         self.datname = prefix + ".dat"
         self.boxname = prefix + ".box"
         self.datfile = None
@@ -204,8 +208,15 @@ class SpongeTrajectoryWriter():
         :param u: an MDAnalysis.Universe instance
         :return: None
         """
-        self.datfile.write(u.coord.positions.astype(np.float32).tobytes())
-        self.boxfile.write(" ".join([f"{i}" for i in u.coord.dimensions]) + "\n")
+        if isinstance(u, mda.Universe):
+            ts = u.coord
+        elif isinstance(u, mda.AtomGroup):
+            ts = u.ts
+        else:
+            raise TypeError(f"u should be Universe or AtomGroup, but {type(u)} got")
+        self.datfile.write(ts.positions.astype(np.float32).tobytes())
+        if self.self.write_box:
+            self.boxfile.write(" ".join([f"{i}" for i in ts.dimensions]) + "\n")
 
 
 class SpongeCoordinateReader(base.ReaderBase):
@@ -348,13 +359,19 @@ class SpongeCoordinateWriter():
         :param u: an MDAnalysis.Universe instance
         :return: None
         """
+        if isinstance(u, mda.Universe):
+            ts = u.coord
+        elif isinstance(u, mda.AtomGroup):
+            ts = u.ts
+        else:
+            raise TypeError(f"u should be Universe or AtomGroup, but {type(u)} got")
         if self.n_atoms is None:
-            self.n_atoms = len(u.coord.positions)
+            self.n_atoms = len(ts.positions)
         towrite = f"{self.n_atoms}\n"
-        for crd in u.coord.positions[:self.n_atoms]:
+        for crd in ts.positions[:self.n_atoms]:
             towrite += f"{crd[0]} {crd[1]} {crd[2]}\n"
-        if u.coord.dimensions:
-            towrite += " ".join([f"{i}" for i in u.coord.dimensions]) + "\n"
+        if ts.dimensions:
+            towrite += " ".join([f"{i}" for i in ts.dimensions]) + "\n"
         else:
             towrite += "999 999 999 90 90 90\n"
         self.file.write(towrite)
