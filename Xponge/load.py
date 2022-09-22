@@ -464,7 +464,7 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
     :return: a Molecule instance
     """
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
-    chain = Xdict()
+    chain = Xdict(not_found_method=lambda key: Xdict())
     sequences = Xdict()
     ssbonds = []
     links = []
@@ -495,7 +495,6 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
                         resname = GlobalSetting.PDBResidueNameMap["head"][resname]
                     residue_type_map.append(resname)
                     current_residue_index = resindex
-                    chain[chain_id] = Xdict()
                     chain[chain_id][resindex] = current_residue_count
                 elif (current_residue_index != resindex or current_insertion_code != insertion_code) or \
                         current_resname != resname:

@@ -4,14 +4,74 @@ This **module** gives functions and classes to use MDAnalysis to analyze the tra
 import os.path
 
 import numpy as np
-from ..helper import Xopen, set_global_alternative_names, set_attribute_alternative_name
+from ..helper import Xopen, guess_element_from_mass, set_global_alternative_names, set_attribute_alternative_name
 try:
     import MDAnalysis as mda
     from MDAnalysis.coordinates import base
     from MDAnalysis.lib import util
+    from MDAnalysis.topology.base import TopologyReaderBase
+    from MDAnalysis.core import topologyattrs
+    from MDAnalysis.core.topology import Topology
 except ModuleNotFoundError as exc:
     raise ModuleNotFoundError(
         "'MDAnalysis' package needed. Maybe you need 'pip install MDAnalysis'") from exc
+
+
+class SpongeInputReader(TopologyReaderBase):
+    """
+    This **class** is used to read the SPONGE input to mdanalysis
+
+    Create the following attributes:
+        Masses
+        Charges
+        Bonds
+        Angles
+
+    Guesses the following attributes:
+        Atomnames
+    """
+    #pylint: disable=unused-argument
+    def parse(self, **kwargs):
+        """
+        This **function** reads the file and returns the structure
+
+        :param kwargs: keyword arguments
+        :return: MDAnalysis Topology object
+        """
+        attrs = [topologyattrs.Segids(np.array(['SYSTEM'], dtype=object))]
+        if os.path.exists(self.filename + "_mass.txt"):
+            with util.openany(self.filename + "_mass.txt") as fm:
+                fm.readline()
+                masses = [float(line.strip()) for line in fm]
+                atom_names = [guess_element_from_mass(mass) for mass in masses]
+                attrs.append(topologyattrs.Masses(masses))
+                attrs.append(topologyattrs.Atomnames(atom_names, guessed=True))
+                attrs.append(topologyattrs.Atomtypes(atom_names, guessed=True))
+                attrs.append(topologyattrs.Elements(atom_names, guessed=True))
+        if os.path.exists(self.filename + "_charge.txt"):
+            with util.openany(self.filename + "_charge.txt") as fm:
+                fm.readline()
+                charges = [float(line.strip()) / 18.2223 for line in fm]
+                attrs.append(topologyattrs.Charges(charges))
+        if os.path.exists(self.filename + "_residue.txt"):
+            with util.openany(self.filename + "_residue.txt") as fm:
+                natoms, nres = fm.readline().split()
+                natoms, nres = int(natoms), int(nres)
+                resid = np.zeros(natoms, dtype=np.int32)
+                count = 0
+                for i, line in enumerate(fm):
+                    res_length = int(line.strip())
+                    resid[count:count + res_length] = i
+                    count += res_length
+                attrs.append(topologyattrs.Resids(np.arange(nres) + 1))
+                attrs.append(topologyattrs.Atomids(np.arange(natoms) + 1))
+                attrs.append(topologyattrs.Resnums(np.arange(nres) + 1))
+        if os.path.exists(self.filename + "_bond.txt"):
+            with util.openany(self.filename + "_bond.txt") as fm:
+                fm.readline()
+                bonds = [[int(words) for words in line.split()[:2]] for line in fm]
+                attrs.append(topologyattrs.Bonds(bonds))
+        return Topology(natoms, nres, 1, attrs, resid, None)
 
 
 class SpongeTrajectoryReader(base.ReaderBase):
