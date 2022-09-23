@@ -167,6 +167,7 @@ def _mol2_template(filename):
             elif flag == "BOND":
                 _mol2_template_bond(line, atom_residue_map)
 
+
 def load_mol2(filename, ignore_atom_type=False, as_template=False):
     """
     This **function** is used to load a mol2 file
@@ -588,6 +589,7 @@ def _frcmod_nb14(line, atoms):
     nb14ee = 1.0 / float(nb14ee[0].split("=")[1]) if nb14ee else 1.0 / 1.2
     nb14lj = 1.0 / float(nb14lj[0].split("=")[1]) if nb14lj else 1.0 / 2.0
     return f"{atoms[0]}-{atoms[3]} {nb14ee} {nb14lj}\n"
+
 
 def _frcmod_cmap(line, cmap, temp_cmp, cmap_flag):
     """

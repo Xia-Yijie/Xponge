@@ -204,7 +204,7 @@ Os-Cp-Os    100.00    112.00   Copy of Os-Cg-Os from GLYCAM06
 Os-Cg-Os    100.00    112.00   Dimethoxymethane, 1,1 Dimethoxyethane
 Oh-Cg-Os    100.00    112.00   Copy of Os-Cg-Os (not derived)
 O2-C -O2     80.00    126.00   Parm10
-O2-C -Cg     70.00    115.00   Aprroximate based from 2-Dimethylpropanoate and Oh-Cg-Cg
+O2-C -Cg     70.00    115.00   Approximate based from 2-Dimethylpropanoate and Oh-Cg-Cg
 Cg-C -Ng     70.00    115.60   Force constant taken from Parm94, Angle set to HF/6-31G(d) value N-Methylethanamide
 Cg-C -O      80.00    121.70   Force constant taken from Parm94, Angle set to HF/6-31G(d) value N-Methylethanamide
 Ng-C -O      80.00    122.90   Parm94
@@ -237,7 +237,7 @@ Oy-Cy-Os    100.00    112.00   Dimethoxymethane, 1,1 Dimethoxyethane - for siali
 Cg-Cy-C      63.00    111.10   Parm94 - for sialic acid only!
 Cg-Os-Cy     50.00    111.60   Methoxymethane - for sialic acid only!
 Cg-Oy-Cy     50.00    111.60   Methoxymethane - for sialic acid only!
-O2-C -Cy     70.00    115.00   Aprroximate based from 2,2-Dimethylpropanoate and Oh-Cg-Cg - for sialic acid only!
+O2-C -Cy     70.00    115.00   Approximate based from 2,2-Dimethylpropanoate and Oh-Cg-Cg - for sialic acid only!
 Hc-Cg-Cy     45.00    112.60   Ethane - for sialic acid only!
 Cg-Cg-Cy     45.00    113.50   Propane - for sialic acid only!
 
