@@ -146,20 +146,22 @@ Here is the list of all packages which may be uesd:
 
 ## References
 
-[1] Y.-P. Huang, et al. Chinese J. Chem. (2022) DOI: [10.1002/cjoc.202100456](https://doi.org/10.1002/cjoc.202100456)
+[0] Y. Xia, Y. Q. Gao, *J. Open Source Softw.* (2022) DOI:[10.21105/joss.04467](https://doi.org/10.21105/joss.04467)
 
-[2] Q. Sun, et al. J. Chem. Phys. (2020) DOI: [10.1063/5.0006074](https://doi.org/10.1063/5.0006074)
+[1] Y.-P. Huang, et al. *Chinese J. Chem.* (2022) DOI: [10.1002/cjoc.202100456](https://doi.org/10.1002/cjoc.202100456)
 
-[3] Q. Sun, et al. Wiley Interdiscip. Rev. Comput. Mol. Sci. (2018) DOI: [10.1002/wcms.1340](https://doi.org/10.1002/wcms.1340)
+[2] Q. Sun, et al. *J. Chem. Phys.* (2020) DOI: [10.1063/5.0006074](https://doi.org/10.1063/5.0006074)
 
-[4] Q. Sun, J. Comp. Chem. (2015) DOI: [10.1002/jcc.23981](https://doi.org/10.1002/jcc.23981)
+[3] Q. Sun, et al. Wiley Interdiscip. *Rev. Comput. Mol. Sci.* (2018) DOI: [10.1002/wcms.1340](https://doi.org/10.1002/wcms.1340)
 
-[5] L.-P. Wang, C.C. Song, J. Chem. Phys. (2016) DOI: [10.1063/1.4952956](https://doi.org/10.1063/1.4952956)
+[4] Q. Sun, *J. Comp. Chem.* (2015) DOI: [10.1002/jcc.23981](https://doi.org/10.1002/jcc.23981)
+
+[5] L.-P. Wang, C.C. Song, *J. Chem. Phys.* (2016) DOI: [10.1063/1.4952956](https://doi.org/10.1063/1.4952956)
 
 [6] RDKit: Open-source cheminformatics. https://www.rdkit.org
 
 [7] R. J. Gowers, et al. Proceedings of the 15th Python in Science Conference (2016) DOI: [10.25080/majora-629e541a-00e](https://doi.org/10.25080/majora-629e541a-00e)
 
-[8] N. Michaud-Agrawal, et al. J. Comput. Chem. (2011) DOI: [10.1002/jcc.21787](https://10.1002/jcc.21787)
+[8] N. Michaud-Agrawal, et al. *J. Comput. Chem.* (2011) DOI: [10.1002/jcc.21787](https://10.1002/jcc.21787)
 
 [9] MindSpore: An Open AI Framwork. https://www.mindspore.cn/

@@ -167,6 +167,7 @@ def _mol2_template(filename):
             elif flag == "BOND":
                 _mol2_template_bond(line, atom_residue_map)
 
+
 def load_mol2(filename, ignore_atom_type=False, as_template=False):
     """
     This **function** is used to load a mol2 file
@@ -464,7 +465,7 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
     :return: a Molecule instance
     """
     molecule = Molecule(os.path.splitext(os.path.basename(filename))[0])
-    chain = Xdict()
+    chain = Xdict(not_found_method=lambda key: Xdict())
     sequences = Xdict()
     ssbonds = []
     links = []
@@ -495,7 +496,6 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
                         resname = GlobalSetting.PDBResidueNameMap["head"][resname]
                     residue_type_map.append(resname)
                     current_residue_index = resindex
-                    chain[chain_id] = Xdict()
                     chain[chain_id][resindex] = current_residue_count
                 elif (current_residue_index != resindex or current_insertion_code != insertion_code) or \
                         current_resname != resname:
@@ -589,6 +589,7 @@ def _frcmod_nb14(line, atoms):
     nb14ee = 1.0 / float(nb14ee[0].split("=")[1]) if nb14ee else 1.0 / 1.2
     nb14lj = 1.0 / float(nb14lj[0].split("=")[1]) if nb14lj else 1.0 / 2.0
     return f"{atoms[0]}-{atoms[3]} {nb14ee} {nb14lj}\n"
+
 
 def _frcmod_cmap(line, cmap, temp_cmp, cmap_flag):
     """
