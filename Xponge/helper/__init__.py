@@ -10,7 +10,7 @@ import time
 import stat
 import copy
 from types import MethodType, FunctionType
-from functools import partial, partialmethod, wraps
+from functools import partial, partialmethod, wraps, update_wrapper
 from collections import OrderedDict
 from collections.abc import Iterable
 from itertools import product
@@ -895,7 +895,8 @@ class Atom(Entity):
         """the residue which the atom belongs to, maybe a Residue instance or a ResidueType instance"""
 
         # 成键信息
-        self.linked_atoms = {i + 1: set() for i in range(1, GlobalSetting.farthest_bonded_force)}
+        self.linked_atoms = Xdict({i + 1: set() for i in range(1, GlobalSetting.farthest_bonded_force)},
+                                  not_found_method=lambda key:set())
         """a dict mapping the type and the atoms linked"""
         self.linked_atoms["extra_excluded_atoms"] = set()
 
@@ -2097,6 +2098,16 @@ def generate_new_bonded_force_type(type_name, atoms, properties, is_compulsory, 
         @classmethod
         def set_same_force_function(cls, func):
             cls.Same_Force = classmethod(func)
+
+        @classmethod
+        def type_name_getter(cls, func):
+            update_wrapper(func, cls.get_type_name)
+            cls.get_type_name = func
+            set_attribute_alternative_name(cls, cls.get_type_name)
+
+        @staticmethod
+        def get_type_name(atoms):
+            return "-".join([atom.type.name for atom in atoms])
 
         def update(self, **kwargs):
             reset = 1

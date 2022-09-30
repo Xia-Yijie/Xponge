@@ -109,7 +109,7 @@ def _find_the_force(frc, frc_all_final, cls):
         finded = Xdict()
         # 先直接找
         for frc_one in frc_ones:
-            tofindname = "-".join([atom.type.name for atom in frc_one])
+            tofindname = frc.Get_Type_Name(frc_one)
             if tofindname in frc.get_all_types():
                 finded[tofindname] = [frc.get_type(tofindname), frc_one]
                 break
@@ -144,6 +144,8 @@ def _build_residue_type(cls):
     """
     _analyze_connectivity(cls)
     for frc in GlobalSetting.BondedForces:
+        if len(frc.get_all_types()) < 2:
+            continue
         frc_all = _get_frc_all(frc, cls)
         frc_all_final = _get_frc_all_final(frc, frc_all)
         _find_the_force(frc, frc_all_final, cls)
@@ -176,13 +178,12 @@ You need to add the missing atoms before building.")
             for atomi in atom0.linked_atoms[key]:
                 atom.Link_Atom(key, res_type_atom_map[atomi])
 
-    for frc in GlobalSetting.BondedForces:
-        frc_name = frc.get_class_name()
-        frc_entities = cls.type.bonded_forces.get(frc_name, [])
+    for key, frc_entities in cls.type.bonded_forces.items():
         for frc_entity in frc_entities:
             finded_atoms = [res_type_atom_map[atom] for atom in frc_entity.atoms]
             finded_type = frc_entity.type
-            cls.Add_Bonded_Force(frc.entity(finded_atoms, finded_type))
+            frc_name = finded_type.get_class_name()
+            cls.Add_Bonded_Force(finded_type.entity(finded_atoms, finded_type))
             cls.bonded_forces[frc_name][-1].contents = frc_entity.contents
 
 
@@ -237,6 +238,8 @@ def _build_residue_link(cls):
     atom1_friends, atom2_friends = _modify_linked_atoms(cls)
     atom12_friends = atom1_friends | atom2_friends
     for frc in GlobalSetting.BondedForces:
+        if len(frc.get_all_types()) < 2:
+            continue
         top = frc.topology_like
         top_matrix = frc.topology_matrix
         frc_all = []
@@ -273,15 +276,16 @@ def _build_molecule(cls):
 
     cls.atoms = []
     cls.bonded_forces = {frc.get_class_name(): [] for frc in GlobalSetting.BondedForces}
+    debug = set()
     for res in cls.residues:
         cls.atoms.extend(res.atoms)
-        for frc in GlobalSetting.BondedForces:
-            cls.bonded_forces[frc.get_class_name()].extend(res.bonded_forces.get(frc.get_class_name(), []))
+        for key in cls.bonded_forces:
+            cls.bonded_forces[key].extend(res.bonded_forces.get(key, []))
     for link in cls.residue_links:
-        for frc in GlobalSetting.BondedForces:
-            cls.bonded_forces[frc.get_class_name()].extend(link.bonded_forces.get(frc.get_class_name(), []))
-    cls.atom_index = {cls.atoms[i]: i for i in range(len(cls.atoms))}
+        for key in cls.bonded_forces:
+            cls.bonded_forces[key].extend(link.bonded_forces.get(key, []))
 
+    cls.atom_index = {cls.atoms[i]: i for i in range(len(cls.atoms))}
     for vatom_type_name, vatom_type_atom_numbers in GlobalSetting.VirtualAtomTypes.items():
         for vatom in cls.bonded_forces.get(vatom_type_name, []):
             this_vatoms = [vatom.atoms[0]]

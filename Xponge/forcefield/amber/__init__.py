@@ -2,11 +2,11 @@
 This **package** sets the basic configuration of amber force field
 """
 import os
-from ...helper import set_global_alternative_names
+from ...helper import set_global_alternative_names, Generate_New_Bonded_Force_Type
 from ... import AtomType, load_parmdat, load_frcmod
 
 from ..base import charge_base, mass_base, lj_base, bond_base, angle_base, dihedral_base, nb14_base,\
-    virtual_atom_base, exclude_base
+    virtual_atom_base, exclude_base, cmap_base
 
 AMBER_DATA_DIR = os.path.dirname(__file__)
 
@@ -19,6 +19,27 @@ X-X     0.5     0.833333
 """)
 
 exclude_base.Exclude(4)
+
+# pylint: disable=invalid-name
+AmberCMapType = Generate_New_Bonded_Force_Type("cmap", "1-2-3-4-5", {"resolution": int, "parameters": list}, False)
+
+@AmberCMapType.Type_Name_Getter
+def _(atoms):
+    atom_names = [atom.type.name for atom in atoms]
+    res_name = atoms[2].residue.name
+    atom_names[2] = res_name + "@" + atom_names[2]
+    return "-".join(atom_names)
+
+
+@AmberCMapType.Set_Same_Force_Function
+def cmap_same_force(_, atom_list):
+    """
+    This **function** is used to return the same force type for an atom list
+    :param _:
+    :param atom_list:
+    :return:
+    """
+    return [atom_list]
 
 
 def load_parameters_from_parmdat(filename, prefix=True):
@@ -62,8 +83,7 @@ def load_parameters_from_frcmod(filename, include_cmap=False, prefix=True):
     lj_base.LJType.New_From_String(ljs)
 
     if include_cmap:
-        from ..base import residue_cmap_base
-        residue_cmap_base.CMapType.Residue_Map.update(cmap)
+        AmberCMapType.New_From_Dict(cmap)
 
 
 set_global_alternative_names()

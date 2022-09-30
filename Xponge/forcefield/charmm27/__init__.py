@@ -5,7 +5,7 @@ import os
 from ... import GlobalSetting, load_ffitp, AtomType, ResidueType, set_global_alternative_names
 from ..base import charge_base, mass_base, lj_base, bond_base, ub_angle_base, \
     dihedral_base, nb14_base, nb14_extra_base, improper_base, \
-    virtual_atom_base, atom_cmap_base, exclude_base
+    virtual_atom_base, cmap_base, exclude_base
 
 CHARMM27_DATA_DIR = os.path.dirname(__file__)
 
