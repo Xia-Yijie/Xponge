@@ -42,7 +42,12 @@ def run(args):
         that_path = os.path.join(this_path, that_path)
 
     cmd = os.path.join(that_path, args[1])
-
+    if not (os.path.exists(cmd) or os.path.exists(cmd + ".exe")):
+        print("Error: No MD Engine found.\n",
+              f"  There is no executable program named '{args[1]}' in '{that_path}'\n",
+              "  Maybe you need to use Xponge.mdrun -set SPONGE_PATH to set the path to MD Engine",
+              file=sys.__stderr__)
+        sys.exit(1)
     if len(args) > 2:
         cmd += " " + " ".join(args[2:])
 

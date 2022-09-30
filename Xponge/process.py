@@ -371,7 +371,7 @@ def get_peptide_from_sequence(sequence, charged_terminal=True):
     return toret
 
 
-def optimize(mol, step=2000, only_bad_coordinate=True, dt=1e-8, force_limit=50, epoch_limit=10):
+def optimize(mol, step=2000, only_bad_coordinate=True, dt=1e-8, force_limit=50, epoch_limit=10, pbc=True):
     """
     This **function** is used to optimize the structure of the Molecule instance
 
@@ -382,6 +382,7 @@ def optimize(mol, step=2000, only_bad_coordinate=True, dt=1e-8, force_limit=50, 
     :param force_limit: the minimization will stop if the largest difference in unit of `kcal/mol/A` \
 between forces in two steps is not more than this value.
     :param epoch_limit: the minimization will stop if the epoch is not less than this value.
+    :param pbc: whether to use the periodic box condition
     :return: None
     """
     from tempfile import TemporaryDirectory
@@ -391,7 +392,12 @@ between forces in two steps is not more than this value.
         temp_out = os.path.join(tempdir, "min")
         Xprint("    Parametering", verbose=0)
         save_min_bonded_parameters()
+        if not pbc:
+            box_length_backup = mol.box_length
+            mol.box_length = [999, 999, 999]
         save_sponge_input(mol, temp_prefix)
+        if not pbc:
+            mol.box_length = box_length_backup
         do_not_save_min_bonded_parameters()
         temp_mdin_name = os.path.join(tempdir, "mdin.txt")
         mdin = Xopen(temp_mdin_name, "w")
@@ -405,9 +411,13 @@ mdinfo = {temp_out}.info
 mode = minimization
 step_limit = {step}
 write_information_interval = {step}
+molecule_map_output  = 1
 """)
         mdin.close()
-        all_to_use = f"SPONGE -mdin {temp_mdin_name} "
+        if pbc:
+            all_to_use = f"SPONGE -mdin {temp_mdin_name} "
+        else:
+            all_to_use = f"SPONGE_NOPBC -mdin {temp_mdin_name} "
         if force_limit > 0:
             all_to_use += f"-frc {temp_out}.frc "
         if only_bad_coordinate:

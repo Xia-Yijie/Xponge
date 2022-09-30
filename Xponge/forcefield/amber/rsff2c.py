@@ -2,8 +2,8 @@
 This **package** sets the basic configuration of RSFF2C
 """
 from ...helper import source, Xdict
-from ..base import cmap_base
 source("..ff14sb")
+source("..base.cmap_base")
 
 def _init():
     """
@@ -17,15 +17,15 @@ def _init():
     @rsff2c_dihedral.Type_Name_Getter
     def build_check(atoms):
         return "-".join([atom.residue.name + "@" + atom.name for atom in atoms])
-    source = """
+    source_data = """
     dih_E_chi2 = '-0.457   0.453  -0.105   0.269'
     dih_E_chi3 = ' 0.028   0.201   0.052   0.025'
     dih_Q_chi2 = ' 0.603   0.672   0.341   0.311'
     dih_Q_chi3 = '-0.187   0.012  -0.440   0.032'
     dih_N_chi2 = '-0.343   0.484  -0.154  -0.108'
     """.strip().replace("\n", "=").split("=")
-    coeffs = Xdict({source[i].strip() : [float(j) for j in source[i+1].split("'")[1].split()]
-                    for i in range(0,len(source),2)})
+    coeffs = Xdict({source_data[i].strip() : [float(j) for j in source_data[i + 1].split("'")[1].split()]
+                    for i in range(0, len(source_data), 2)})
     phase = Xdict({key: [ 3.1415926 if x > 0 else 0 for x in coeff] for key, coeff in coeffs.items()})
     to_update = "name k phi0 periodicity reset\n"
     names = Xdict({"GLU@CA-GLU@CB-GLU@CG-GLU@CD": "dih_E_chi2",
@@ -57,13 +57,13 @@ def _init():
         return "-".join(atom_names)
 
     with open(os.path.join(AMBER_DATA_DIR, "RSFF2C.dat")) as f:
-        source = f.read().strip().replace("%FLAG", "%FORMAT(8(F9.5))").split("%FORMAT(8(F9.5))")[1:]
-    names = [line.split("COMMENT")[1].split() for line in source[::2]]
+        source_data = f.read().strip().replace("%FLAG", "%FORMAT(8(F9.5))").split("%FORMAT(8(F9.5))")[1:]
+    names = [line.split("COMMENT")[1].split() for line in source_data[::2]]
     temp_map = Xdict({"phi/psi": "C-N-%s@CA-C-N",
                       "chi/phi": "G-CB-%s@CA-N-C",
                       "chi/psi": "G-CB-%s@CA-C-N"})
     names = [temp_map[name[1]]%name[0] for name in names]
-    parameters = [ [float(word) for word in line.split()] for line in source[1::2]]
+    parameters = [[float(word) for word in line.split()] for line in source_data[1::2]]
     to_update = Xdict()
     for name, parameter in zip(names, parameters):
         to_update[name] = {"resolution":24, "parameters": parameter}
@@ -73,8 +73,8 @@ def _init():
 _init()
 
 Xprint("""Reference for RSFF2C:
-  Jia-Jie Feng, Jia-Nan Chen, Wei Kang, Yun-Dong Wu
-    Accurate Structure Prediction for Protein Loops Based on Molecular Dynamics Simulations with RSFF2C
-    Journal of Chemical Theory and Computation 2021, 17(7), 4614–4628
-    DOI: 10.1021/acs.jctc.1c00341
+  Wei Kang, Fan Jiang, Yun-Dong Wu
+    Universal Implementation of a Residue-Specific Force Field Based on CMAP Potentials and Free Energy Decomposition
+    Journal of Chemical Theory and Computation 2018, 14(8), 4474–4486
+    DOI: 10.1021/acs.jctc.8b00285
 """)

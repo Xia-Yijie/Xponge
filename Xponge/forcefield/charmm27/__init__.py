@@ -41,7 +41,7 @@ def load_parameter_from_ffitp(filename, prefix=True):
     improper_base.ImproperType.New_From_String(output["impropers"])
     nb14_extra_base.NB14Type.New_From_String(output["nb14_extra"])
     nb14_base.NB14Type.New_From_String(output["nb14"])
-    atom_cmap_base.CMapType.New_From_Dict(output["cmaps"])
+    cmap_base.CMapType.New_From_Dict(output["cmaps"])
 
 
 load_parameter_from_ffitp("forcefield.itp")

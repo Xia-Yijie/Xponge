@@ -276,7 +276,6 @@ def _build_molecule(cls):
 
     cls.atoms = []
     cls.bonded_forces = {frc.get_class_name(): [] for frc in GlobalSetting.BondedForces}
-    debug = set()
     for res in cls.residues:
         cls.atoms.extend(res.atoms)
         for key in cls.bonded_forces:

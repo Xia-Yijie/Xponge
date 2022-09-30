@@ -31,7 +31,6 @@ def write_cmap(self):
     haved_cmaps = []
     haved_cmap_index = Xdict()
     for bond in self.bonded_forces.get("cmap", []):
-        order = list(range(5))
         if bond.type not in haved_cmaps:
             haved_cmap_index[bond.type] = len(haved_cmaps)
             haved_cmaps.append(bond.type)
