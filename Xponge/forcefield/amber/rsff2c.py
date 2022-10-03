@@ -3,7 +3,7 @@ This **package** sets the basic configuration of RSFF2C
 """
 from ...helper import source, Xdict
 source("..ff14sb")
-source("..base.cmap_base")
+source("...base.cmap_base")
 
 def _init():
     """
@@ -16,7 +16,8 @@ def _init():
     rsff2c_dihedral.Set_Property_Unit("phi0", "angle", "rad")
     @rsff2c_dihedral.Type_Name_Getter
     def build_check(atoms):
-        return "-".join([atom.residue.name + "@" + atom.name for atom in atoms])
+        return "-".join([atom.residue.name + "@" + atom.name if len(atom.residue.name <= 3)
+                         else atom.residue.name[-3:] + "@" + atom.name for atom in atoms])
     source_data = """
     dih_E_chi2 = '-0.457   0.453  -0.105   0.269'
     dih_E_chi3 = ' 0.028   0.201   0.052   0.025'
@@ -35,10 +36,10 @@ def _init():
                    "GLN@CB-GLN@CG-GLN@CD-GLN@OE1": "dih_Q_chi3",
                    "ASN@CA-ASN@CB-ASN@CG-ASN@OD1": "dih_N_chi2"})
     for name, pname in names.items():
-        to_update += f"{name} {coeffs[pname][0]} {phase[pname][0]} 1 1\n"
-        to_update += f"{name} {coeffs[pname][1]} {phase[pname][1]} 2 0\n"
-        to_update += f"{name} {coeffs[pname][2]} {phase[pname][2]} 3 0\n"
-        to_update += f"{name} {coeffs[pname][3]} {phase[pname][3]} 4 0\n"
+        to_update += f"{name} {abs(coeffs[pname][0])} {phase[pname][0]} 1 1\n"
+        to_update += f"{name} {abs(coeffs[pname][1])} {phase[pname][1]} 2 0\n"
+        to_update += f"{name} {abs(coeffs[pname][2])} {phase[pname][2]} 3 0\n"
+        to_update += f"{name} {abs(coeffs[pname][3])} {phase[pname][3]} 4 0\n"
 
     rsff2c_dihedral.New_From_String(to_update)
 
