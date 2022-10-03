@@ -48,7 +48,7 @@ def _init():
     @rsff2c_cmap.Type_Name_Getter
     def _(atoms):
         atom_names = ["G" if ((atom.residue.name == "VAL" and atom.name == "CG2") or
-                              (atom.residue.name != "VAL" and atom.name in ('CG', 'OG', 'SG', 'CG1', 'OG1'))
+                              (atom.residue.name != "VAL" and atom.name in ('CG', 'OG', 'SG', 'CG1', 'OG1')))
                       else atom.name for atom in atoms]
         res_name = atoms[2].residue.name
         if "-".join(atom_names) == "C-N-CA-C-N" and res_name != "GLY":
