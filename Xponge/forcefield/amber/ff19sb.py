@@ -2,15 +2,9 @@
 This **module** set the basic configuration for ff19sb
 """
 from ...helper import source, Xprint, set_real_global_variable
-from ..base import residue_cmap_base
 
 source("....")
 amber = source("...amber")
-
-residue_cmap_base.CMapType.New_From_String(r"""
-name
-C-N-XC-C-N
-""")
 
 amber.load_parameters_from_parmdat("parm19.dat")
 amber.load_parameters_from_frcmod("ff19SB.frcmod", include_cmap=True)

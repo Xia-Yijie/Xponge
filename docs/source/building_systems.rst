@@ -29,6 +29,10 @@ Here are the existing force fields in ``Xponge`` now:
       - ff19SB
       - Xponge.forcefield.amber.ff19sb
     * - 
+      - proteins
+      - RSFF2C
+      - Xponge.forcefield.amber.rsff2c
+    * - 
       - lipids
       - lipid14
       - Xponge.forcefield.amber.lipid14

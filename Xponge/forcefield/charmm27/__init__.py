@@ -5,7 +5,7 @@ import os
 from ... import GlobalSetting, load_ffitp, AtomType, ResidueType, set_global_alternative_names
 from ..base import charge_base, mass_base, lj_base, bond_base, ub_angle_base, \
     dihedral_base, nb14_base, nb14_extra_base, improper_base, \
-    virtual_atom_base, atom_cmap_base, exclude_base
+    virtual_atom_base, cmap_base, exclude_base
 
 CHARMM27_DATA_DIR = os.path.dirname(__file__)
 
@@ -41,7 +41,7 @@ def load_parameter_from_ffitp(filename, prefix=True):
     improper_base.ImproperType.New_From_String(output["impropers"])
     nb14_extra_base.NB14Type.New_From_String(output["nb14_extra"])
     nb14_base.NB14Type.New_From_String(output["nb14"])
-    atom_cmap_base.CMapType.New_From_Dict(output["cmaps"])
+    cmap_base.CMapType.New_From_Dict(output["cmaps"])
 
 
 load_parameter_from_ffitp("forcefield.itp")

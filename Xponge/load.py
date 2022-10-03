@@ -604,7 +604,8 @@ def _frcmod_cmap(line, cmap, temp_cmp, cmap_flag):
         if "CMAP_COUNT" in line:
             if temp_cmp:
                 for res in temp_cmp["residues"]:
-                    cmap[res] = temp_cmp["info"]
+                    cmap[f"C-N-{res}@XC-C-N"] = {"resolution": temp_cmp["info"]["resolution"],
+                                                 "parameters": temp_cmp["info"]["parameters"]}
             temp_cmp = {"residues": [], "info": {"resolution": 24, "count": int(line.split()[-1]), "parameters": []}}
             cmap_flag = "CMAP_COUNT"
         elif "CMAP_RESOLUTION" in line:
@@ -695,7 +696,8 @@ def load_frcmod(filename, nbtype="RE"):
                 temp_cmp, cmap_flag = _frcmod_cmap(line, cmap, temp_cmp, cmap_flag)
 
     for res in temp_cmp["residues"]:
-        cmap[res] = temp_cmp["info"]
+        cmap[f"C-N-{res}@XC-C-N"] = {"resolution": temp_cmp["info"]["resolution"],
+                                     "parameters": temp_cmp["info"]["parameters"]}
     atoms = "name  mass  LJtype\n"
     for atom, mass in atom_types.items():
         atoms += atom + "\t" + mass + "\t" + atom + "\n"

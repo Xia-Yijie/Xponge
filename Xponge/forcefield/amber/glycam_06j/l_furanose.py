@@ -7,7 +7,7 @@ from ....helper import source
 
 def _init():
     """
-    initialize the moduele
+    initialize the module
     """
     source("...glycam_06j")
     load_mol2(os.path.join(AMBER_DATA_DIR, "glycam_06j", "l_furanose.mol2"), as_template=True)
