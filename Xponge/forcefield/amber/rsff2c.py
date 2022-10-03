@@ -16,7 +16,7 @@ def _init():
     rsff2c_dihedral.Set_Property_Unit("phi0", "angle", "rad")
     @rsff2c_dihedral.Type_Name_Getter
     def build_check(atoms):
-        return "-".join([atom.residue.name + "@" + atom.name if len(atom.residue.name <= 3)
+        return "-".join([atom.residue.name + "@" + atom.name if len(atom.residue.name) <= 3
                          else atom.residue.name[-3:] + "@" + atom.name for atom in atoms])
     source_data = """
     dih_E_chi2 = '-0.457   0.453  -0.105   0.269'
