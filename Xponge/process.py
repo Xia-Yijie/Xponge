@@ -371,7 +371,7 @@ def get_peptide_from_sequence(sequence, charged_terminal=True):
     return toret
 
 
-def optimize(mol, step=2000, only_bad_coordinate=True, dt=1e-8, force_limit=50, epoch_limit=10, pbc=True):
+def optimize(mol, step=2000, only_bad_coordinate=True, dt=1e-8, force_limit=50, epoch_limit=10, pbc=True, extra_commands = None):
     """
     This **function** is used to optimize the structure of the Molecule instance
 
@@ -383,7 +383,8 @@ def optimize(mol, step=2000, only_bad_coordinate=True, dt=1e-8, force_limit=50, 
 between forces in two steps is not more than this value.
     :param epoch_limit: the minimization will stop if the epoch is not less than this value.
     :param pbc: whether to use the periodic box condition
-    :return: None
+    :param extra_commands: a dict, with the extra commands to pass to the MD engine
+    :return: 0 for reaching the force limitation, 1 for reaching the epoch limitation
     """
     from tempfile import TemporaryDirectory
     Xprint("Optimizing", verbose=0)
@@ -413,6 +414,11 @@ step_limit = {step}
 write_information_interval = {step}
 molecule_map_output  = 1
 """)
+        towrite = ""
+        if extra_commands:
+            for command, value in extra_commands.items():
+                towrite += f"{command} = {value}\n"
+        mdin.write(towrite)
         mdin.close()
         if pbc:
             all_to_use = f"SPONGE -mdin {temp_mdin_name} "
@@ -432,7 +438,7 @@ molecule_map_output  = 1
         start_dt = dt
         if force_limit > 0:
             frc = np.fromfile(f"{temp_out}.frc", dtype=np.float32).reshape(-1, 3)
-            frc = np.linalg.norm(frc, axis=1)
+            frc = np.linalg.norm(frc, axis=1) 
             last_frc = np.zeros_like(frc)
             epoch = 0
             Xprint("Epoch    Max Force Difference    Force Limit    Epoch Limit", verbose=0)
@@ -449,6 +455,10 @@ molecule_map_output  = 1
                                                                  epoch_limit), verbose=0)
         load_coordinate(temp_out+'_coordinate.txt', mol)
         Xprint("Optimization Finished", verbose=0)
+        if np.all(np.abs(frc - last_frc) < force_limit):
+            return 0
+        else:
+            return 1
 
 
 class Region(ABC):

@@ -140,12 +140,15 @@ instead of the default ones")
 instead of the default one")
     mol2rfe.add_argument("-ei", "-equilibrium_mdin", help="Use this equilibrium mdin file instead of the default one")
     mol2rfe.add_argument("-ai", "-analysis_mdin", help="Use this analysis mdin file instead of the default one")
-
     mol2rfe.add_argument("-method", default="TI", choices=["TI"], help="the method to calculate the free energy")
     mol2rfe.add_argument("-temp", default="TMP", metavar="TMP", help="the temporary file name prefix")
 
     mol2rfe.add_argument("-tmcs", default=10, type=int, metavar="10",
                          help="the timeout parameter for max common structure in unit of second")
+    mol2rfe.add_argument("-fmcs", default="mcs.png", type=str, metavar="mcs.png",
+                         help="the file name for max common structure image")
+    mol2rfe.add_argument("-lmcs", default=0.0, type=float, metavar="0.0",
+                         help="minimum limitation of the Tanimoto coefficient of max common structure")
     mol2rfe.add_argument("-dt", default=2e-3, type=float, metavar="dt",
                          help="the dt used for simulation when mdin is not provided")
     mol2rfe.add_argument("-msteps", type=int, nargs=6,

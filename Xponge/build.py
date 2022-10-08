@@ -437,14 +437,14 @@ def _pdb_chain(cls: Molecule):
         if not cls.get_residue_link(cls.residues[i-1], res, "residue"):
             length = i - start
             if length > 1:
-                chains[alphabet] = {j + 1: start + j + 1 for j in range(length + 1)}
-                chain_ids[start: start + length + 1] = alphabet * (length + 1)
+                chains[alphabet] = {j + 1: start + j + 1 for j in range(length)}
+                chain_ids[start: start + length] = alphabet * (length)
                 alphabet = chr(ord(alphabet) + 1)
             start = i
-    length = i - start
+    length = i - start + 1
     if length > 1:
-        chains[alphabet] = {j + 1: start + j for j in range(length + 1)}
-        chain_ids[start: start + length + 1] = alphabet * (length + 1)
+        chains[alphabet] = {j + 1: start + j + 1 for j in range(length)}
+        chain_ids[start: start + length] = alphabet * (length)
     return chains, chain_ids
 
 
@@ -481,7 +481,7 @@ def _pdb_sequence(cls: Molecule, chains: Xdict):
         pdb_index.sort()
         names = []
         for i in pdb_index:
-            mol_index = index_map[i]
+            mol_index = index_map[i] - 1
             name = cls.residues[mol_index].name
             name = GlobalSetting.PDBResidueNameMap["save"][name] \
                 if name in GlobalSetting.PDBResidueNameMap["save"] else name

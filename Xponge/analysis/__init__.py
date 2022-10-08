@@ -25,7 +25,10 @@ class MdoutReader():
     def __init__(self, filename):
         with open(filename) as f:
             self.content = f.readline().split()
-            self.data = np.loadtxt(f)
+            words = f.read().replace("****", "nan").split()
+            self.data = np.array([[float(words[i+j])
+                                   for j in range(len(self.content))]
+                                  for i in range(0, len(words), len(self.content))])
         self.content_index = {self.content[i]: i for i in range(len(self.content))}
 
     def __getattribute__(self, attr):

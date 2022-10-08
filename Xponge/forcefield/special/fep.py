@@ -605,7 +605,8 @@ def _get_residue_ab(residue_type_a, residue_type_b, residue_a, forcopy, matchmap
     return restype_ab, rbmap
 
 
-def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b, tmcs=60):
+def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b, 
+                        tmcs=60, image_path=None, similarity_limit=0):
     """
     This **function** perturbs a residue in the molecule into another type in the dual topology way
 
@@ -615,6 +616,8 @@ def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b, tmcs=60):
     :param assign_a: the Assign instance corresponding to ``residue_a``
     :param assign_b: the Assign instance corresponding to ``residue_b``
     :param tmcs: the max time to find the max common structure
+    :param similarity_limit: the limitation of the similarity. The similarity is calculated by \
+the tanimoto coefficient of the max common structure.
     :return: two molecules in the initial and final lambda stat respectively
     """
     build.Build_Bonded_Force(mol)
@@ -622,6 +625,7 @@ def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b, tmcs=60):
 
     from ...helper.rdkit import assign_to_rdmol, insert_atom_type_to_rdmol
     from rdkit.Chem import rdFMCS as MCS
+    from rdkit.Chem import Draw, AllChem
 
     rdmol_a = assign_to_rdmol(assign_a, True)
     rdmol_b = assign_to_rdmol(assign_b, True)
@@ -629,7 +633,7 @@ def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b, tmcs=60):
     atom_type_dict = Xdict()
     insert_atom_type_to_rdmol(rdmol_a, residue_a, assign_a, atom_type_dict)
     insert_atom_type_to_rdmol(rdmol_b, residue_b, assign_b, atom_type_dict)
-    print("FINDING MAXIMUM COMMON SUBSTRUCTURE")
+    print("FINDING MAXIMUM COMMON SUBSTRUCTURE\n")
 
     result = MCS.FindMCS([rdmol_a, rdmol_b], atomCompare=MCS.AtomCompare.CompareIsotopes, completeRingsOnly=True,
                          timeout=tmcs)
@@ -637,9 +641,26 @@ def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b, tmcs=60):
 
     match_a = rdmol_a.GetSubstructMatch(rdmol_mcs)
     match_b = rdmol_b.GetSubstructMatch(rdmol_mcs)
+    tanimoto = len(match_a)
+    tanimoto /= len(assign_a.atoms) + len(assign_b.atoms) - tanimoto
+    Xprint(f"similarity: {tanimoto}")
+    assert tanimoto > similarity_limit, f"similarity (={tanimoto}) should be greater than {similarity_limit}"
     matchmap = {match_b[j]: match_a[j] for j in range(len(match_a))}
-
-    print("ALIGNING TOPOLOGY AND COORDINATE")
+    if image_path:
+        draw_a = assign_to_rdmol(assign_a, True)
+        draw_b = assign_to_rdmol(assign_b, True)
+        AllChem.Compute2DCoords(draw_a)
+        AllChem.Compute2DCoords(draw_b)
+        for atom in draw_a.GetAtoms():
+            atom.SetProp("atomLabel", atom.GetSymbol())
+        for atom in draw_b.GetAtoms():
+            atom.SetProp("atomLabel", atom.GetSymbol())
+        img = Draw.MolsToGridImage([draw_a, draw_b],
+                                   molsPerRow=1,
+                                   subImgSize=(1200,600),
+                                   highlightAtomLists=[match_a, match_b])
+        img.save(image_path)
+    print("ALIGNING TOPOLOGY AND COORDINATE\n")
 
     residue_type_a = residue_a.type
 

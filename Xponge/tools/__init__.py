@@ -183,7 +183,7 @@ class TestMyPackage(unittest.TestCase):
         Save_Mol2(NALA, f"{args.o}_r1.mol2")
         Save_Mol2(NGLY, f"{args.o}_r2.mol2")
         error = os.system(f"Xponge mol2rfe -nl 1 -pdb {args.o}.pdb -r1 {args.o}_r1.mol2 \
--r2 {args.o}_r2.mol2 -pstep 1000 -estep 1000 > {os.devnull}")
+-r2 {args.o}_r2.mol2 -pstep 1000 -esteps 1000 > {os.devnull}")
         self.assertEqual(error, 0)
 
 
@@ -492,10 +492,11 @@ def _mol2rfe_build(args, merged_from, merged_to):
                 os.system("rm -rf %d" % i)
             os.mkdir("%d" % i)
             tt = fep.Merge_Force_Field(merged_from, merged_to, i / args.nl)
-            if i == 0:
-                min_.save_min_bonded_parameters()
-            elif i == 1:
-                min_.do_not_save_min_bonded_parameters()
+            Xprint(f"lambda = {i / args.nl}")
+            process.optimize(tt,
+                             only_bad_coordinate=False,
+                             extra_commands={"lambda_lj": i / args.nl})
+            build.save_mol2(tt, "%d/%s.mol2" % (i, args.temp))
             build.Save_SPONGE_Input(tt, "%d/%s" % (i, args.temp))
 
 
@@ -530,7 +531,7 @@ def _mol2rfe_min(args):
             basic += f" -mode minimization -lambda_lj {lambda_}"
             basic += _mol2rfe_output_path("min", i, args.temp)
             if not args.mi:
-                cif = " -constrain_mode SHAKE"
+                cif = " -constrain_mode SHAKE -cutoff 8"
                 run(f"{basic} {cif} -dt 1e-8 -step_limit {args.msteps[0]}")
                 cif += " -coordinate_in_file {1}/min/{0}_coordinate.txt".format(args.temp, i)
                 run(f"{basic} {cif} -dt 1e-7 -step_limit {args.msteps[1]}")
@@ -562,7 +563,7 @@ def _mol2rfe_pre_equilibrium(args):
             os.mkdir("%d/pre_equilibrium" % i)
             command = f"SPONGE -default_in_file_prefix {i}/{args.temp}"
             lambda_ = i / args.nl
-            command += f" -lambda_lj {lambda_}"
+            command += f" -lambda_lj {lambda_} -cutoff 8"
             command += _mol2rfe_output_path("pre_equilibrium", i, args.temp)
             command += f" -coordinate_in_file {i}/min/{args.temp}_coordinate.txt"
             if not args.pi:
@@ -589,32 +590,63 @@ def _mol2rfe_equilibrium(args):
             os.mkdir("%d/equilibrium" % i)
             command = f"SPONGE -default_in_file_prefix {i}/{args.temp}"
             lambda_ = i / args.nl
-            command += f" -lambda_lj {lambda_}"
+            command += f" -lambda_lj {lambda_} -cutoff 8"
             command += _mol2rfe_output_path("equilibrium", i, args.temp)
             command += f" -coordinate_in_file {i}/pre_equilibrium/{args.temp}_coordinate.txt"
             if not args.ei:
                 command += f" -mode NPT -step_limit {args.equilibrium_step} -dt {args.dt} -constrain_mode SHAKE"
                 command += f" -barostat {args.barostat} -thermostat {args.thermostat}"
+                command += f" -write_information_interval 100 -write_restart_file_interval {args.equilibrium_step}"
                 run(command)
             else:
                 command += f" -mdin {args.pi}"
                 run(command)
 
 
-def _mol2rfe_analysis(args, merged_from):
+def _mol2rfe_analysis(args, merged_from, merged_to):
     """
 
     :param args:
     :param merged_from:
+    :param merged_to:
     :return:
     """
     source("..")
-
+    source("..analysis")
+    import matplotlib.pyplot as plt
     if "analysis" in args.do:
-        f = Xopen("dh_dlambda.txt", "w")
-        f.write("")
-        f.close()
+        #f = Xopen("dh_dlambda.txt", "w")
+        #f.close()
+        resname = merged_from.residues[args.ri].name
+        draw_r1_mol = merged_from.deepcopy()
+        draw_r2_mol = merged_to.deepcopy()
+        load_coordinate(f"0/equilibrium/{args.temp}_coordinate.txt", draw_r1_mol)
+        load_coordinate(f"{args.nl}/equilibrium/{args.temp}_coordinate.txt", draw_r2_mol)
+        draw_r1_res = draw_r1_mol.residues[args.ri]
+        draw_r2_res = draw_r2_mol.residues[args.ri]
+        draw_r1_res.name = resname.split("_")[0]
+        draw_r2_res.name = resname.split("_")[1]
+        to_delete = []
+        for atom in draw_r1_res.atoms:
+            if atom.LJtype == "ZERO_LJ_ATOM":
+                to_delete.append(atom)
+        for atom in to_delete:
+            draw_r1_res.atoms.remove(atom)
+        to_delete = []
+        for atom in draw_r2_res.atoms:
+            if atom.LJtype == "ZERO_LJ_ATOM":
+                to_delete.append(atom)
+            if atom.name.endswith("R2"):
+                atom.name = atom.name[:-2]
+        for atom in to_delete:
+            draw_r2_res.atoms.remove(atom)
+        save_pdb(draw_r1_mol, "r1.pdb")
+        save_pdb(draw_r2_mol, "r2.pdb")
+        frame = args.equilibrium_step // 100
         if args.method == "TI":
+            ses = []
+            prefix_sum = []
+            suffix_sum = []
             for i in range(args.nl + 1):
                 if os.path.exists("%d/ti" % i):
                     os.system("rm -rf %d/ti" % i)
@@ -632,25 +664,62 @@ def _mol2rfe_analysis(args, merged_from):
                 inprefix = f"{i}/equilibrium/{args.temp}"
                 command += f" -crd {inprefix}.dat -box {inprefix}.box -TI dh_dlambda.txt"
                 command += f" -atom_numbers {len(merged_from.atoms)}"
-                command += f" -frame_numbers {args.equilibrium_step // 100}"
+                command += f" -frame_numbers {frame}"
                 if not args.ai:
                     run(command)
                 else:
                     command += f" -mdin {args.ai}"
                     run(command)
+                temp = MdoutReader(f"{i}/ti/{args.temp}.mdout").dH_dlambda
+                prefix_sum.append(np.cumsum(temp[::10]) / (np.arange(frame)[::10] + 1))
+                suffix_sum.append(np.cumsum(temp[::-10]) / (np.arange(frame)[::10] + 1))
+                ses.append(np.std(temp) / np.sqrt(frame))
+            prefix_sum = np.array(prefix_sum)
             dh_dlambda = np.loadtxt("dh_dlambda.txt")
+            ses = np.array(ses)
+            ses *= ses
             dh = []
             dh_int = []
+            dh_se = []
+            dh_int_se = []
+            prefix_dh = []
+            prefix_dh_int = []
             tempall = 0
+            temp_se_all = 0
+            space = 0.5 / args.nl
+            if os.path.exists("time_check"):
+                os.system("rm -rf time_check")
+            os.mkdir("time_check")
             for i in range(args.nl):
-                temp = dh_dlambda[i] * 0.5 / args.nl
-                temp += dh_dlambda[i + 1] * 0.5 / args.nl
+                temp = (prefix_sum[i] + prefix_sum[i + 1]) * space
+                time = args.dt * (np.arange(frame // 10))
+                plt.plot(time, temp, label="forward")
+                temp_ses = np.vstack((time, temp))
+                temp = (suffix_sum[i] + suffix_sum[i + 1]) * space
+                temp_ses = np.vstack((temp_ses, temp))
+                plt.plot(time, temp, label="backward")
+                plt.xlabel("time[ns]")
+                plt.ylabel("free energy difference[kcal/mol]")
+                plt.legend()
+                plt.savefig(f"time_check/{i}-{i + 1}.png")
+                np.savetxt(f"time_check/{i}-{i + 1}.csv", temp_ses.transpose(), header="time[ps],forward DeltaG[kcal/mol],backward DeltaG[kcal/mol]", comments="", delimiter=",")
+                plt.clf()
+                temp = dh_dlambda[i] * space
+                temp += dh_dlambda[i + 1] * space
+                temp_ses = space * (ses[i] + ses[i + 1])
                 dh.append(temp)
+                dh_se.append(np.sqrt(temp_ses))
                 tempall += temp
+                temp_se_all += temp_ses
                 dh_int.append(tempall)
+                dh_int_se.append(np.sqrt(temp_se_all))
+            prefix_dh = np.array(prefix_dh)
+            prefix_dh_int = np.array(prefix_dh_int)
+            
+            temp_ses **= 0.5
             f = Xopen("free_energy.txt", "w")
             f.write("lambda_state\tFE(i+1)-FE(i)[kcal/mol]\tFE(i+1)-FE(0)[kcal/mol]\n")
-            f.write("\n".join(["%d\t\t%.2f\t\t\t%.2f" % (i, dh[i], dh_int[i]) for i in range(args.nl)]))
+            f.write("\n".join([f"{i}\t\t{dh[i]: .2f} +- {dh_se[i]:.2f}\t\t{dh_int[i]: .2f} +- {dh_int_se[i]:.2f}" for i in range(args.nl)]))
             f.close()
         elif args.method == "FEP_BAR":
             raise NotImplementedError
@@ -697,7 +766,7 @@ def mol2rfe(args):
 
     rmol = load_pdb(args.pdb)
 
-    merged_from, merged_to = Merge_Dual_Topology(rmol, rmol.residues[args.ri], to_res_type_, from_, to_, args.tmcs)
+    merged_from, merged_to = Merge_Dual_Topology(rmol, rmol.residues[args.ri], to_res_type_, from_, to_, args.tmcs, f"{args.fmcs}", args.lmcs)
 
     if args.dohmr:
         H_Mass_Repartition(merged_from)
@@ -711,4 +780,4 @@ def mol2rfe(args):
 
     _mol2rfe_equilibrium(args)
 
-    _mol2rfe_analysis(args, merged_from)
+    _mol2rfe_analysis(args, merged_from, merged_to)
