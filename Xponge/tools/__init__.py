@@ -641,8 +641,8 @@ def _mol2rfe_analysis(args, merged_from, merged_to):
         save_pdb(draw_r1_mol, "r1.pdb")
         save_pdb(draw_r2_mol, "r2.pdb")
         if args.method == "TI":
-            ti = source("..ti", False)
-            ti.ti_analysis(args)
+            ti = source(".ti", False)
+            ti.ti_analysis(args, merged_from)
         elif args.method == "FEP_BAR":
             raise NotImplementedError
 

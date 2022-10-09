@@ -5,7 +5,7 @@ from collections import OrderedDict
 from itertools import groupby
 import numpy as np
 from ..helper import AtomType, ResidueType, Xopen, Xdict, set_real_global_variable, set_attribute_alternative_names, \
-    set_global_alternative_names, Guess_Element_From_Mass
+    set_global_alternative_names, Guess_Element_From_Mass, Xprint
 
 
 class AssignRule:
@@ -498,6 +498,9 @@ instance yourself, remember to determine the ring and bond type!
                                         a2=parameters.get("a2", 0.001), two_stage=parameters.get("two_stage", True),
                                         only_esp=parameters.get("only_esp", False),
                                         radius=parameters.get("radius", None))
+        elif method == "Gasteiger":
+            from . import gasteiger
+            self.charge = gasteiger.Gasteiger(self)
         else:
             raise ValueError("methods should be one of the following: 'RESP'")
 
