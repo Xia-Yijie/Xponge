@@ -605,7 +605,7 @@ def _get_residue_ab(residue_type_a, residue_type_b, residue_a, forcopy, matchmap
     return restype_ab, rbmap
 
 
-def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b, 
+def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b,
                         tmcs=60, image_path=None, similarity_limit=0):
     """
     This **function** perturbs a residue in the molecule into another type in the dual topology way

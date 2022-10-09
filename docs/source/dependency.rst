@@ -72,6 +72,10 @@ Here is the list of all packages which may be used:
       - trajectory analysis
       - ``pip install MDAnalysis``
       - [8-9]
+    * - matplotlib
+      - plot and visualization
+      - ``pip install matplotlib``
+      -
 
 References for the dependent packags
 

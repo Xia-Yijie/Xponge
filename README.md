@@ -141,6 +141,7 @@ Here is the list of all packages which may be uesd:
 | geometric[5]      | geometry optimization             | `pip install geometric`        |
 | rdkit[6]          | cheminformatics                   | `conda install -c rdkit rdkit` |
 | MDAnalysis[7-8]   | trajectory analysis               | `pip install MDAnalysis`       |
+| matplotlib        | plot and visualization            | `pip install matplotlib`       |
 | mindspore[9]      | AI framework for machine learning | See the [official website](https://www.mindspore.cn/install)|
 | mindsponge[1]     | end-to-end differentiable MD      | See the [official website](https://www.mindspore.cn/mindscience/docs/en/master/mindsponge/intro_and_install.html)|
 

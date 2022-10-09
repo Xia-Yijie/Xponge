@@ -371,7 +371,8 @@ def get_peptide_from_sequence(sequence, charged_terminal=True):
     return toret
 
 
-def optimize(mol, step=2000, only_bad_coordinate=True, dt=1e-8, force_limit=50, epoch_limit=10, pbc=True, extra_commands = None):
+def optimize(mol, step=2000, only_bad_coordinate=True, dt=1e-8, force_limit=50,
+             epoch_limit=10, pbc=True, extra_commands=None):
     """
     This **function** is used to optimize the structure of the Molecule instance
 
@@ -438,7 +439,7 @@ molecule_map_output  = 1
         start_dt = dt
         if force_limit > 0:
             frc = np.fromfile(f"{temp_out}.frc", dtype=np.float32).reshape(-1, 3)
-            frc = np.linalg.norm(frc, axis=1) 
+            frc = np.linalg.norm(frc, axis=1)
             last_frc = np.zeros_like(frc)
             epoch = 0
             Xprint("Epoch    Max Force Difference    Force Limit    Epoch Limit", verbose=0)
@@ -457,8 +458,7 @@ molecule_map_output  = 1
         Xprint("Optimization Finished", verbose=0)
         if np.all(np.abs(frc - last_frc) < force_limit):
             return 0
-        else:
-            return 1
+        return 1
 
 
 class Region(ABC):

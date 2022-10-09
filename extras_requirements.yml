@@ -10,4 +10,5 @@ dependencies:
     - xpongelib
     - pyscf
     - geometric
+    - matplotlib
 
