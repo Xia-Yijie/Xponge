@@ -5,6 +5,7 @@ from rdkit.Chem import rdPartialCharges
 from ..helper import Xprint, set_global_alternative_names
 from ..helper.rdkit import assign_to_rdmol
 
+
 def gasteiger(assign):
     """
     This **function** is used to calculate the Gasteiger charge of an assignment
@@ -15,6 +16,7 @@ def gasteiger(assign):
     rdmol = assign_to_rdmol(assign)
     rdPartialCharges.ComputeGasteigerCharges(rdmol)
     return [float(atom.GetProp("_GasteigerCharge")) for atom in rdmol.GetAtoms()]
+
 
 set_global_alternative_names()
 

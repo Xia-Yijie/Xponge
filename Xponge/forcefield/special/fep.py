@@ -1,7 +1,7 @@
 """
 This **module** gives the basic functions for fep calculations
 """
-from ...helper import source, set_global_alternative_names, Xdict
+from ...helper import source, set_global_alternative_names, Xdict, Xopen, Xprint
 from ..base import lj_base, exclude_base, bond_base, angle_base, dihedral_base, nb14_extra_base
 
 source("....")
@@ -96,7 +96,7 @@ def _nb14_extra_merge_rule(mol_r, mol_a, mol_b, forcetype, rforces, bforces, lam
 
             f_r.A = f_b.A * lambda_
             f_r.B = f_b.B * lambda_
-            f_r.kee = f2.kee * lambda_
+            f_r.kee = f_b.kee * lambda_
             mol_r.Add_Bonded_Force(f_r)
         else:
             temp_charge0 = f_r.atoms[0].charge if abs(f_r.atoms[0].charge) > TINY else TINY
@@ -616,6 +616,7 @@ def merge_dual_topology(mol, residue_a, residue_b, assign_a, assign_b,
     :param assign_a: the Assign instance corresponding to ``residue_a``
     :param assign_b: the Assign instance corresponding to ``residue_b``
     :param tmcs: the max time to find the max common structure
+    :param image_path: the path to save the mcs image
     :param similarity_limit: the limitation of the similarity. The similarity is calculated by \
 the tanimoto coefficient of the max common structure.
     :return: two molecules in the initial and final lambda stat respectively
@@ -657,9 +658,15 @@ the tanimoto coefficient of the max common structure.
             atom.SetProp("atomLabel", atom.GetSymbol())
         img = Draw.MolsToGridImage([draw_a, draw_b],
                                    molsPerRow=1,
-                                   subImgSize=(1200,600),
+                                   subImgSize=(1200, 600),
                                    highlightAtomLists=[match_a, match_b])
         img.save(image_path)
+        f = Xopen(os.path.splitext(image_path)[0] + ".txt", "w")
+        f.write(f"similarity: {tanimoto}\n")
+        f.write(f"mcs atoms in r1: {match_a}\n\n")
+        f.write(f"mcs atoms in r2: {match_b}\n\n")
+        f.close()
+
     print("ALIGNING TOPOLOGY AND COORDINATE\n")
 
     residue_type_a = residue_a.type

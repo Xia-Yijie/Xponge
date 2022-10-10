@@ -505,6 +505,7 @@ def load_pdb(filename, judge_histone=True, position_need="A", ignore_hydrogen=Fa
                     current_insertion_code = insertion_code
                     if insertion_code != " ":
                         insertion_count += 1
+                        resindex += 1
                     current_residue_index = resindex
                     chain[chain_id][resindex] = current_residue_count
                     residue_type_map.append(resname)

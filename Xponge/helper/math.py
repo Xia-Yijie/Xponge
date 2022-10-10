@@ -39,9 +39,9 @@ def kabsch(positions1, positions2):
     positions1 = np.array(positions1, dtype=np.float32).reshape(-1, 3)
     positions2 = np.array(positions2, dtype=np.float32).reshape(-1, 3)
     if positions1.shape[0] == 0:
-        return np.array([0, 0, 0], dtype=np.float32), np.identity(3)
+        return np.array([0, 0, 0], dtype=np.float32), np.identity(3), np.identity(3)
     if positions1.shape[0] == 1:
-        return positions1[0], np.identity(3)
+        return positions1[0], np.identity(3), np.identity(3)
     center1 = np.mean(positions1, axis=0, keepdims=True)
     center2 = np.mean(positions2, axis=0, keepdims=True)
     x = positions1 - center1

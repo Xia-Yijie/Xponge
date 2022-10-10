@@ -498,11 +498,11 @@ instance yourself, remember to determine the ring and bond type!
                                         a2=parameters.get("a2", 0.001), two_stage=parameters.get("two_stage", True),
                                         only_esp=parameters.get("only_esp", False),
                                         radius=parameters.get("radius", None))
-        elif method == "Gasteiger":
+        elif method == "GASTEIGER":
             from . import gasteiger
             self.charge = gasteiger.Gasteiger(self)
         else:
-            raise ValueError("methods should be one of the following: 'RESP'")
+            raise ValueError("methods should be one of the following: 'RESP', 'GASTEIGER'")
 
     def save_as_pdb(self, filename):
         """

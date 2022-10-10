@@ -157,7 +157,8 @@ def _add_solvent_box(molecule, new_molecule, molmin, molmax, solshape, distance,
 
 def add_solvent_box(molecule, solvent, distance, tolerance=3):
     """
-    This **function** add a box full of solvents to a molecule
+    This **function** adds a box full of solvents to a molecule.
+    This will be performed in place for a Molecule and out of place for a ResidueType.
 
     :param molecule: the molecule to add the box, either a ``Molecule`` or a ``ResidueType``
     :param solvent: the solvent molecule, either a ``Molecule`` or a ``ResidueType``
@@ -165,7 +166,7 @@ def add_solvent_box(molecule, solvent, distance, tolerance=3):
  This can be an ``int`` or a ``float``, and it can be also a list of them with the length 3 or 6, \
  which represents the 3 or 6 directions respectively.
     :param tolerance: the distance between two molecules. 3 for default.
-    :return: None
+    :return: the Molecule instance
     """
     if isinstance(distance, (float, int)):
         distance = [distance] * 6
@@ -202,7 +203,7 @@ def add_solvent_box(molecule, solvent, distance, tolerance=3):
     solshape = solmax - solmin + tolerance
 
     _add_solvent_box(molecule, new_molecule, molmin, molmax, solshape, distance, tolerance, solcrd)
-
+    return molecule
 
 def h_mass_repartition(molecules, repartition_mass=1.1, repartition_rate=3, exclude_residue_name="WAT"):
     """

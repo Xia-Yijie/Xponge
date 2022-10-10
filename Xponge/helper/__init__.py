@@ -1967,6 +1967,7 @@ def _add(self, other, deepcopy, link):
         res_b = other_molecule.residues[0]
         new_molecule.residues += other_molecule.residues
         new_molecule.residue_links |= other_molecule.residue_links
+        getattr(new_molecule, "_residue_links_map").update(getattr(other_molecule, "_residue_links_map"))
         if link and res_a and res_a.type.tail and res_b.type.head:
             atom1 = res_a.name2atom(res_a.type.tail)
             atom2 = res_b.name2atom(res_b.type.head)

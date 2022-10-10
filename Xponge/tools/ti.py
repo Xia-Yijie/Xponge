@@ -9,7 +9,7 @@ from ..helper import Xopen
 from ..analysis import MdoutReader
 
 
-def ti_analysis(args):
+def ti_analysis(args, merged_from):
     """
     This **function** is used to do the ti analysis
 
@@ -44,8 +44,8 @@ def ti_analysis(args):
             command += f" -mdin {args.ai}"
             run(command)
         temp = MdoutReader(f"{i}/ti/{args.temp}.mdout").dH_dlambda
-        prefix_sum.append(np.cumsum(temp[::10]) / (np.arange(frame)[::10] + 1))
-        suffix_sum.append(np.cumsum(temp[::-10]) / (np.arange(frame)[::10] + 1))
+        prefix_sum.append(np.cumsum(temp[::]) / (np.arange(frame) + 1))
+        suffix_sum.append(np.cumsum(temp[::-1]) / (np.arange(frame) + 1))
         ses.append(np.std(temp) / np.sqrt(frame))
     prefix_sum = np.array(prefix_sum)
     dh_dlambda = np.loadtxt("dh_dlambda.txt")
@@ -63,7 +63,7 @@ def ti_analysis(args):
     os.mkdir("time_check")
     for i in range(args.nl):
         temp = (prefix_sum[i] + prefix_sum[i + 1]) * space
-        time = args.dt * (np.arange(frame // 10))
+        time = args.dt * (np.arange(frame) + 1)
         plt.plot(time, temp, label="forward")
         temp_ses = np.vstack((time, temp))
         temp = (suffix_sum[i] + suffix_sum[i + 1]) * space

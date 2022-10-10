@@ -5,6 +5,7 @@ import os
 import sys
 import unittest
 import multiprocessing as mpc
+
 from ..helper import source, GlobalSetting, Xopen, Xprint
 from ..mdrun import run
 
@@ -490,13 +491,18 @@ def _mol2rfe_build(args, merged_from, merged_to):
                 os.system("rm -rf %d" % i)
             os.mkdir("%d" % i)
             tt = fep.Merge_Force_Field(merged_from, merged_to, i / args.nl)
-            Xprint(f"lambda = {i / args.nl}")
-            process.optimize(tt,
-                             only_bad_coordinate=False,
-                             extra_commands={"lambda_lj": i / args.nl})
+            if i == 0:
+                Xprint("Initial Structure Optimizing\n")
+                process.optimize(tt,
+                                 only_bad_coordinate=False,
+                                 extra_commands={"lambda_lj": i / args.nl})
+                for atom_m, atom_t in zip(merged_from.atoms, tt.atoms):
+                    atom_m.x = atom_t.x
+                    atom_m.y = atom_t.y
+                    atom_m.z = atom_t.z
             build.save_mol2(tt, "%d/%s.mol2" % (i, args.temp))
             build.Save_SPONGE_Input(tt, "%d/%s" % (i, args.temp))
-
+            Xprint(f"{i} built success")
 
 def _mol2rfe_output_path(subdir, workdir, tempname):
     """
@@ -641,8 +647,8 @@ def _mol2rfe_analysis(args, merged_from, merged_to):
         save_pdb(draw_r1_mol, "r1.pdb")
         save_pdb(draw_r2_mol, "r2.pdb")
         if args.method == "TI":
-            ti = source("..ti", False)
-            ti.ti_analysis(args)
+            ti = source(".ti", False)
+            ti.ti_analysis(args, merged_from)
         elif args.method == "FEP_BAR":
             raise NotImplementedError
 
