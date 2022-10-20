@@ -253,12 +253,12 @@ class Assign():
 
     def add_index_to_name(self):
         """
-        This **function** adds the atom index to the atom name
+        This **function** renames the atoms by adding the index to the element name
 
         :return: None
         """
         for i in range(self.atom_numbers):
-            self.names[i] += str(i)
+            self.names[i] = self.atoms[i] + str(i)
 
     def atom_judge(self, atom, string):
         """
