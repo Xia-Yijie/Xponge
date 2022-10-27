@@ -63,7 +63,7 @@ def ti_analysis(args, merged_from):
     os.mkdir("time_check")
     for i in range(args.nl):
         temp = (prefix_sum[i] + prefix_sum[i + 1]) * space
-        time = args.dt * (np.arange(frame) + 1)
+        time = args.dt * 0.1 * (np.arange(frame) + 1)
         plt.plot(time, temp, label="forward")
         temp_ses = np.vstack((time, temp))
         temp = (suffix_sum[i] + suffix_sum[i + 1]) * space

@@ -13,7 +13,7 @@ from types import MethodType, FunctionType
 from functools import partial, partialmethod, wraps, update_wrapper
 from collections import OrderedDict
 from collections.abc import Iterable
-from itertools import product
+from itertools import product, chain
 from abc import ABC
 
 import numpy as np
@@ -1175,7 +1175,8 @@ class Residue(Entity):
                 temp_atom = getattr(self.type, atom_name)
                 self_position = np.array([getattr(temp_atom, i) for i in "xyz"])
                 self_position = np.dot(rotation, (self_position - center1)) + center2
-                for connected_atom in self.type.connectivity[temp_atom]:
+                tofind = self.type.connectivity[temp_atom] or self.atoms
+                for connected_atom in tofind:
                     if connected_atom.name in t:
                         connected_position = np.array([getattr(connected_atom, i) for i in "xyz"])
                         connected_position = np.dot(rotation, (connected_position - center1)) + center2
