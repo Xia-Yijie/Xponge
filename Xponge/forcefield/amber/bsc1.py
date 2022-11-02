@@ -9,7 +9,7 @@ amber = source("...amber")
 amber.load_parameters_from_parmdat("parm10.dat")
 amber.load_parameters_from_frcmod("parmbsc1.frcmod")
 
-load_mol2(os.path.join(AMBER_DATA_DIR, "DNA.mol2"), as_template=True)
+load_mol2(os.path.join(AMBER_DATA_DIR, "bsc1.mol2"), as_template=True)
 
 for i in "ATCG":
     i = "D" + i

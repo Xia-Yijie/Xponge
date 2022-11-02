@@ -1,7 +1,7 @@
 """
 This **module** set the basic configuration for ff14sb
 """
-from ...helper import source, Xprint
+from ...helper import source, Xprint, set_real_global_variable
 
 source("....")
 amber = source("...amber")
@@ -39,6 +39,12 @@ EP     -3       -2      -1      0.1066413  0.1066413
 """)
 
 TIP4P = load_mol2(os.path.join(AMBER_DATA_DIR, "tip4pew.mol2"), as_template=True)
+
+ResidueType.set_type("H2O", ResidueType.get_type("WAT"))
+ResidueType.set_type("HOH", ResidueType.get_type("WAT"))
+
+set_real_global_variable("H2O", ResidueType.get_type("WAT"))
+set_real_global_variable("HOH", ResidueType.get_type("WAT"))
 
 amber.load_parameters_from_frcmod("ions1lm_126_tip4pew.frcmod")
 amber.load_parameters_from_frcmod("ionsjc_tip4pew.frcmod")

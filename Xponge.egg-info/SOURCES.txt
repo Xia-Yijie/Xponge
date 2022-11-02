@@ -18,12 +18,12 @@ Xponge/assign/__init__.py
 Xponge/assign/gasteiger.py
 Xponge/assign/resp.py
 Xponge/forcefield/__init__.py
-Xponge/forcefield/amber/DNA.mol2
 Xponge/forcefield/amber/OL15.frcmod
 Xponge/forcefield/amber/RNA.mol2
 Xponge/forcefield/amber/RSFF2C.dat
 Xponge/forcefield/amber/__init__.py
 Xponge/forcefield/amber/atomic_ions.mol2
+Xponge/forcefield/amber/bsc1.mol2
 Xponge/forcefield/amber/bsc1.py
 Xponge/forcefield/amber/ff14SB.frcmod
 Xponge/forcefield/amber/ff14SB.mol2
@@ -49,6 +49,7 @@ Xponge/forcefield/amber/lipid14.py
 Xponge/forcefield/amber/lipid17.dat
 Xponge/forcefield/amber/lipid17.mol2
 Xponge/forcefield/amber/lipid17.py
+Xponge/forcefield/amber/ol15.mol2
 Xponge/forcefield/amber/ol15.py
 Xponge/forcefield/amber/ol3.py
 Xponge/forcefield/amber/opc.mol2
