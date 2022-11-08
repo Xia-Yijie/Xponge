@@ -726,7 +726,7 @@ def _deal_with_ar_bonds(assign):
                     doubled[work_atom] = True
 
 
-def get_assignment_from_mol2(filename):
+def get_assignment_from_mol2(filename, ignore_hydrogen=False):
     """
     This **function** gets an Assign instance from a mol2 file
 
@@ -736,6 +736,7 @@ def get_assignment_from_mol2(filename):
     with open(filename) as f:
         flag = None
         subflag = None
+        real_index = Xdict()
         for line in f:
             if not line.strip():
                 continue
@@ -749,6 +750,10 @@ def get_assignment_from_mol2(filename):
             elif flag == "ATOM":
                 words = line.split()
                 atom_name = words[1]
+                if ignore_hydrogen and (atom_name.startswith("H") or atom_name.startswith("1H")  or
+                    atom_name.startswith("2H") or atom_name.startswith("3H")):
+                    continue
+                real_index[words[0]] = assign.atom_numbers
                 element = words[5]
                 x = float(words[2])
                 y = float(words[3])
@@ -757,11 +762,13 @@ def get_assignment_from_mol2(filename):
                 assign.Add_Atom(element, x, y, z, atom_name, charge)
             elif flag == "BOND":
                 words = line.split()
+                if words[1] not in real_index or words[2] not in real_index:
+                    continue
+                atom1 = real_index[words[1]]
+                atom2 = real_index[words[2]]
                 if words[3] in "1234567890":
-                    assign.Add_Bond(int(words[1]) - 1, int(words[2]) - 1, int(words[3]))
+                    assign.Add_Bond(atom1 , atom2, int(words[3]))
                 elif words[3] == "ar":
-                    atom1 = int(words[1]) - 1
-                    atom2 = int(words[2]) - 1
                     assign.Add_Bond(atom1, atom2, 1)
                     if atom1 not in assign.ar_bonds.keys():
                         assign.ar_bonds[atom1] = [atom2]
@@ -772,8 +779,6 @@ def get_assignment_from_mol2(filename):
                     else:
                         assign.ar_bonds[atom2].append(atom1)
                 elif words[3] == "am":
-                    atom1 = int(words[1]) - 1
-                    atom2 = int(words[2]) - 1
                     assign.Add_Bond(atom1, atom2, 1)
                     if atom1 not in assign.am_bonds.keys():
                         assign.am_bonds[atom1] = [atom2]
@@ -784,8 +789,7 @@ def get_assignment_from_mol2(filename):
                     else:
                         assign.am_bonds[atom2].append(atom1)
                 else:
-                    raise NotImplementedError(
-                        "No implemented method to process bond #%s type %s" % (words[0], words[3]))
+                    raise NotImplementedError(f"No implemented method to process bond #{words[0]} type {words[3]}")
 
     _deal_with_ar_bonds(assign)
     assign.Determine_Ring_And_Bond_Type()
