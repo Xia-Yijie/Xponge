@@ -22,9 +22,11 @@ def _analyze_connectivity(cls):
             for atom1, from_atom in index_dict.items():
                 atom0.Link_Atom(i, atom1)
                 index_temp = Xdict().fromkeys(cls.connectivity[atom1], atom1)
-                index_temp.pop(from_atom)
+                index_temp.pop(from_atom, None)
+                index_temp.update(index_temp.fromkeys(index_temp.keys() & index_next.keys()))
                 index_next.update(index_temp)
             index_dict = index_next
+
 
 
 def _check_backup(backups, atom1, top_matrix, i, d):
@@ -70,7 +72,6 @@ def _get_frc_all(frc, cls):
                 continue
             for atom1 in atom0.linked_atoms[d]:
                 _check_backup(backups, atom1, top_matrix, i, d)
-
         frc_all.extend(backups[len(top) - 1])
     return frc_all
 
@@ -127,7 +128,6 @@ def _find_the_force(frc, frc_all_final, cls):
                         finded = {tofindname: [frc.get_type(tofindname), frc_one]}
                         leastfinded_x = pcountx
                         break
-
         assert (not frc.compulsory or len(finded) == 1), "None of %s type found for %s" % (
             frc.get_class_name(), "-".join([atom.type.name for atom in frc_one]))
 
