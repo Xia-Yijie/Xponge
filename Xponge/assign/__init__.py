@@ -1,6 +1,8 @@
 """
 This **package** is used to assign the properties for atoms, residues and molecules
 """
+import heapq
+from copy import deepcopy
 from collections import OrderedDict
 from itertools import groupby
 import numpy as np
@@ -16,10 +18,11 @@ class AssignRule:
     """
     all = Xdict(not_found_message="AssignRule {} not found. Did you import the proper force field?")
 
-    def __init__(self, name):
+    def __init__(self, name, pure_string=False):
         self.name = name
         AssignRule.all[name] = self
         self.rules = OrderedDict()
+        self.pure_string = pure_string
         set_attribute_alternative_names(self)
 
     def add_rule(self, atomtype):
@@ -31,7 +34,8 @@ class AssignRule:
 and giving True or False as a result)
         """
         if isinstance(atomtype, str):
-            atomtype = AtomType.get_type(atomtype)
+            if not self.pure_string:
+                atomtype = AtomType.get_type(atomtype)
         elif not isinstance(atomtype, AtomType):
             raise TypeError("atomtype should be a string or AtomType")
 
@@ -115,7 +119,6 @@ class _RING():
         current_path = []
         current_path_sons = Xdict()
         current_work = []
-        current_path_father = Xdict()
         have_found_rings = set([])
         for atom0 in range(len(assign.atoms)):
             current_path.append(atom0)
@@ -234,6 +237,9 @@ class Assign():
     XC = set(["F", "Cl", "Br", "I"])
     XD = set("SP")
     XE = set(["N", "O", "F", "Cl", "Br", "S", "I"])
+
+    CONNECTIVITY_RADII = {"H": 0.35, "C": 0.73, "N": 0.66, "O": 0.69, "F": 0.68,
+                          "P": 1.04, "S": 0.96, "Cl": 0.95, "Br": 1.08, "I": 1.26}
 
     def __init__(self, name="ASN"):
         self.name = name
@@ -426,11 +432,13 @@ connected to two other atoms, "N4" means a nitrogen atom connected to four other
 instance yourself, remember to determine the ring and bond type!
 
         :param rule: a string or an AssignRule instance
-        :return: None
+        :return: if the attribute "pure_string" of the rule is False, the atom types will be saved inplace and return
+None, else return the atom types.
         """
         if isinstance(rule, str):
             rule = AssignRule.all[rule]
-
+        if rule.pure_string:
+            backup = deepcopy(self.atom_types)
         for i in range(len(self.atoms)):
             find_type = False
             for atom_type, type_rule in rule.rules.items():
@@ -440,6 +448,60 @@ instance yourself, remember to determine the ring and bond type!
                     break
 
             assert find_type, "No atom type found for assignment %s of atom #%d" % (self.name, i)
+        if rule.pure_string:
+            backup, self.atom_types = self.atom_types, backup
+            return backup
+        return None
+
+    def determine_connectivity(self, simple_cutoff=None, tolerance=1.00):
+        """
+        This **function** determines the connectivity based on atomic distances
+
+        :param simple_cutoff: the distance cutoff to determine whether the two atoms are connected. If None (default),
+the rule described in the reference (J. Wang et al., J. Am. Chem. Soc, 2001) will be used.
+        :param tolerance: the tolerance factor for the default method
+        :return: None
+        """
+        if simple_cutoff is None:
+            for i, ci in enumerate(self.coordinate):
+                for j in range(i + 1, self.atom_numbers):
+                    dij = np.linalg.norm(np.array(self.coordinate[j]) - np.array(ci))
+                    rij = self.CONNECTIVITY_RADII[self.atoms[i]] + self.CONNECTIVITY_RADII[self.atoms[j]]
+                    if dij <= 1.5:
+                        factor = 1 - 0.15
+                    elif dij <= 1.9:
+                        factor = 1 - 0.11
+                    elif dij <= 2.05:
+                        factor = 1 - 0.09
+                    else:
+                        factor = 1 - 0.08
+                    factor /= tolerance
+                    if factor < rij / dij < 2:
+                        self.add_bond(i, j, -1)
+        else:
+            for i, ci in enumerate(self.coordinate):
+                for j in range(i + 1, self.atom_numbers):
+                    dij = np.linalg.norm(np.array(self.coordinate[j]) - np.array(ci))
+                    if dij < simple_cutoff:
+                        self.add_bond(i, j, -1)
+
+    def determine_bond_order(self, max_step=200, max_stat=2000, penalty_scores=None, debug=False):
+        """
+        This **function** determines the bond order based on connectivities
+
+        :param max_step: the max iterative step
+        :param max_stat: the max iterative stat
+        :param penalty_scores: the penalty scores for every atom. This should be a list of ordered dicts, and every
+ordered dict stores the valence-penalty pairs for every atom, and it is sorted by the penalty scores. If None(default),
+a set of penalty scores described in the reference (J. Wang et al., J. Mol. Graph. Model., 2006) will be used.
+        :return: True for success, False for failure.
+        """
+        from .bond_order import BondOrderAssignment
+        if penalty_scores is None:
+            penalty_scores = [BondOrderAssignment.atomic_valence[type_]
+                              for type_ in self.determine_atom_type("bo").values()]
+        bo_assign = BondOrderAssignment(penalty_scores, max_step, max_stat, self, debug)
+        return bo_assign.main()
 
     def to_residuetype(self, name, charge=None):
         """

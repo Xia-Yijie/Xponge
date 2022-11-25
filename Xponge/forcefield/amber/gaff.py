@@ -98,7 +98,7 @@ def _rule_cq(i, assign):
         for bonded_atom in assign.bonds[i]:
             if tofind:
                 break
-            if (assign.atom_types[bonded_atom] == AtomType.get_type("cp") and \
+            if (assign.atom_types[bonded_atom] == AtomType.get_type("cp") and
                     "AB" in assign.bond_marker[bonded_atom][i]):
                 tofind = True
                 break

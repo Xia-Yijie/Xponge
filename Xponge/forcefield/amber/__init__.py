@@ -20,6 +20,7 @@ X-X     0.5     0.833333
 
 exclude_base.Exclude(4)
 
+# pylint: disable=invalid-name
 AmberCMapType = None
 
 def load_parameters_from_parmdat(filename, prefix=True):
