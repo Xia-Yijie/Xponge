@@ -1,4 +1,3 @@
 [console_scripts]
 Xponge = Xponge.__main__:main
 Xponge.mdrun = Xponge.mdrun.__main__:main
-

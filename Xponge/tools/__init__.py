@@ -441,6 +441,7 @@ def name2name(args):
         from_ = assign.Get_Assignment_From_PDB(args.from_file, determine_bond_order=False,
                                                only_residue=args.from_residue)
 
+    from_.add_index_to_name()
     rdmol_a = rdktool.assign_to_rdmol(to_, True)
     rdmol_b = rdktool.assign_to_rdmol(from_, True)
 

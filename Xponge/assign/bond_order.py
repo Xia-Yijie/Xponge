@@ -2,6 +2,7 @@
 This **module** helps to assign bond orders
 """
 from itertools import product
+# pylint: disable=cyclic-import
 from . import AssignRule, Xdict, OrderedDict, set_attribute_alternative_names, deepcopy, np
 
 bo = AssignRule("bo", pure_string=True)
@@ -204,6 +205,7 @@ class BondOrderAssignment:
         self.max_stat = max_stat
         self.assign = assign
         self.original_penalties = original_penalties
+        # pylint: disable=cell-var-from-loop
         self.uc = [set(filter(lambda aj: self.assign.bonds[ai][aj] == -1, self.assign.bonds[ai]))
                      for ai in range(self.assign.atom_numbers)]
         self.connected = [sum(filter(lambda x: x > 0, self.assign.bonds[ai].values()))
@@ -229,12 +231,15 @@ class BondOrderAssignment:
                 self.penalties[penalty].append((atom, penalty, valence))
 
     def _preprocess_penalties(self, n):
+        """
+        Get the atomic valence combinations when penality == n
+        """
         if n in self.cached:
             return self.cached[n]
         if n == 1:
             toret = [[point] for point in self.penalties[n]]
         else:
-            toret =  []
+            toret = []
             have_added = set()
             for i in range(1, n // 2 + 1):
                 r1 = self.cached[i]
@@ -253,6 +258,9 @@ class BondOrderAssignment:
         return toret
 
     def _get_next_valence(self):
+        """
+        Get the next atomic valence combination to search
+        """
         if self.current_stat < self.max_stat:
             if self.stat_position < len(self.points):
                 self.valence = deepcopy(self.valence_best)
@@ -273,6 +281,7 @@ class BondOrderAssignment:
                     print("stat=", self.current_stat)
                     print("points=\n", self.points)
                 return True
+        return False
 
 
     def main(self):
@@ -338,11 +347,10 @@ class BondOrderAssignment:
                             determined = True
                             success = False
                             break
-                        else:
-                            bonds[i][j] += 1
-                            bonds[j][i] += 1
-                            valence[i] -= 1
-                            valence[j] -= 1
+                        bonds[i][j] += 1
+                        bonds[j][i] += 1
+                        valence[i] -= 1
+                        valence[j] -= 1
             if self.debug:
                 print(valence, uc)
             if not success:
